@@ -1,0 +1,52 @@
+name: Deploy MVP a Vercel
+
+# Despliega la plataforma a Vercel desde los runners de GitHub.
+# Requisito único: añadir el secreto `VERCEL_TOKEN` en
+# Settings → Secrets and variables → Actions del repositorio.
+# (Genera el token en https://vercel.com/account/tokens con scope "Zero Agency").
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - claude/notion-platform-email-dashboard-a561hv
+
+concurrency:
+  group: vercel-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Deploy a producción
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::Falta el secreto VERCEL_TOKEN. Añádelo en Settings → Secrets → Actions."
+            exit 1
+          fi
+          URL=$(vercel deploy --prod --yes \
+            --token="$VERCEL_TOKEN" \
+            --scope=danis-projects-b2ee6899)
+          echo "Deployment URL: $URL"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar URL del MVP
+        run: |
+          echo "## 🚀 MVP desplegado en Vercel" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**URL:** ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
