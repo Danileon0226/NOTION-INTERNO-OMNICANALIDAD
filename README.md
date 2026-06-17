@@ -43,13 +43,13 @@ npm run build    # build de producción
 
 ## 🔌 Conectar datos reales
 
-El módulo `src/lib/data/emails.ts` contiene los datos sembrados. Para producción:
+La app **no usa datos de ejemplo**: todo se alimenta en vivo desde los conectores.
 
-1. Copia `.env.example` → `.env.local` y completa las credenciales.
-2. En `src/app/api/emails/route.ts`, reemplaza `seedEmails` por una llamada a la API de
-   Gmail usando el token OAuth de la cuenta de la agencia.
-3. Los conectores (`src/app/api/connectors/route.ts`) ya exponen los flujos de conexión
-   (OAuth de Google para Gmail/Drive, GitHub App/token, webhook de Telegram).
+1. Configura `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (Client ID OAuth de tipo Web) en Vercel o en
+   `.env.local`. Con eso, conectar Gmail + Drive + Calendar es de un solo clic.
+2. En **Conectores** conecta GitHub (token/usuario) y Telegram (bot token + chat id).
+3. El dashboard, la bandeja y el Canvas/Grafo se hidratan automáticamente desde esos
+   conectores. ZERO (Gemini) los orquesta con function calling.
 
 ## 📁 Estructura
 

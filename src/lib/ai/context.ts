@@ -3,13 +3,13 @@
 // Zustand y a los tokens de los conectores); el texto resultante viaja a /api/ai.
 
 import type { Block, EmailItem, WorkspacePage } from "@/lib/types";
-import { seedConnectors } from "@/lib/data/connectors";
 import { ghFetchAll } from "@/lib/connectors/github";
 import { gmailFetchInbox, driveList } from "@/lib/connectors/google";
 import { tgGetMe } from "@/lib/connectors/telegram";
 import {
   GMAIL_SCOPE,
   DRIVE_SCOPE,
+  CALENDAR_SCOPE,
   googleTokenValid,
   type GithubConfig,
   type GoogleConfig,
@@ -100,11 +100,15 @@ export interface LiveConnectorInput {
 export async function buildConnectorsContext(cfg: LiveConnectorInput): Promise<string> {
   const lines: string[] = ["## CONECTORES"];
 
-  // Estado declarado de cada conector (de los datos del dashboard).
-  for (const c of seedConnectors) {
-    const metrics = c.metrics?.map((m) => `${m.label}: ${m.value}`).join(", ");
-    lines.push(`- ${c.name} — estado: ${c.status}. ${c.detail}${metrics ? ` (${metrics})` : ""}`);
-  }
+  // Estado real derivado de la configuración actual (sin datos de ejemplo).
+  const status = (ok: boolean) => (ok ? "conectado" : "sin conectar");
+  lines.push(
+    `- Gmail — ${status(googleTokenValid(cfg.google, GMAIL_SCOPE))}`,
+    `- Google Drive — ${status(googleTokenValid(cfg.google, DRIVE_SCOPE))}`,
+    `- Google Calendar — ${status(googleTokenValid(cfg.google, CALENDAR_SCOPE))}`,
+    `- GitHub — ${status(!!cfg.github.account || !!cfg.github.token)}${cfg.github.account ? ` (@${cfg.github.account})` : ""}`,
+    `- Telegram — ${status(!!cfg.telegram.botToken)}`
+  );
 
   // Captura en vivo en paralelo; cada fuente falla de forma aislada.
   const live = await Promise.allSettled([

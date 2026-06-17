@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Block, BlockType, WorkspacePage } from "@/lib/types";
-import { seedPages } from "@/lib/data/workspace";
+import { seedPages, blankPage, DEMO_PAGE_IDS } from "@/lib/data/workspace";
 
 function uid(prefix = "id"): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -235,6 +235,17 @@ export const useWorkspace = create<WorkspaceState>()(
         return childId;
       },
     }),
-    { name: "zero-agency-workspace" }
+    {
+      name: "zero-agency-workspace",
+      version: 2,
+      // Purga las antiguas páginas de ejemplo del almacenamiento existente.
+      migrate: (persisted) => {
+        const s = (persisted ?? {}) as Partial<WorkspaceState>;
+        const pages = (s.pages ?? []).filter((p) => !DEMO_PAGE_IDS.includes(p.id));
+        const list = pages.length ? pages : [blankPage()];
+        const activeOk = list.some((p) => p.id === s.activePageId);
+        return { ...s, pages: list, activePageId: activeOk ? s.activePageId! : list[0].id } as WorkspaceState;
+      },
+    }
   )
 );

@@ -31,7 +31,11 @@ interface ConnectorsState {
   disconnect: (id: ConnectorId) => void;
 }
 
-const emptyGoogle: GoogleConfig = { clientId: "", accessToken: "", expiry: 0, scopes: [] };
+// Client ID de Google tomado del entorno (lo configuras una vez en Vercel:
+// NEXT_PUBLIC_GOOGLE_CLIENT_ID). Así el OAuth queda listo sin pegar nada.
+export const GOOGLE_CLIENT_ID = (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").trim();
+
+const emptyGoogle: GoogleConfig = { clientId: GOOGLE_CLIENT_ID, accessToken: "", expiry: 0, scopes: [] };
 
 export const useConnectors = create<ConnectorsState>()(
   persist(
@@ -55,19 +59,32 @@ export const useConnectors = create<ConnectorsState>()(
             return {
               google: scopes.length
                 ? { ...s.google, scopes }
-                : { ...emptyGoogle, clientId: s.google.clientId },
+                : { ...emptyGoogle, clientId: s.google.clientId || GOOGLE_CLIENT_ID },
             };
           }
           return {};
         }),
     }),
-    { name: "zero-agency-connectors" }
+    {
+      name: "zero-agency-connectors",
+      // Si no hay Client ID guardado, usa el del entorno (Vercel) al rehidratar.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<ConnectorsState>;
+        const merged = { ...current, ...p } as ConnectorsState;
+        if (!merged.google?.clientId && GOOGLE_CLIENT_ID) {
+          merged.google = { ...merged.google, clientId: GOOGLE_CLIENT_ID };
+        }
+        return merged;
+      },
+    }
   )
 );
 
 export const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
 export const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+// Todos los scopes de Google: un solo consentimiento conecta Gmail + Drive + Calendar.
+export const GOOGLE_SCOPES = [GMAIL_SCOPE, DRIVE_SCOPE, CALENDAR_SCOPE];
 
 export function googleTokenValid(g: GoogleConfig, scope?: string): boolean {
   if (!g.accessToken || g.expiry < Date.now() + 30_000) return false;
