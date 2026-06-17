@@ -4,6 +4,7 @@
 // qué conector usar, ejecuta la herramienta client-side y responde.
 
 import { useAi } from "@/lib/ai/store";
+import { geminiError } from "@/lib/ai/client";
 import { toolDeclarations, runTool } from "@/lib/ai/tools";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -75,7 +76,7 @@ export async function runAgent(
       }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data?.error?.message || `Gemini ${res.status}`);
+    if (!res.ok) throw geminiError(data?.error?.message || `Gemini ${res.status}`);
 
     const parts: any[] = data?.candidates?.[0]?.content?.parts ?? [];
     const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall);

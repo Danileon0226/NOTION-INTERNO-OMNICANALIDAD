@@ -11,6 +11,18 @@ export interface AskAiOptions {
 
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 
+/** Convierte errores crípticos de Google en guía accionable. */
+export function geminiError(raw: string): Error {
+  if (/are blocked|blocked|API_KEY_HTTP_REFERRER|PERMISSION_DENIED|restricted/i.test(raw)) {
+    return new Error(
+      "Tu API key de Gemini está restringida (la Generative Language API está bloqueada para esta key). " +
+        "Solución: crea una key SIN restricciones en aistudio.google.com/apikey, o en Google Cloud Console " +
+        "habilita 'Generative Language API' y pon la key en 'No restringir' / referrers que incluyan este dominio."
+    );
+  }
+  return new Error(raw);
+}
+
 /** Envía un prompt a Gemini y devuelve el texto generado. */
 export async function askAi(prompt: string, opts: AskAiOptions = {}): Promise<string> {
   const { apiKey, model } = useAi.getState();
@@ -26,7 +38,7 @@ export async function askAi(prompt: string, opts: AskAiOptions = {}): Promise<st
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data?.error?.message || `Gemini ${res.status}`);
+    throw geminiError(data?.error?.message || `Gemini ${res.status}`);
   }
   const text: string =
     data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? "";
