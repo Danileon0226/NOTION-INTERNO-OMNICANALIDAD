@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Rocket, Play, Loader2, Plug, Clock, Wrench } from "lucide-react";
+import { Rocket, Play, Loader2, Plug, Clock, Wrench, Sun, Send } from "lucide-react";
 import { runAgent, type AgentStep } from "@/lib/ai/agent";
 import { useAi } from "@/lib/ai/store";
+import { useScheduledBriefing, runScheduledBriefing } from "@/lib/briefing";
 
 interface Routine {
   id: string;
@@ -153,6 +154,8 @@ export default function AutopilotPage() {
         </div>
       )}
 
+      <ScheduledBriefingCard />
+
       <div className="grid gap-3 md:grid-cols-2">
         {ROUTINES.map((r) => {
           const st = state[r.id];
@@ -206,6 +209,84 @@ export default function AutopilotPage() {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function ScheduledBriefingCard() {
+  const s = useScheduledBriefing();
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState("");
+
+  async function sendNow() {
+    setBusy(true);
+    setSent("");
+    try {
+      const r = await runScheduledBriefing(true);
+      setSent(r.sent.length ? `Enviado a ${r.sent.join(", ")}.` : "Generado (sin canales activos o sin configurar).");
+    } catch (e) {
+      setSent(`⚠️ ${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mb-4 rounded-xl border border-accent/30 bg-gradient-to-br from-accent/5 to-transparent p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Sun size={18} className="text-accent" />
+        <span className="text-sm font-semibold text-ink">Briefing programado</span>
+        <span className="text-xs text-muted">ZERO te lo envía cada mañana</span>
+        <label className="ml-auto flex items-center gap-1.5 text-xs text-muted">
+          <input type="checkbox" checked={s.enabled} onChange={(e) => s.setEnabled(e.target.checked)} className="accent-accent" />
+          {s.enabled ? "Activo" : "Inactivo"}
+        </label>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-4">
+        <label className="flex items-center gap-1.5 text-xs text-muted">
+          A partir de las
+          <select
+            value={s.hour}
+            onChange={(e) => s.setHour(Number(e.target.value))}
+            className="rounded-md border bg-card px-2 py-1 text-ink"
+          >
+            {Array.from({ length: 24 }, (_, h) => (
+              <option key={h} value={h}>
+                {String(h).padStart(2, "0")}:00
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 text-xs text-muted">
+          <input type="checkbox" checked={s.toTelegram} onChange={(e) => s.setChannels({ toTelegram: e.target.checked })} className="accent-accent" />
+          Telegram
+        </label>
+        <label className="flex items-center gap-1.5 text-xs text-muted">
+          <input type="checkbox" checked={s.toSlack} onChange={(e) => s.setChannels({ toSlack: e.target.checked })} className="accent-accent" />
+          Slack
+        </label>
+        <label className="flex items-center gap-1.5 text-xs text-muted">
+          <input type="checkbox" checked={s.toWebhooks} onChange={(e) => s.setChannels({ toWebhooks: e.target.checked })} className="accent-accent" />
+          Webhooks
+        </label>
+      </div>
+
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          onClick={sendNow}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+        >
+          {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+          Enviar ahora
+        </button>
+        {s.lastSent && <span className="text-[11px] text-muted">Último envío: {s.lastSent}</span>}
+      </div>
+      {sent && <p className="mt-2 text-xs text-muted">{sent}</p>}
+      <p className="mt-2 text-[11px] text-muted">
+        Corre mientras tengas una pestaña abierta a esa hora. Configura Telegram/Slack en Conectores.
+      </p>
     </div>
   );
 }

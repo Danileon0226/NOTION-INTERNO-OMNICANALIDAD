@@ -11,6 +11,7 @@ import { NotificationsBell } from "@/components/NotificationsBell";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { AutonomyDaemon } from "@/components/anticipation/AutonomyDaemon";
 import { MonitorDaemon } from "@/components/monitor/MonitorDaemon";
+import { BriefingDaemon } from "@/components/BriefingDaemon";
 import { useTheme, applyTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
 import zeroMark from "@/brand/zero-mark.png";
@@ -95,6 +96,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Demonio de monitoreo del sitio web de la agencia */}
       <MonitorDaemon />
+
+      {/* Demonio del briefing programado */}
+      <BriefingDaemon />
 
       {/* Copiloto "Zero" — flotante en cualquier pantalla */}
       <AssistantPanel />
