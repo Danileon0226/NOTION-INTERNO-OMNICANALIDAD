@@ -1,122 +1,667 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mail, HardDrive, Github, Send, ExternalLink, Check } from "lucide-react";
-import type { Connector, ConnectorId } from "@/lib/types";
-import { getConnectors } from "@/lib/clientData";
-
-const icons: Record<ConnectorId, React.ReactNode> = {
-  gmail: <Mail size={22} />,
-  "google-drive": <HardDrive size={22} />,
-  github: <Github size={22} />,
-  telegram: <Send size={22} />,
-};
-
-const statusLabel: Record<Connector["status"], string> = {
-  connected: "Conectado",
-  pending: "Pendiente",
-  error: "Error",
-  disconnected: "Sin conectar",
-};
-
-const statusStyle: Record<Connector["status"], string> = {
-  connected: "bg-emerald-50 text-emerald-600",
-  pending: "bg-amber-50 text-amber-600",
-  error: "bg-red-50 text-red-600",
-  disconnected: "bg-gray-100 text-gray-500",
-};
+import {
+  Mail,
+  HardDrive,
+  Github,
+  Send,
+  ExternalLink,
+  Check,
+  RefreshCw,
+  AlertTriangle,
+  Loader2,
+  Star,
+  GitPullRequest,
+  CircleDot,
+  Folder,
+  FileText,
+  Trash2,
+} from "lucide-react";
+import {
+  useConnectors,
+  GMAIL_SCOPE,
+  DRIVE_SCOPE,
+  googleTokenValid,
+} from "@/lib/connectors/store";
+import { ghFetchAll, repoFromUrl, type GithubData } from "@/lib/connectors/github";
+import {
+  tgGetMe,
+  tgSendMessage,
+  tgGetUpdates,
+  alertText,
+  type TelegramBot,
+  type TelegramUpdate,
+} from "@/lib/connectors/telegram";
+import {
+  requestGoogleToken,
+  gmailProfile,
+  gmailFetchInbox,
+  driveList,
+  isFolder,
+  type GmailProfile,
+  type DriveFile,
+} from "@/lib/connectors/google";
+import type { EmailItem } from "@/lib/types";
 
 export default function ConnectorsPage() {
-  const [connectors, setConnectors] = useState<Connector[]>([]);
-  const [busy, setBusy] = useState<ConnectorId | null>(null);
-
-  useEffect(() => {
-    setConnectors(getConnectors());
-  }, []);
-
-  const flows: Record<ConnectorId, string> = {
-    gmail: "Inicia el consentimiento OAuth de Google para Gmail.",
-    "google-drive": "Inicia el consentimiento OAuth de Google para Drive.",
-    github: "Instala la GitHub App o registra un Personal Access Token.",
-    telegram: "Configura TELEGRAM_BOT_TOKEN y registra el webhook del bot.",
-  };
-
-  function connect(id: ConnectorId) {
-    setBusy(id);
-    setTimeout(() => {
-      setBusy(null);
-      alert(`${flows[id]}\n\nConfigura las credenciales en .env.local para activar la conexión real.`);
-    }, 400);
-  }
-
   return (
     <div className="mx-auto max-w-5xl px-8 py-8">
       <header className="mb-6">
         <h1 className="text-2xl font-bold text-ink">Conectores omnicanal</h1>
         <p className="mt-1 text-sm text-muted">
-          Integra tus herramientas con el workspace usando los conectores de Claude. Toda la data se
-          monta automáticamente en el dashboard.
+          Integraciones reales y funcionales. Las credenciales se guardan solo en tu navegador
+          (localStorage) y las llamadas salen directo a cada API — sin servidores intermedios.
         </p>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {connectors.map((c) => (
-          <div key={c.id} className="flex flex-col rounded-xl border bg-white p-5">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-bg-subtle text-ink">
-                  {icons[c.id]}
-                </div>
-                <div>
-                  <h2 className="font-semibold text-ink">{c.name}</h2>
-                  <span className={`mt-0.5 inline-block rounded px-1.5 py-0.5 text-[11px] font-medium ${statusStyle[c.status]}`}>
-                    {statusLabel[c.status]}
-                  </span>
-                </div>
+      <div className="space-y-4">
+        <GithubCard />
+        <TelegramCard />
+        <GmailCard />
+        <DriveCard />
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────────── UI helpers ───────────────────────────── */
+
+function Shell({
+  icon,
+  title,
+  desc,
+  connected,
+  children,
+  docsUrl,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  connected: boolean;
+  children: React.ReactNode;
+  docsUrl?: string;
+}) {
+  return (
+    <section className="rounded-xl border bg-white p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-bg-subtle text-ink">
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold text-ink">{title}</h2>
+            <span
+              className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
+                connected ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              {connected ? "Conectado" : "Sin conectar"}
+            </span>
+            {docsUrl && (
+              <a
+                href={docsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="ml-auto flex items-center gap-1 text-xs text-muted hover:text-ink"
+              >
+                Docs <ExternalLink size={12} />
+              </a>
+            )}
+          </div>
+          <p className="mt-1 text-sm text-muted">{desc}</p>
+          <div className="mt-4">{children}</div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-muted">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        spellCheck={false}
+        className="w-full rounded-md border bg-white px-3 py-1.5 text-sm text-ink outline-none focus:border-accent"
+      />
+    </label>
+  );
+}
+
+function Btn({
+  children,
+  onClick,
+  busy,
+  variant = "primary",
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  busy?: boolean;
+  variant?: "primary" | "ghost" | "danger";
+  disabled?: boolean;
+}) {
+  const styles =
+    variant === "primary"
+      ? "bg-accent text-white hover:opacity-90"
+      : variant === "danger"
+        ? "text-red-600 hover:bg-red-50"
+        : "border text-ink hover:bg-bg-subtle";
+  return (
+    <button
+      onClick={onClick}
+      disabled={busy || disabled}
+      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50 ${styles}`}
+    >
+      {busy && <Loader2 size={14} className="animate-spin" />}
+      {children}
+    </button>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-lg bg-bg-subtle px-3 py-2">
+      <div className="text-lg font-semibold text-ink">{value}</div>
+      <div className="text-[11px] text-muted">{label}</div>
+    </div>
+  );
+}
+
+function ErrorMsg({ msg }: { msg: string }) {
+  if (!msg) return null;
+  return (
+    <div className="mt-3 flex items-start gap-1.5 rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
+      <AlertTriangle size={13} className="mt-0.5 shrink-0" /> {msg}
+    </div>
+  );
+}
+
+/* ───────────────────────────── GitHub ───────────────────────────── */
+
+function GithubCard() {
+  const { github, setGithub, disconnect } = useConnectors();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [data, setData] = useState<GithubData | null>(null);
+  const connected = !!data?.user || (!!github.account && !!data);
+
+  async function connect() {
+    setErr("");
+    setBusy(true);
+    try {
+      const d = await ghFetchAll(github.account.trim(), github.token.trim() || undefined);
+      if (!d.user && !github.account) throw new Error("Indica un usuario/organización o un token.");
+      setData(d);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if ((github.account || github.token) && !data) connect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <Shell
+      icon={<Github size={22} />}
+      title="GitHub"
+      desc="Repos, issues y PRs en vivo. Funciona con un usuario/organización público; añade un token (PAT) para repos privados y más límite."
+      connected={connected}
+      docsUrl="https://docs.github.com/rest"
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field
+          label="Usuario u organización"
+          value={github.account}
+          onChange={(v) => setGithub({ account: v })}
+          placeholder="p. ej. Danileon0226"
+        />
+        <Field
+          label="Token (opcional, PAT)"
+          value={github.token}
+          onChange={(v) => setGithub({ token: v })}
+          placeholder="ghp_…"
+          type="password"
+        />
+      </div>
+      <div className="mt-3 flex gap-2">
+        <Btn onClick={connect} busy={busy}>
+          {connected ? "Actualizar" : "Conectar"}
+        </Btn>
+        {connected && (
+          <Btn
+            variant="danger"
+            onClick={() => {
+              disconnect("github");
+              setData(null);
+            }}
+          >
+            <Trash2 size={14} /> Desconectar
+          </Btn>
+        )}
+      </div>
+      <ErrorMsg msg={err} />
+
+      {data && (
+        <div className="mt-4 space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            <Stat label="Repos" value={data.user?.public_repos ?? data.repos.length} />
+            <Stat label="PRs abiertos" value={data.openPRs} />
+            <Stat label="Issues abiertos" value={data.openIssues} />
+          </div>
+          {data.repos.length > 0 && (
+            <div>
+              <div className="mb-1 text-xs font-medium text-muted">Repositorios recientes</div>
+              <div className="divide-y rounded-lg border">
+                {data.repos.slice(0, 5).map((r) => (
+                  <a
+                    key={r.id}
+                    href={r.html_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-bg-subtle"
+                  >
+                    <span className="truncate font-medium text-ink">{r.name}</span>
+                    {r.private && <span className="rounded bg-gray-100 px-1 text-[10px] text-gray-500">privado</span>}
+                    <span className="ml-auto flex items-center gap-2 text-[11px] text-muted">
+                      {r.language && <span>{r.language}</span>}
+                      <span className="flex items-center gap-0.5">
+                        <Star size={11} /> {r.stargazers_count}
+                      </span>
+                    </span>
+                  </a>
+                ))}
               </div>
             </div>
+          )}
+          {data.pulls.length > 0 && (
+            <div>
+              <div className="mb-1 text-xs font-medium text-muted">Pull requests abiertos</div>
+              <div className="divide-y rounded-lg border">
+                {data.pulls.slice(0, 5).map((p) => (
+                  <a
+                    key={p.id}
+                    href={p.html_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-bg-subtle"
+                  >
+                    <GitPullRequest size={13} className="shrink-0 text-emerald-600" />
+                    <span className="truncate text-ink">{p.title}</span>
+                    <span className="ml-auto shrink-0 text-[11px] text-muted">
+                      {repoFromUrl(p.repository_url)}#{p.number}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </Shell>
+  );
+}
 
-            <p className="mt-3 text-sm text-muted">{c.description}</p>
+/* ───────────────────────────── Telegram ───────────────────────────── */
 
-            {c.metrics && (
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {c.metrics.map((m) => (
-                  <div key={m.label} className="rounded-lg bg-bg-subtle px-3 py-2">
-                    <div className="text-lg font-semibold text-ink">{m.value}</div>
-                    <div className="text-[11px] text-muted">{m.label}</div>
+function TelegramCard() {
+  const { telegram, setTelegram, disconnect } = useConnectors();
+  const [busy, setBusy] = useState<"connect" | "send" | "updates" | null>(null);
+  const [err, setErr] = useState("");
+  const [bot, setBot] = useState<TelegramBot | null>(null);
+  const [updates, setUpdates] = useState<TelegramUpdate[]>([]);
+  const [sent, setSent] = useState(false);
+
+  async function connect() {
+    setErr("");
+    setSent(false);
+    setBusy("connect");
+    try {
+      const me = await tgGetMe(telegram.botToken.trim());
+      setBot(me);
+    } catch (e) {
+      setErr((e as Error).message);
+      setBot(null);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function send() {
+    setErr("");
+    setBusy("send");
+    try {
+      await tgSendMessage(
+        telegram.botToken.trim(),
+        telegram.chatId.trim(),
+        alertText("Prueba de conexión", "El bot de Telegram quedó conectado al dashboard ✅")
+      );
+      setSent(true);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function refreshUpdates() {
+    setErr("");
+    setBusy("updates");
+    try {
+      setUpdates((await tgGetUpdates(telegram.botToken.trim())).reverse());
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  useEffect(() => {
+    if (telegram.botToken && !bot) connect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <Shell
+      icon={<Send size={22} />}
+      title="Telegram"
+      desc="Bot de alertas omnicanal. Crea un bot con @BotFather, pega el token, y usa 'Leer updates' para descubrir el chat_id (escríbele algo al bot primero)."
+      connected={!!bot}
+      docsUrl="https://core.telegram.org/bots/api"
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field
+          label="Bot token"
+          value={telegram.botToken}
+          onChange={(v) => setTelegram({ botToken: v })}
+          placeholder="123456:ABC-DEF…"
+          type="password"
+        />
+        <Field
+          label="Chat ID (destino de alertas)"
+          value={telegram.chatId}
+          onChange={(v) => setTelegram({ chatId: v })}
+          placeholder="p. ej. 123456789"
+        />
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Btn onClick={connect} busy={busy === "connect"}>
+          {bot ? "Revalidar" : "Conectar"}
+        </Btn>
+        <Btn variant="ghost" onClick={refreshUpdates} busy={busy === "updates"} disabled={!telegram.botToken}>
+          <RefreshCw size={14} /> Leer updates
+        </Btn>
+        <Btn
+          variant="ghost"
+          onClick={send}
+          busy={busy === "send"}
+          disabled={!bot || !telegram.chatId}
+        >
+          <Send size={14} /> Enviar alerta de prueba
+        </Btn>
+        {bot && (
+          <Btn
+            variant="danger"
+            onClick={() => {
+              disconnect("telegram");
+              setBot(null);
+              setUpdates([]);
+            }}
+          >
+            <Trash2 size={14} /> Desconectar
+          </Btn>
+        )}
+      </div>
+      {sent && (
+        <div className="mt-3 flex items-center gap-1.5 rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-600">
+          <Check size={13} /> Alerta enviada al chat {telegram.chatId}.
+        </div>
+      )}
+      <ErrorMsg msg={err} />
+
+      {bot && (
+        <div className="mt-4 space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <Stat label="Bot" value={`@${bot.username}`} />
+            <Stat label="Updates leídos" value={updates.length} />
+          </div>
+          {updates.length > 0 && (
+            <div>
+              <div className="mb-1 text-xs font-medium text-muted">Mensajes recientes hacia el bot</div>
+              <div className="divide-y rounded-lg border">
+                {updates.slice(0, 5).map((u) => (
+                  <div key={u.update_id} className="px-3 py-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-ink">{u.message?.from?.first_name ?? "—"}</span>
+                      <span className="ml-auto text-[11px] text-muted">chat_id: {u.message?.chat.id}</span>
+                    </div>
+                    {u.message?.text && <p className="text-xs text-muted">{u.message.text}</p>}
                   </div>
                 ))}
               </div>
-            )}
-
-            <div className="mt-4 flex items-center gap-2 border-t pt-3">
-              {c.status === "connected" ? (
-                <span className="flex items-center gap-1 text-sm text-emerald-600">
-                  <Check size={15} /> {c.detail}
-                </span>
-              ) : (
-                <button
-                  onClick={() => connect(c.id)}
-                  disabled={busy === c.id}
-                  className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  {busy === c.id ? "Conectando…" : c.status === "pending" ? "Completar conexión" : "Conectar"}
-                </button>
-              )}
-              {c.docsUrl && (
-                <a
-                  href={c.docsUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="ml-auto flex items-center gap-1 text-xs text-muted hover:text-ink"
-                >
-                  Docs <ExternalLink size={12} />
-                </a>
-              )}
             </div>
-          </div>
-        ))}
+          )}
+        </div>
+      )}
+    </Shell>
+  );
+}
+
+/* ───────────────────────────── Google base ───────────────────────────── */
+
+function useGoogleConnect() {
+  const { google, setGoogle } = useConnectors();
+
+  async function ensureToken(scope: string): Promise<string> {
+    if (googleTokenValid(google, scope)) return google.accessToken;
+    if (!google.clientId.trim()) throw new Error("Falta el Google OAuth Client ID.");
+    const wanted = Array.from(new Set([...google.scopes, scope]));
+    const tok = await requestGoogleToken(google.clientId.trim(), wanted);
+    setGoogle({
+      accessToken: tok.access_token,
+      expiry: Date.now() + tok.expires_in * 1000,
+      scopes: tok.scope ? tok.scope.split(" ") : wanted,
+    });
+    return tok.access_token;
+  }
+
+  return { google, setGoogle, ensureToken };
+}
+
+/* ───────────────────────────── Gmail ───────────────────────────── */
+
+function GmailCard() {
+  const { google, setGoogle, ensureToken } = useGoogleConnect();
+  const { disconnect } = useConnectors();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [profile, setProfile] = useState<GmailProfile | null>(null);
+  const [emails, setEmails] = useState<EmailItem[]>([]);
+  const connected = googleTokenValid(google, GMAIL_SCOPE);
+
+  async function connect() {
+    setErr("");
+    setBusy(true);
+    try {
+      const token = await ensureToken(GMAIL_SCOPE);
+      const [p, msgs] = await Promise.all([gmailProfile(token), gmailFetchInbox(token)]);
+      setProfile(p);
+      setEmails(msgs);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Shell
+      icon={<Mail size={22} />}
+      title="Gmail · Correo de la agencia"
+      desc="OAuth de Google (sin secreto) y lectura real de tu bandeja. El dashboard usará estos correos en vivo cuando esté conectado."
+      connected={connected}
+      docsUrl="https://developers.google.com/gmail/api"
+    >
+      <Field
+        label="Google OAuth Client ID"
+        value={google.clientId}
+        onChange={(v) => setGoogle({ clientId: v })}
+        placeholder="xxxxx.apps.googleusercontent.com"
+      />
+      <p className="mt-1 text-[11px] text-muted">
+        Crea un Client ID de tipo &quot;Web&quot; en Google Cloud Console y añade este origen a
+        &quot;Authorized JavaScript origins&quot;.
+      </p>
+      <div className="mt-3 flex gap-2">
+        <Btn onClick={connect} busy={busy}>
+          {connected ? "Sincronizar bandeja" : "Conectar con Google"}
+        </Btn>
+        {connected && (
+          <Btn
+            variant="danger"
+            onClick={() => {
+              disconnect("gmail");
+              setProfile(null);
+              setEmails([]);
+            }}
+          >
+            <Trash2 size={14} /> Desconectar
+          </Btn>
+        )}
       </div>
-    </div>
+      <ErrorMsg msg={err} />
+
+      {profile && (
+        <div className="mt-4 space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <Stat label={profile.emailAddress} value={`${profile.messagesTotal.toLocaleString()} msgs`} />
+            <Stat label="Cargados en vivo" value={emails.length} />
+          </div>
+          <div className="divide-y rounded-lg border">
+            {emails.slice(0, 6).map((e) => (
+              <div key={e.id} className="px-3 py-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className={`truncate ${e.unread ? "font-semibold text-ink" : "text-ink/80"}`}>
+                    {e.subject}
+                  </span>
+                  <span className="ml-auto shrink-0 rounded bg-bg-subtle px-1.5 py-0.5 text-[10px] text-muted">
+                    {e.category}
+                  </span>
+                </div>
+                <p className="truncate text-xs text-muted">{e.senderName}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Shell>
+  );
+}
+
+/* ───────────────────────────── Drive ───────────────────────────── */
+
+function DriveCard() {
+  const { google, setGoogle, ensureToken } = useGoogleConnect();
+  const { disconnect } = useConnectors();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [files, setFiles] = useState<DriveFile[] | null>(null);
+  const connected = googleTokenValid(google, DRIVE_SCOPE);
+
+  async function connect() {
+    setErr("");
+    setBusy(true);
+    try {
+      const token = await ensureToken(DRIVE_SCOPE);
+      setFiles(await driveList(token));
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Shell
+      icon={<HardDrive size={22} />}
+      title="Google Drive"
+      desc="Monta archivos y carpetas reales (incluidas las compartidas con la agencia). Usa el mismo Client ID de Google."
+      connected={connected}
+      docsUrl="https://developers.google.com/drive/api"
+    >
+      {!google.clientId && (
+        <p className="text-[11px] text-muted">
+          Configura primero el Google OAuth Client ID en la tarjeta de Gmail (es el mismo).
+        </p>
+      )}
+      <div className="mt-1 flex gap-2">
+        <Btn onClick={connect} busy={busy} disabled={!google.clientId}>
+          {connected ? "Actualizar archivos" : "Conectar Drive"}
+        </Btn>
+        {connected && (
+          <Btn
+            variant="danger"
+            onClick={() => {
+              disconnect("google-drive");
+              setFiles(null);
+            }}
+          >
+            <Trash2 size={14} /> Desconectar
+          </Btn>
+        )}
+      </div>
+      <ErrorMsg msg={err} />
+
+      {files && (
+        <div className="mt-4">
+          <div className="mb-1 text-xs font-medium text-muted">{files.length} elementos recientes</div>
+          <div className="divide-y rounded-lg border">
+            {files.map((f) => (
+              <a
+                key={f.id}
+                href={f.webViewLink ?? "#"}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-bg-subtle"
+              >
+                {isFolder(f) ? (
+                  <Folder size={14} className="shrink-0 text-amber-500" />
+                ) : (
+                  <FileText size={14} className="shrink-0 text-muted" />
+                )}
+                <span className="truncate text-ink">{f.name}</span>
+                {f.shared && (
+                  <span className="rounded bg-blue-50 px-1 text-[10px] text-blue-600">compartido</span>
+                )}
+                <span className="ml-auto shrink-0 text-[11px] text-muted">
+                  {new Date(f.modifiedTime).toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </Shell>
   );
 }
