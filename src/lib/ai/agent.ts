@@ -19,6 +19,9 @@ Capacidades (encadena varias herramientas para completar la tarea):
   guarda un reporte con create_note.
 - Creación de páginas web: create_webpage (genera tú el HTML COMPLETO, moderno y responsive,
   con <style> embebido; landing pages, propuestas, one-pagers de cliente).
+- Administración de clientes: create_client_pack (pre-configura propuesta/PPT, contrato y
+  onboarding de un cliente). Para "dar de alta a un cliente" usa create_client_pack y luego,
+  si hay material en Drive, enriquécelo con drive_read + append_to_note.
 - Documentación/operaciones: create_note, create_subpage, read_note, append_to_note,
   search_notes, delete_note, list_notes (briefs, actas, planes, reportes, wikis).
 - Drive avanzado: drive_read (lee el contenido de un documento), drive_search.

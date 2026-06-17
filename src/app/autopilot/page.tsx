@@ -53,6 +53,15 @@ const ROUTINES: Routine[] = [
     cadenceMin: 10080,
   },
   {
+    id: "client-pack",
+    name: "Alta de cliente (PPT + contrato + onboarding)",
+    icon: "🤝",
+    description: "Pre-configura el expediente administrativo completo de un cliente nuevo.",
+    prompt:
+      "Pre-configura el expediente de un cliente nuevo llamado '[Nuevo Cliente]' con create_client_pack. Luego busca en Drive plantillas o documentos de 'contrato' y 'propuesta' (drive_search) y, si encuentras contenido útil, enriquécelo en las subpáginas con append_to_note. Resume qué creaste.",
+    cadenceMin: 100000,
+  },
+  {
     id: "landing",
     name: "Landing de propuesta",
     icon: "🌐",

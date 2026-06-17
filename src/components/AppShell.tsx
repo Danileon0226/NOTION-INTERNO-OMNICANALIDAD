@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Menu } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
@@ -9,6 +10,7 @@ import zeroMark from "@/brand/zero-mark.png";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <div className="flex h-screen w-screen overflow-hidden">
@@ -22,7 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setOpen(false)} />
       )}
       <div
-        className={`fixed inset-y-0 left-0 z-50 transition-transform duration-200 lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] lg:hidden ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -43,7 +45,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="text-sm font-semibold tracking-wide text-ink">ZERO AGENCY</span>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-bg">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-bg">
+          <div key={pathname} className="zero-page-enter h-full">
+            {children}
+          </div>
+        </main>
       </div>
 
       {/* Copiloto "Zero" — flotante en cualquier pantalla */}

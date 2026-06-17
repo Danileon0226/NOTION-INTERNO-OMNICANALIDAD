@@ -64,7 +64,7 @@ export function AssistantPanel() {
 
       {/* Panel lateral */}
       {open && (
-        <div className="fixed bottom-5 right-5 z-40 flex h-[min(620px,calc(100vh-2.5rem))] w-[min(420px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-xl border bg-bg shadow-2xl">
+        <div className="zero-pop fixed bottom-5 right-5 z-40 flex h-[min(620px,calc(100vh-2.5rem))] w-[min(420px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-xl border bg-bg shadow-2xl">
           {/* Cabecera */}
           <div className="flex items-center justify-between border-b bg-sidebar px-4 py-3">
             <div className="flex items-center gap-2">
