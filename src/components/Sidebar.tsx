@@ -30,6 +30,7 @@ import {
   Sun,
   Radar,
   Globe,
+  Brain,
 } from "lucide-react";
 
 // Navegación agrupada por intención → más fácil de escanear.
@@ -41,6 +42,7 @@ const NAV_GROUPS: { label: string; items: { href: string; label: string; icon: R
       { href: "/anticipation", label: "Anticipación", icon: <Radar size={16} /> },
       { href: "/assistant", label: "Asistente IA", icon: <Bot size={16} /> },
       { href: "/zero", label: "ZERO (voz)", icon: <Mic size={16} /> },
+      { href: "/memory", label: "Memoria", icon: <Brain size={16} /> },
     ],
   },
   {

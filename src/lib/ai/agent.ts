@@ -6,6 +6,7 @@
 import { useAi } from "@/lib/ai/store";
 import { geminiError } from "@/lib/ai/client";
 import { toolDeclarations, runTool } from "@/lib/ai/tools";
+import { useMemory, memoryContext } from "@/lib/ai/memory";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -34,6 +35,8 @@ Capacidades (encadena varias herramientas para completar la tarea):
   diagnosticar contenido o caídas, combina site_status + fetch_url.
 - Anticipación: anticipate (próximas mejores acciones a partir de señales reales). Úsalo cuando
   pidan "adelántate", "qué debería hacer ahora" o un resumen proactivo; explica la señal que justifica cada una.
+- Memoria persistente: remember (guarda un hecho), recall (recupéralos), forget (olvida). Recuerda
+  preferencias, datos de clientes y decisiones estables para usarlas en futuras conversaciones.
 - Utilidades: now (fecha/hora), calc (cálculos para finanzas/métricas).
 - Comunicación: telegram_alert (enviar), telegram_updates (leer), telegram_bot_info.
 
@@ -72,6 +75,10 @@ export async function runAgent(
   const tools = [{ functionDeclarations: toolDeclarations }];
   const steps: AgentStep[] = [];
 
+  // Inyecta la memoria persistente como contexto del gestor de conciencia.
+  const mem = memoryContext(useMemory.getState().items);
+  const system = mem ? `${SYSTEM}\n\n${mem}` : SYSTEM;
+
   for (let i = 0; i < 6; i++) {
     const res = await fetch(`${ENDPOINT}/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
       method: "POST",
@@ -79,7 +86,7 @@ export async function runAgent(
       body: JSON.stringify({
         contents,
         tools,
-        systemInstruction: { parts: [{ text: SYSTEM }] },
+        systemInstruction: { parts: [{ text: system }] },
       }),
     });
     const data = await res.json();

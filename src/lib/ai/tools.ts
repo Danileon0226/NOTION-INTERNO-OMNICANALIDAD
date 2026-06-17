@@ -17,6 +17,7 @@ import { useWorkspace } from "@/lib/store";
 import { useActivity, type ActivitySource } from "@/lib/activity";
 import { useVault } from "@/lib/obsidian";
 import { useMonitor, statusOf, uptime, avgLatency } from "@/lib/monitor/store";
+import { useMemory, searchMemory } from "@/lib/ai/memory";
 import { resolveAnticipations } from "@/lib/anticipation/engine";
 import { templates } from "@/lib/data/templates";
 import type { Block } from "@/lib/types";
@@ -291,6 +292,36 @@ export const toolDeclarations = [
       type: "object",
       properties: { url: { type: "string", description: "URL https:// a leer." } },
       required: ["url"],
+    },
+  },
+  {
+    name: "remember",
+    description:
+      "Guarda un hecho en la memoria persistente de ZERO para recordarlo en futuras conversaciones (preferencias del usuario, datos de clientes, decisiones, contexto de la agencia). Úsalo cuando el usuario diga 'recuerda que…', 'apunta…', o cuando detectes un dato estable y reutilizable.",
+    parameters: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "El hecho a recordar, claro y autónomo." },
+        tag: { type: "string", description: "Etiqueta opcional (cliente, preferencia, finanzas…)." },
+      },
+      required: ["text"],
+    },
+  },
+  {
+    name: "recall",
+    description: "Recupera de la memoria de ZERO los hechos recordados que coincidan con una consulta (o todos si se omite).",
+    parameters: {
+      type: "object",
+      properties: { query: { type: "string", description: "Texto/etiqueta a buscar (opcional)." } },
+    },
+  },
+  {
+    name: "forget",
+    description: "Elimina de la memoria de ZERO los hechos que coincidan con el texto indicado.",
+    parameters: {
+      type: "object",
+      properties: { query: { type: "string", description: "Texto a buscar para olvidar." } },
+      required: ["query"],
     },
   },
   {
@@ -766,6 +797,26 @@ export async function runTool(name: string, args: any): Promise<unknown> {
           checks: s.checks.length,
         })),
       };
+    }
+    case "remember": {
+      const text = String((args as any).text ?? "");
+      const m = useMemory.getState().add(text, (args as any).tag);
+      if (!m) return { error: "Texto vacío." };
+      logActivity("ai", `ZERO recordó: ${m.text.slice(0, 60)}`);
+      return { saved: { id: m.id, text: m.text, tag: m.tag } };
+    }
+    case "recall": {
+      const items = useMemory.getState().items;
+      const found = searchMemory(items, String((args as any).query ?? ""));
+      return { memories: found.slice(0, 30).map((m) => ({ text: m.text, tag: m.tag, pinned: !!m.pinned })) };
+    }
+    case "forget": {
+      const q = String((args as any).query ?? "").trim().toLowerCase();
+      if (!q) return { error: "Indica qué olvidar." };
+      const st = useMemory.getState();
+      const toRemove = st.items.filter((m) => m.text.toLowerCase().includes(q));
+      toRemove.forEach((m) => st.remove(m.id));
+      return { forgotten: toRemove.length };
     }
     case "anticipate": {
       const res = await resolveAnticipations();
