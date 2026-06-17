@@ -18,6 +18,8 @@ import { useActivity, type ActivitySource } from "@/lib/activity";
 import { useVault } from "@/lib/obsidian";
 import { useMonitor, statusOf, uptime, avgLatency } from "@/lib/monitor/store";
 import { useMemory, searchMemory } from "@/lib/ai/memory";
+import { sendSlack } from "@/lib/connectors/slack";
+import { fireWebhooks } from "@/lib/connectors/webhooks";
 import { resolveAnticipations } from "@/lib/anticipation/engine";
 import { templates } from "@/lib/data/templates";
 import type { Block } from "@/lib/types";
@@ -329,6 +331,24 @@ export const toolDeclarations = [
     description:
       "Motor de anticipación: lee señales reales de los conectores y devuelve las próximas mejores acciones (Next Best Actions) con su confianza y la señal que las justifica. Úsalo cuando el usuario pida 'adelántate', 'qué debería hacer', 'anticípate' o un resumen proactivo.",
     parameters: { type: "object", properties: {} },
+  },
+  {
+    name: "slack_alert",
+    description: "Envía un mensaje/alerta al canal de Slack del equipo (Incoming Webhook). Úsalo para avisos importantes.",
+    parameters: {
+      type: "object",
+      properties: { text: { type: "string", description: "Mensaje a enviar a Slack." } },
+      required: ["text"],
+    },
+  },
+  {
+    name: "webhook_broadcast",
+    description: "Dispara un evento manual a los webhooks salientes configurados (Zapier/Make/n8n/Discord). Úsalo para integrar con sistemas externos.",
+    parameters: {
+      type: "object",
+      properties: { message: { type: "string", description: "Mensaje/carga del evento." } },
+      required: ["message"],
+    },
   },
   {
     name: "site_status",
@@ -783,6 +803,19 @@ export async function runTool(name: string, args: any): Promise<unknown> {
       } catch (e) {
         return { error: `No pude leer la URL (posible bloqueo CORS): ${(e as Error).message}` };
       }
+    }
+    case "slack_alert": {
+      const text = String((args as any).text ?? "");
+      if (!text.trim()) return { error: "Mensaje vacío." };
+      await sendSlack(text);
+      logActivity("system", "Alerta enviada a Slack");
+      return { sent: true };
+    }
+    case "webhook_broadcast": {
+      const message = String((args as any).message ?? "");
+      const n = await fireWebhooks("manual", { message });
+      logActivity("system", `Evento enviado a ${n} webhook(s)`);
+      return { delivered: n };
     }
     case "site_status": {
       const sites = useMonitor.getState().sites;

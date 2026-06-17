@@ -24,8 +24,12 @@ import {
   CalendarDays,
   ShieldAlert,
   Database,
+  MessageSquare,
+  Webhook,
 } from "lucide-react";
 import { exportBackup, restoreBackup, backupKeyCount } from "@/lib/backup";
+import { useSlack, sendSlack } from "@/lib/connectors/slack";
+import { useWebhooks, fireWebhooks, WEBHOOK_EVENTS, type WebhookEvent } from "@/lib/connectors/webhooks";
 import { useAi } from "@/lib/ai/store";
 import { askAi, listModels, type GeminiModel } from "@/lib/ai/client";
 import {
@@ -113,9 +117,151 @@ export default function ConnectorsPage() {
         <GmailCard />
         <DriveCard />
         <CalendarCard />
+        <SlackCard />
+        <WebhooksCard />
         <BackupCard />
       </div>
     </div>
+  );
+}
+
+/* ───────────────────────────── Slack ───────────────────────────── */
+
+function SlackCard() {
+  const { webhookUrl, setUrl } = useSlack();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [ok, setOk] = useState(false);
+  const connected = /^https:\/\/hooks\.slack\.com\//i.test(webhookUrl);
+
+  async function test() {
+    setErr("");
+    setOk(false);
+    setBusy(true);
+    try {
+      await sendSlack("✅ ZERO Agency OS conectado a Slack.");
+      setOk(true);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Shell
+      icon={<MessageSquare size={22} />}
+      title="Slack · Alertas del equipo"
+      desc="Envía alertas a un canal de Slack mediante un Incoming Webhook (igual que Telegram). ZERO y el monitoreo pueden avisarte aquí."
+      connected={connected}
+      docsUrl="https://api.slack.com/messaging/webhooks"
+    >
+      <Field
+        label="Slack Incoming Webhook URL"
+        value={webhookUrl}
+        onChange={setUrl}
+        placeholder="https://hooks.slack.com/services/T000/B000/xxxx"
+        type="password"
+      />
+      <div className="mt-3 flex gap-2">
+        <Btn onClick={test} busy={busy} disabled={!webhookUrl}>
+          Probar envío
+        </Btn>
+      </div>
+      {ok && <p className="mt-2 text-xs text-emerald-600">Mensaje enviado (revisa el canal).</p>}
+      <ErrorMsg msg={err} />
+      <p className="mt-2 text-[11px] text-muted">
+        Crea el webhook en api.slack.com → tu app → Incoming Webhooks → Add New Webhook to Workspace.
+      </p>
+    </Shell>
+  );
+}
+
+/* ───────────────────────────── Webhooks salientes ───────────────────────────── */
+
+function WebhooksCard() {
+  const { hooks, add, remove, toggle } = useWebhooks();
+  const [url, setUrl] = useState("");
+  const [label, setLabel] = useState("");
+  const [events, setEvents] = useState<WebhookEvent[]>(["monitor", "autonomy"]);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  function addHook() {
+    if (!url.trim()) return;
+    add(url, label, events);
+    setUrl("");
+    setLabel("");
+  }
+
+  async function test(id: string, hookUrl: string) {
+    setBusy(id);
+    try {
+      await fetch(hookUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ event: "manual", source: "zero-agency-os", ts: Date.now(), message: "Prueba de webhook" }),
+      });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Shell
+      icon={<Webhook size={22} />}
+      title="Webhooks salientes"
+      desc="Conecta ZERO con Zapier, Make, n8n, Discord o cualquier endpoint. El monitoreo, la autonomía y el agente disparan eventos por POST."
+      connected={hooks.some((h) => h.enabled)}
+    >
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Field label="URL del webhook" value={url} onChange={setUrl} placeholder="https://hooks.zapier.com/..." />
+        <Field label="Nombre (opcional)" value={label} onChange={setLabel} placeholder="Zapier · ventas" />
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {WEBHOOK_EVENTS.map((ev) => {
+          const on = events.includes(ev.id);
+          return (
+            <button
+              key={ev.id}
+              type="button"
+              onClick={() => setEvents((s) => (on ? s.filter((x) => x !== ev.id) : [...s, ev.id]))}
+              className={`rounded-full border px-2.5 py-1 text-[11px] ${on ? "border-accent bg-accent/10 text-accent" : "text-muted hover:bg-bg-subtle"}`}
+            >
+              {ev.label}
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-3">
+        <Btn onClick={addHook} disabled={!url.trim()}>
+          Añadir webhook
+        </Btn>
+      </div>
+
+      {hooks.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {hooks.map((h) => (
+            <div key={h.id} className="flex items-center gap-2 rounded-lg border bg-bg-subtle px-3 py-2">
+              <span className={`h-2 w-2 shrink-0 rounded-full ${h.enabled ? "bg-emerald-500" : "bg-gray-300"}`} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm text-ink">{h.label}</div>
+                <div className="truncate text-[11px] text-muted">{h.events.join(", ")}</div>
+              </div>
+              <button onClick={() => test(h.id, h.url)} className="shrink-0 text-[11px] text-accent hover:underline">
+                {busy === h.id ? "…" : "Probar"}
+              </button>
+              <button onClick={() => toggle(h.id)} className="shrink-0 text-[11px] text-muted hover:text-ink">
+                {h.enabled ? "Pausar" : "Activar"}
+              </button>
+              <button onClick={() => remove(h.id)} className="shrink-0 text-muted hover:text-red-500">
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Shell>
   );
 }
 

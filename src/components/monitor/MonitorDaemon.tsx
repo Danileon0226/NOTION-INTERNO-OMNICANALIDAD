@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useMonitor, statusOf } from "@/lib/monitor/store";
 import { pingSite } from "@/lib/monitor/ping";
 import { useActivity } from "@/lib/activity";
+import { fireWebhooks } from "@/lib/connectors/webhooks";
 
 let running = false;
 
@@ -20,17 +21,14 @@ export async function runMonitorCycle(): Promise<void> {
       const now = check.ok ? (check.ms > 2500 ? "slow" : "up") : "down";
       // Solo registra el evento cuando cambia el estado (señal, no ruido).
       if (now !== prev && prev !== "unknown") {
-        useActivity.getState().push({
-          source: "system",
-          kind: now === "down" ? "alert" : "info",
-          label:
-            now === "down"
-              ? `⚠️ ${site.label} no responde`
-              : now === "slow"
-                ? `${site.label} lento (${check.ms} ms)`
-                : `${site.label} se recuperó`,
-          count: 0,
-        });
+        const label =
+          now === "down"
+            ? `⚠️ ${site.label} no responde`
+            : now === "slow"
+              ? `${site.label} lento (${check.ms} ms)`
+              : `${site.label} se recuperó`;
+        useActivity.getState().push({ source: "system", kind: now === "down" ? "alert" : "info", label, count: 0 });
+        void fireWebhooks("monitor", { site: site.label, url: site.url, status: now, ms: check.ms, message: label });
       }
     }
   } finally {
