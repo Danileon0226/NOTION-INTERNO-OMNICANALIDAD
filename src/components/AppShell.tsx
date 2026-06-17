@@ -1,16 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Menu } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
+import { CommandPalette } from "@/components/CommandPalette";
+import { useTheme, applyTheme } from "@/lib/theme";
 import zeroMark from "@/brand/zero-mark.png";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const mode = useTheme((s) => s.mode);
+
+  // Aplica el tema persistido al cargar y cuando cambia.
+  useEffect(() => {
+    applyTheme(mode);
+  }, [mode]);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden">
@@ -51,6 +59,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+
+      {/* Paleta de comandos global (⌘K / Ctrl+K) */}
+      <CommandPalette />
 
       {/* Copiloto "Zero" — flotante en cualquier pantalla */}
       <AssistantPanel />

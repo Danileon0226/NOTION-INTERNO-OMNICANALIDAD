@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/store";
 import { BlockEditor } from "@/components/editor/BlockEditor";
-import { Trash2, Plus, ChevronRight, FilePlus2, Copy, LayoutTemplate } from "lucide-react";
+import { Trash2, Plus, ChevronRight, FilePlus2, Copy, LayoutTemplate, Download } from "lucide-react";
 import type { WorkspacePage } from "@/lib/types";
 import { templates } from "@/lib/data/templates";
+import { exportPageMarkdown } from "@/lib/export";
 
 const EMOJIS = ["📄", "🚀", "🤝", "💰", "📈", "🧠", "📋", "🎯", "🛠️", "🔔", "📦", "✨", "📊", "🗂️", "⚡", "🌐"];
 
@@ -79,7 +80,7 @@ export function PageClient({ id }: { id: string }) {
             {page.icon}
           </button>
           {showPicker && (
-            <div className="absolute z-10 mt-1 grid grid-cols-6 gap-1 rounded-lg border bg-white p-2 shadow-lg">
+            <div className="absolute z-10 mt-1 grid grid-cols-6 gap-1 rounded-lg border bg-card p-2 shadow-lg">
               {EMOJIS.map((e) => (
                 <button
                   key={e}
@@ -107,6 +108,12 @@ export function PageClient({ id }: { id: string }) {
             className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-bg-subtle hover:text-ink"
           >
             <Copy size={13} /> Duplicar
+          </button>
+          <button
+            onClick={() => exportPageMarkdown(page)}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-bg-subtle hover:text-ink"
+          >
+            <Download size={13} /> Exportar
           </button>
           <button
             onClick={() => {
@@ -149,7 +156,7 @@ export function PageClient({ id }: { id: string }) {
                   applyTemplate(page.id, t.blocks, { title: t.name, icon: t.icon });
                   setShowTemplates(false);
                 }}
-                className="rounded-lg border bg-white p-3 text-left hover:border-accent"
+                className="rounded-lg border bg-card p-3 text-left hover:border-accent"
               >
                 <div className="text-xl">{t.icon}</div>
                 <div className="mt-1 text-sm font-medium text-ink">{t.name}</div>

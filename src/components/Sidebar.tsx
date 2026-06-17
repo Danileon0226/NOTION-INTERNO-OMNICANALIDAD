@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import zeroMark from "@/brand/zero-mark.png";
 import { useWorkspace } from "@/lib/store";
+import { useTheme } from "@/lib/theme";
 import { AGENCY_EMAIL } from "@/lib/data/emails";
 import type { WorkspacePage } from "@/lib/types";
 import {
@@ -21,6 +22,10 @@ import {
   Bot,
   Mic,
   Rocket,
+  Calendar,
+  FolderOpen,
+  Moon,
+  Sun,
 } from "lucide-react";
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
@@ -31,6 +36,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const setActivePage = useWorkspace((s) => s.setActivePage);
   const createPage = useWorkspace((s) => s.createPage);
   const createSubpage = useWorkspace((s) => s.createSubpage);
+  const mode = useTheme((s) => s.mode);
+  const toggleTheme = useTheme((s) => s.toggle);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -64,7 +71,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <div className="px-3 pb-2">
-        <div className="flex items-center gap-1.5 rounded-md border bg-white px-2 py-1">
+        <div className="flex items-center gap-1.5 rounded-md border bg-card px-2 py-1">
           <Search size={13} className="text-muted" />
           <input
             value={query}
@@ -91,11 +98,17 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <NavLink href="/canvas" active={pathname === "/canvas"} icon={<Activity size={16} />} onClick={onNavigate}>
           Canvas / Grafo
         </NavLink>
-        <NavLink href="/connectors" active={pathname === "/connectors"} icon={<Plug size={16} />} onClick={onNavigate}>
-          Conectores
+        <NavLink href="/calendar" active={pathname === "/calendar"} icon={<Calendar size={16} />} onClick={onNavigate}>
+          Calendario
+        </NavLink>
+        <NavLink href="/drive" active={pathname === "/drive"} icon={<FolderOpen size={16} />} onClick={onNavigate}>
+          Drive
         </NavLink>
         <NavLink href="/inbox" active={pathname === "/inbox"} icon={<Mail size={16} />} onClick={onNavigate}>
           Bandeja
+        </NavLink>
+        <NavLink href="/connectors" active={pathname === "/connectors"} icon={<Plug size={16} />} onClick={onNavigate}>
+          Conectores
         </NavLink>
       </nav>
 
@@ -155,9 +168,21 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </div>
 
-      <div className="border-t px-4 py-2.5 text-[11px] text-muted">
-        <FileText size={12} className="mr-1 inline" />
-        {AGENCY_EMAIL || "Zero Agency OS"}
+      <div className="flex items-center justify-between gap-2 border-t px-3 py-2 text-[11px] text-muted">
+        <span className="flex min-w-0 items-center gap-1">
+          <FileText size={12} className="shrink-0" />
+          <span className="truncate">{AGENCY_EMAIL || "Zero Agency OS"}</span>
+        </span>
+        <span className="flex shrink-0 items-center gap-1">
+          <kbd className="hidden rounded border px-1 py-0.5 text-[9px] sm:inline">⌘K</kbd>
+          <button
+            onClick={toggleTheme}
+            title={mode === "dark" ? "Modo claro" : "Modo oscuro"}
+            className="rounded p-1 text-muted hover:bg-bg-subtle hover:text-ink"
+          >
+            {mode === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
+        </span>
       </div>
     </aside>
   );

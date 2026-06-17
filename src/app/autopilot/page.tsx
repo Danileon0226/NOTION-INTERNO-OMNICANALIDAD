@@ -155,7 +155,7 @@ export default function AutopilotPage() {
           const st = state[r.id];
           const on = auto.has(r.id);
           return (
-            <div key={r.id} className="flex flex-col rounded-xl border bg-white p-4">
+            <div key={r.id} className="flex flex-col rounded-xl border bg-card p-4">
               <div className="flex items-start gap-2">
                 <span className="text-2xl">{r.icon}</span>
                 <div className="min-w-0 flex-1">

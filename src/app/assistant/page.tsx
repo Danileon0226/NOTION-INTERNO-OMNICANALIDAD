@@ -73,7 +73,7 @@ export default function AssistantPage() {
         </div>
       )}
 
-      <div className="flex-1 space-y-3 overflow-y-auto rounded-xl border bg-white p-4">
+      <div className="flex-1 space-y-3 overflow-y-auto rounded-xl border bg-card p-4">
         {turns.length === 0 && (
           <div className="py-6 text-center">
             <Sparkles size={28} className="mx-auto text-accent" />
@@ -83,7 +83,7 @@ export default function AssistantPage() {
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  className="rounded-full border bg-white px-3 py-1.5 text-xs text-ink hover:bg-bg-subtle"
+                  className="rounded-full border bg-card px-3 py-1.5 text-xs text-ink hover:bg-bg-subtle"
                 >
                   {s}
                 </button>
@@ -125,7 +125,7 @@ export default function AssistantPage() {
               {liveSteps.length > 0 && (
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {liveSteps.map((s, j) => (
-                    <span key={j} className="inline-flex items-center gap-1 rounded bg-white px-1.5 py-0.5 text-[10px] text-accent">
+                    <span key={j} className="inline-flex items-center gap-1 rounded bg-card px-1.5 py-0.5 text-[10px] text-accent">
                       <Wrench size={10} /> {s.tool}
                     </span>
                   ))}
@@ -143,7 +143,7 @@ export default function AssistantPage() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send(input)}
           placeholder="Pregunta o pide una acción…"
-          className="flex-1 rounded-lg border bg-white px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+          className="flex-1 rounded-lg border bg-card px-3 py-2 text-sm text-ink outline-none focus:border-accent"
         />
         <button
           onClick={() => send(input)}

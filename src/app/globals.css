@@ -5,6 +5,7 @@
   --bg: #ffffff;
   --bg-subtle: #f6f4fb;
   --sidebar: #f7f5fc;
+  --card: #ffffff; /* superficie de tarjetas/paneles */
   --border: #e9e5f2;
   --text: #241d33;
   --text-muted: #6f6886;
@@ -13,10 +14,25 @@
   --brand-soft: #927cb7; /* lavanda */
 }
 
+/* Modo oscuro ZERO — mantiene el violeta de marca sobre fondos profundos */
+[data-theme="dark"] {
+  --bg: #0c0a14;
+  --bg-subtle: #171326;
+  --sidebar: #110e1d;
+  --card: #15111f;
+  --border: #2a2440;
+  --text: #ece8f6;
+  --text-muted: #9d95b8;
+  --accent: #a78bfa;
+  --brand: #927cb7;
+  --brand-soft: #b9a8db;
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-bg-subtle: var(--bg-subtle);
   --color-sidebar: var(--sidebar);
+  --color-card: var(--card);
   --color-border: var(--border);
   --color-ink: var(--text);
   --color-muted: var(--text-muted);
@@ -147,4 +163,15 @@ h2 {
   content: attr(data-placeholder);
   color: var(--text-muted);
   pointer-events: none;
+}
+
+/* Modo oscuro: scrollbar y controles nativos coherentes */
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #352d52;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #463c6e;
 }

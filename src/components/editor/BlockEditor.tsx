@@ -320,7 +320,7 @@ function BlockRow({
   if (block.type === "html") {
     return (
       <Row {...rowProps}>
-        <div className="my-1 w-full overflow-hidden rounded-lg border bg-white">
+        <div className="my-1 w-full overflow-hidden rounded-lg border bg-card">
           <div className="flex items-center gap-2 border-b bg-bg-subtle px-3 py-1.5 text-xs text-muted">
             🌐 Página web generada
             <button
@@ -331,7 +331,7 @@ function BlockRow({
                   w.document.close();
                 }
               }}
-              className="ml-auto rounded px-1.5 py-0.5 hover:bg-white hover:text-ink"
+              className="ml-auto rounded px-1.5 py-0.5 hover:bg-card hover:text-ink"
             >
               Abrir
             </button>
@@ -343,7 +343,7 @@ function BlockRow({
                 a.download = "pagina.html";
                 a.click();
               }}
-              className="rounded px-1.5 py-0.5 hover:bg-white hover:text-ink"
+              className="rounded px-1.5 py-0.5 hover:bg-card hover:text-ink"
             >
               Descargar
             </button>
@@ -352,7 +352,7 @@ function BlockRow({
             title="preview"
             sandbox="allow-scripts"
             srcDoc={block.content}
-            className="h-80 w-full bg-white"
+            className="h-80 w-full bg-card"
           />
         </div>
       </Row>
@@ -497,7 +497,7 @@ function RowActions({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="zero-pop absolute left-5 top-0 z-20 w-36 rounded-md border bg-white py-1 shadow-lg">
+          <div className="zero-pop absolute left-5 top-0 z-20 w-36 rounded-md border bg-card py-1 shadow-lg">
             <MenuItem icon={<ChevronUp size={13} />} label="Subir" onClick={() => { onUp(); setOpen(false); }} />
             <MenuItem icon={<ChevronDown size={13} />} label="Bajar" onClick={() => { onDown(); setOpen(false); }} />
             <MenuItem icon={<Copy size={13} />} label="Duplicar" onClick={() => { onDup(); setOpen(false); }} />
@@ -543,7 +543,7 @@ function SlashMenu({
 }) {
   if (!matches.length) return null;
   return (
-    <div className="zero-pop absolute left-6 top-7 z-30 max-h-72 w-64 overflow-y-auto rounded-lg border bg-white py-1 shadow-xl">
+    <div className="zero-pop absolute left-6 top-7 z-30 max-h-72 w-64 overflow-y-auto rounded-lg border bg-card py-1 shadow-xl">
       {matches.map((m, i) => (
         <button
           key={m.type}
@@ -555,7 +555,7 @@ function SlashMenu({
             i === sel ? "bg-bg-subtle" : "hover:bg-bg-subtle"
           }`}
         >
-          <span className="flex h-6 w-6 items-center justify-center rounded border bg-white text-[11px]">
+          <span className="flex h-6 w-6 items-center justify-center rounded border bg-card text-[11px]">
             {m.hint}
           </span>
           <span className="text-ink">{m.label}</span>
