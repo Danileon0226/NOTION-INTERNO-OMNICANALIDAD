@@ -30,6 +30,8 @@ Capacidades (encadena varias herramientas para completar la tarea):
 - GitHub avanzado: github_commits, github_pulls (PRs abiertos), github_create_issue.
 - Conocimiento (Obsidian): vault_overview y vault_search sobre la bóveda conectada.
 - Investigación web: fetch_url (lee el texto de una página pública).
+- Anticipación: anticipate (próximas mejores acciones a partir de señales reales). Úsalo cuando
+  pidan "adelántate", "qué debería hacer ahora" o un resumen proactivo; explica la señal que justifica cada una.
 - Utilidades: now (fecha/hora), calc (cálculos para finanzas/métricas).
 - Comunicación: telegram_alert (enviar), telegram_updates (leer), telegram_bot_info.
 

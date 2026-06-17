@@ -26,6 +26,7 @@ import {
   FolderOpen,
   Moon,
   Sun,
+  Radar,
 } from "lucide-react";
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
@@ -94,6 +95,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </NavLink>
         <NavLink href="/autopilot" active={pathname === "/autopilot"} icon={<Rocket size={16} />} onClick={onNavigate}>
           Piloto automático
+        </NavLink>
+        <NavLink href="/anticipation" active={pathname === "/anticipation"} icon={<Radar size={16} />} onClick={onNavigate}>
+          Anticipación
         </NavLink>
         <NavLink href="/canvas" active={pathname === "/canvas"} icon={<Activity size={16} />} onClick={onNavigate}>
           Canvas / Grafo
