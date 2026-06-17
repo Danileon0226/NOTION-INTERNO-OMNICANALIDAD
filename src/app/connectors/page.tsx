@@ -97,7 +97,7 @@ function Shell({
   docsUrl?: string;
 }) {
   return (
-    <section className="rounded-xl border bg-white p-5">
+    <section className="rounded-xl border bg-card p-5">
       <div className="flex items-start gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-bg-subtle text-ink">
           {icon}
@@ -153,7 +153,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         spellCheck={false}
-        className="w-full rounded-md border bg-white px-3 py-1.5 text-sm text-ink outline-none focus:border-accent"
+        className="w-full rounded-md border bg-card px-3 py-1.5 text-sm text-ink outline-none focus:border-accent"
       />
     </label>
   );
@@ -684,7 +684,7 @@ function DriveCard() {
       {files && (
         <div className="mt-4 space-y-2">
           {/* búsqueda */}
-          <div className="flex items-center gap-1.5 rounded-md border bg-white px-2 py-1">
+          <div className="flex items-center gap-1.5 rounded-md border bg-card px-2 py-1">
             <Search size={13} className="text-muted" />
             <input
               value={search}
@@ -966,7 +966,7 @@ function ModelPicker({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border bg-white px-3 py-1.5 text-sm text-ink outline-none focus:border-accent"
+        className="w-full rounded-md border bg-card px-3 py-1.5 text-sm text-ink outline-none focus:border-accent"
       >
         {options.map((id) => {
           const found = models.find((m) => m.id === id);

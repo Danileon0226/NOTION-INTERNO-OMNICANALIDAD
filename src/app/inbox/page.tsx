@@ -68,7 +68,7 @@ export default function InboxPage() {
         {connected && (
           <button
             onClick={load}
-            className="flex items-center gap-1.5 rounded-md border bg-white px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
+            className="flex items-center gap-1.5 rounded-md border bg-card px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Sincronizar
           </button>
@@ -121,7 +121,7 @@ export default function InboxPage() {
               Sin correos en esta vista.
             </div>
           ) : (
-            <div className="divide-y rounded-lg border bg-white">
+            <div className="divide-y rounded-lg border bg-card">
               {filtered.map((e) => (
                 <div key={e.id} className="flex items-start gap-3 px-4 py-3 hover:bg-bg-subtle">
                   <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: categoryColors[e.category] }} />
@@ -165,7 +165,7 @@ function Chip({
     <button
       onClick={onClick}
       className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs ${
-        active ? "border-ink bg-ink text-white" : "bg-white text-ink hover:bg-bg-subtle"
+        active ? "border-ink bg-ink text-white" : "bg-card text-ink hover:bg-bg-subtle"
       }`}
     >
       {color && <span className="h-2 w-2 rounded-full" style={{ background: color }} />}
