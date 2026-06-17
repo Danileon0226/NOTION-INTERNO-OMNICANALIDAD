@@ -38,3 +38,42 @@ export function getAiStatus(): { configured: boolean; model: string } {
   const { apiKey, model } = useAi.getState();
   return { configured: !!apiKey, model };
 }
+
+// ── Chat del asistente (conversación multi-turno con contexto) ───────
+
+export type ChatRole = "user" | "model";
+export interface ChatMessage {
+  role: ChatRole;
+  text: string;
+}
+
+export interface ChatAiOptions {
+  /** Snapshot del banco de datos para anclar las respuestas (grounding). */
+  context?: string;
+  system?: string;
+  model?: string;
+}
+
+/** Envía el historial de conversación + contexto y devuelve la respuesta. */
+export async function chatAi(messages: ChatMessage[], opts: ChatAiOptions = {}): Promise<string> {
+  const { apiKey, model } = useAi.getState();
+  if (!apiKey) throw new Error("Falta la API key de Gemini. Pégala en Conectores → Asistente IA.");
+  const m = opts.model || model;
+  // El contexto del banco de datos se inyecta en la instrucción de sistema.
+  const systemInstruction = [opts.system, opts.context].filter(Boolean).join("\n\n");
+  const res = await fetch(`${ENDPOINT}/${m}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: messages.map((msg) => ({ role: msg.role, parts: [{ text: msg.text }] })),
+      ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.error?.message || `Gemini ${res.status}`);
+  }
+  return (
+    data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? ""
+  );
+}
