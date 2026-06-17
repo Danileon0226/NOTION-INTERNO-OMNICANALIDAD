@@ -39,6 +39,39 @@ export function getAiStatus(): { configured: boolean; model: string } {
   return { configured: !!apiKey, model };
 }
 
+// ── Catálogo de modelos (ListModels de Google) ──────────────────────
+
+export interface GeminiModel {
+  id: string; // p. ej. "gemini-2.5-flash"
+  label: string; // nombre legible que da Google
+}
+
+/**
+ * Trae los modelos disponibles para TU key directamente desde Google y deja
+ * solo los que soportan generación de contenido (chat). Requiere key válida.
+ */
+export async function listModels(): Promise<GeminiModel[]> {
+  const { apiKey } = useAi.getState();
+  if (!apiKey) throw new Error("Falta la API key de Gemini.");
+  const res = await fetch(`${ENDPOINT}?key=${encodeURIComponent(apiKey)}&pageSize=200`);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.error?.message || `Gemini ${res.status}`);
+  }
+  const models = (data?.models ?? []) as Array<{
+    name: string;
+    displayName?: string;
+    supportedGenerationMethods?: string[];
+  }>;
+  return models
+    .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
+    .map((m) => {
+      const id = m.name.replace(/^models\//, "");
+      return { id, label: m.displayName || id };
+    })
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+
 // ── Chat del asistente (conversación multi-turno con contexto) ───────
 
 export type ChatRole = "user" | "model";
