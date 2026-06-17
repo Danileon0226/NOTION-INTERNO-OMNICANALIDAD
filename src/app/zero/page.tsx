@@ -177,8 +177,8 @@ export default function ZeroVoicePage() {
   return (
     <div className="flex min-h-full flex-col items-center bg-gradient-to-b from-[#0a0e1a] to-[#0a0a0f] px-4 py-8 text-white">
       <header className="mb-2 text-center">
-        <h1 className="text-2xl font-bold tracking-[0.3em] text-cyan-300">Z E R O</h1>
-        <p className="mt-1 text-xs text-cyan-100/60">Asistente de voz · gestor omnicanal con IA</p>
+        <h1 className="text-2xl font-bold tracking-[0.3em] text-violet-300">Z E R O</h1>
+        <p className="mt-1 text-xs text-violet-100/60">Asistente de voz · gestor omnicanal con IA</p>
       </header>
 
       {!apiKey && (
@@ -195,12 +195,12 @@ export default function ZeroVoicePage() {
       {/* Orbe */}
       <div className="relative my-6 flex h-56 w-56 items-center justify-center">
         <span
-          className={`absolute inset-0 rounded-full bg-cyan-500/20 ${
+          className={`absolute inset-0 rounded-full bg-violet-500/20 ${
             status === "listening" ? "animate-ping" : ""
           }`}
         />
         <span
-          className={`absolute inset-4 rounded-full border border-cyan-400/40 ${
+          className={`absolute inset-4 rounded-full border border-violet-400/40 ${
             status === "speaking" ? "animate-pulse" : ""
           }`}
         />
@@ -208,12 +208,12 @@ export default function ZeroVoicePage() {
           onClick={toggle}
           className={`relative flex h-36 w-36 items-center justify-center rounded-full shadow-[0_0_60px] transition ${
             status === "idle"
-              ? "bg-cyan-600 shadow-cyan-900"
+              ? "bg-violet-600 shadow-violet-900"
               : status === "thinking"
                 ? "bg-violet-600 shadow-violet-700"
                 : status === "speaking"
                   ? "bg-emerald-500 shadow-emerald-700"
-                  : "bg-cyan-500 shadow-cyan-500"
+                  : "bg-violet-500 shadow-violet-500"
           }`}
         >
           {status === "idle" ? (
@@ -228,13 +228,13 @@ export default function ZeroVoicePage() {
         </button>
       </div>
 
-      <p className="text-sm text-cyan-100/80">{label}</p>
-      {interim && <p className="mt-1 max-w-md text-center text-xs italic text-cyan-200/60">“{interim}”</p>}
+      <p className="text-sm text-violet-100/80">{label}</p>
+      {interim && <p className="mt-1 max-w-md text-center text-xs italic text-violet-200/60">“{interim}”</p>}
 
       {steps.length > 0 && status === "thinking" && (
         <div className="mt-2 flex flex-wrap justify-center gap-1">
           {steps.map((s, j) => (
-            <span key={j} className="inline-flex items-center gap-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-cyan-200">
+            <span key={j} className="inline-flex items-center gap-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-violet-200">
               <Wrench size={10} /> {s.tool}
             </span>
           ))}
@@ -242,12 +242,12 @@ export default function ZeroVoicePage() {
       )}
 
       <div className="mt-4 flex items-center gap-3">
-        <label className="flex items-center gap-1.5 text-xs text-cyan-100/70">
+        <label className="flex items-center gap-1.5 text-xs text-violet-100/70">
           <input
             type="checkbox"
             checked={handsFree}
             onChange={(e) => setHandsFree(e.target.checked)}
-            className="accent-cyan-400"
+            className="accent-violet-400"
           />
           Manos libres (conversación continua)
         </label>
@@ -275,14 +275,14 @@ export default function ZeroVoicePage() {
             key={i}
             className={`rounded-xl px-3 py-2 text-sm ${
               t.role === "user"
-                ? "ml-8 bg-cyan-500/15 text-cyan-50"
-                : "mr-8 bg-white/5 text-cyan-50/90"
+                ? "ml-8 bg-violet-500/15 text-violet-50"
+                : "mr-8 bg-white/5 text-violet-50/90"
             }`}
           >
             {t.role === "model" && t.steps && t.steps.length > 0 && (
               <div className="mb-1 flex flex-wrap gap-1">
                 {t.steps.map((s, j) => (
-                  <span key={j} className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-cyan-200">
+                  <span key={j} className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-violet-200">
                     {s.tool}
                   </span>
                 ))}

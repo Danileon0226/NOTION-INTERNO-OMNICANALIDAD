@@ -1,13 +1,16 @@
 @import "tailwindcss";
 
 :root {
+  /* Identidad ZERO AGENCY — violeta (#392851 / #927cb7), tipografía Outfit */
   --bg: #ffffff;
-  --bg-subtle: #f7f7f5;
-  --sidebar: #fbfbfa;
-  --border: #ebebea;
-  --text: #37352f;
-  --text-muted: #787774;
-  --accent: #2383e2;
+  --bg-subtle: #f6f4fb;
+  --sidebar: #f7f5fc;
+  --border: #e9e5f2;
+  --text: #241d33;
+  --text-muted: #6f6886;
+  --accent: #5b3fa6; /* violeta de marca para acciones */
+  --brand: #392851; /* violeta profundo */
+  --brand-soft: #927cb7; /* lavanda */
 }
 
 @theme inline {
@@ -18,14 +21,16 @@
   --color-ink: var(--text);
   --color-muted: var(--text-muted);
   --color-accent: var(--accent);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
 }
 
 html,
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
-    sans-serif;
+  font-family: var(--font-outfit), ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

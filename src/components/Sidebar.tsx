@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import zeroLogo from "@/brand/zero-logo-violet.png";
 import { useWorkspace } from "@/lib/store";
 import { AGENCY_EMAIL } from "@/lib/data/emails";
 import type { WorkspacePage } from "@/lib/types";
@@ -53,13 +55,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r bg-sidebar">
-      <div className="flex items-center gap-2 px-4 py-3.5">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-ink text-sm font-bold text-white">
-          Z
-        </div>
+      <div className="flex items-center gap-2.5 px-4 py-3.5">
+        <Image src={zeroLogo} alt="ZERO AGENCY" height={34} className="w-auto" priority />
         <div className="leading-tight">
-          <div className="text-sm font-semibold text-ink">Zero Agency OS</div>
-          <div className="text-[11px] text-muted">Omnicanal · Interno</div>
+          <div className="text-sm font-semibold tracking-wide text-ink">ZERO AGENCY</div>
+          <div className="text-[11px] text-muted">OS Omnicanal</div>
         </div>
       </div>
 

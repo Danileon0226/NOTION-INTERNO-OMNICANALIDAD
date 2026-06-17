@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Menu } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
+import zeroLogo from "@/brand/zero-logo-violet.png";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -37,10 +39,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <Menu size={20} />
           </button>
-          <div className="flex h-6 w-6 items-center justify-center rounded bg-ink text-xs font-bold text-white">
-            Z
-          </div>
-          <span className="text-sm font-semibold text-ink">Zero Agency OS</span>
+          <Image src={zeroLogo} alt="ZERO AGENCY" height={24} className="w-auto" />
+          <span className="text-sm font-semibold tracking-wide text-ink">ZERO AGENCY</span>
         </div>
 
         <main className="flex-1 overflow-y-auto bg-bg">{children}</main>
