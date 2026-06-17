@@ -16,6 +16,7 @@ import { tgSendMessage, tgGetUpdates, tgGetMe, alertText } from "@/lib/connector
 import { useWorkspace } from "@/lib/store";
 import { useActivity, type ActivitySource } from "@/lib/activity";
 import { useVault } from "@/lib/obsidian";
+import { useMonitor, statusOf, uptime, avgLatency } from "@/lib/monitor/store";
 import { resolveAnticipations } from "@/lib/anticipation/engine";
 import { templates } from "@/lib/data/templates";
 import type { Block } from "@/lib/types";
@@ -296,6 +297,12 @@ export const toolDeclarations = [
     name: "anticipate",
     description:
       "Motor de anticipación: lee señales reales de los conectores y devuelve las próximas mejores acciones (Next Best Actions) con su confianza y la señal que las justifica. Úsalo cuando el usuario pida 'adelántate', 'qué debería hacer', 'anticípate' o un resumen proactivo.",
+    parameters: { type: "object", properties: {} },
+  },
+  {
+    name: "site_status",
+    description:
+      "Estado del monitoreo del sitio web de la agencia (zeroagency.com.co y otros): disponibilidad (operativo/lento/caído), uptime y latencia media. Para leer el CONTENIDO del sitio usa fetch_url.",
     parameters: { type: "object", properties: {} },
   },
 ];
@@ -745,6 +752,20 @@ export async function runTool(name: string, args: any): Promise<unknown> {
       } catch (e) {
         return { error: `No pude leer la URL (posible bloqueo CORS): ${(e as Error).message}` };
       }
+    }
+    case "site_status": {
+      const sites = useMonitor.getState().sites;
+      if (!sites.length) return { sites: [], note: "No hay sitios monitoreados." };
+      return {
+        sites: sites.map((s) => ({
+          label: s.label,
+          url: s.url,
+          status: statusOf(s),
+          uptime: Math.round(uptime(s) * 100) / 100,
+          avgLatencyMs: avgLatency(s),
+          checks: s.checks.length,
+        })),
+      };
     }
     case "anticipate": {
       const res = await resolveAnticipations();

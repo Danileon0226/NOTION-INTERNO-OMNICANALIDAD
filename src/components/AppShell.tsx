@@ -3,18 +3,22 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { Menu } from "lucide-react";
+import { Menu, Search, Moon, Sun } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import { CommandPalette } from "@/components/CommandPalette";
 import { AutonomyDaemon } from "@/components/anticipation/AutonomyDaemon";
+import { MonitorDaemon } from "@/components/monitor/MonitorDaemon";
 import { useTheme, applyTheme } from "@/lib/theme";
+import { useCommandPalette } from "@/lib/ui/commandPalette";
 import zeroMark from "@/brand/zero-mark.png";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const mode = useTheme((s) => s.mode);
+  const toggleTheme = useTheme((s) => s.toggle);
+  const openPalette = useCommandPalette((s) => s.setOpen);
 
   // Aplica el tema persistido al cargar y cuando cambia.
   useEffect(() => {
@@ -52,6 +56,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
           <Image src={zeroMark} alt="ZERO AGENCY" width={24} height={24} className="h-6 w-6 shrink-0 rounded-md" />
           <span className="text-sm font-semibold tracking-wide text-ink">ZERO AGENCY</span>
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={() => openPalette(true)}
+              className="rounded-md p-1.5 text-muted hover:bg-bg-subtle hover:text-ink"
+              aria-label="Buscar o comando"
+            >
+              <Search size={18} />
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="rounded-md p-1.5 text-muted hover:bg-bg-subtle hover:text-ink"
+              aria-label="Cambiar tema"
+            >
+              {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+          </div>
         </div>
 
         <main className="flex-1 overflow-y-auto bg-bg">
@@ -66,6 +86,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Demonio de autonomía: ZERO actúa solo (con guardrails) */}
       <AutonomyDaemon />
+
+      {/* Demonio de monitoreo del sitio web de la agencia */}
+      <MonitorDaemon />
 
       {/* Copiloto "Zero" — flotante en cualquier pantalla */}
       <AssistantPanel />

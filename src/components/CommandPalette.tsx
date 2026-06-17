@@ -14,6 +14,7 @@ import {
   Mail,
   Calendar,
   FolderOpen,
+  Globe,
   FileText,
   Plus,
   Moon,
@@ -24,6 +25,7 @@ import {
 } from "lucide-react";
 import { useWorkspace } from "@/lib/store";
 import { useTheme } from "@/lib/theme";
+import { useCommandPalette } from "@/lib/ui/commandPalette";
 import { runAgent } from "@/lib/ai/agent";
 
 interface Cmd {
@@ -42,7 +44,9 @@ export function CommandPalette() {
   const toggleTheme = useTheme((s) => s.toggle);
   const mode = useTheme((s) => s.mode);
 
-  const [open, setOpen] = useState(false);
+  const open = useCommandPalette((s) => s.open);
+  const setOpen = useCommandPalette((s) => s.setOpen);
+  const toggle = useCommandPalette((s) => s.toggle);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const [asking, setAsking] = useState(false);
@@ -54,13 +58,13 @@ export function CommandPalette() {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setOpen((o) => !o);
+        toggle();
       }
       if (e.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [toggle, setOpen]);
 
   useEffect(() => {
     if (open) {
@@ -91,6 +95,7 @@ export function CommandPalette() {
       { id: "canvas", label: "Canvas / Grafo", icon: <Activity size={16} />, run: () => nav("/canvas") },
       { id: "calendar", label: "Calendario", icon: <Calendar size={16} />, run: () => nav("/calendar") },
       { id: "drive", label: "Explorador de Drive", icon: <FolderOpen size={16} />, run: () => nav("/drive") },
+      { id: "monitor", label: "Monitoreo web", icon: <Globe size={16} />, run: () => nav("/monitor") },
       { id: "inbox", label: "Bandeja", icon: <Mail size={16} />, run: () => nav("/inbox") },
       { id: "connectors", label: "Conectores", icon: <Plug size={16} />, run: () => nav("/connectors") },
       {

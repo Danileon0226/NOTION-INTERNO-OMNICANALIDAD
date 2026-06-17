@@ -13,6 +13,10 @@ import {
   Minus,
   RefreshCw,
   Wifi,
+  Radar,
+  Mail,
+  Calendar,
+  Plug,
 } from "lucide-react";
 import type { DashboardMetric, EmailCategory, EmailItem } from "@/lib/types";
 import { categoryColors, categoryLabels } from "@/lib/data/emails";
@@ -156,6 +160,14 @@ export default function DashboardPage() {
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{err}</div>
       )}
 
+      {/* Accesos rápidos (navegación de un toque, mobile-first) */}
+      <section className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <QuickLink href="/anticipation" icon={<Radar size={18} />} label="Anticipación" hint="ZERO se adelanta" />
+        <QuickLink href="/inbox" icon={<Mail size={18} />} label="Bandeja" hint="Correo en vivo" />
+        <QuickLink href="/calendar" icon={<Calendar size={18} />} label="Calendario" hint="Tu agenda" />
+        <QuickLink href="/connectors" icon={<Plug size={18} />} label="Conectores" hint="Integraciones" />
+      </section>
+
       {/* Métricas */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {(data?.metrics ?? []).map((m) => (
@@ -225,13 +237,40 @@ export default function DashboardPage() {
   );
 }
 
+function QuickLink({
+  href,
+  icon,
+  label,
+  hint,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="hover-lift flex items-center gap-3 rounded-xl border bg-card p-3"
+    >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-medium text-ink">{label}</span>
+        <span className="block truncate text-[11px] text-muted">{hint}</span>
+      </span>
+    </Link>
+  );
+}
+
 function MetricCard({ metric }: { metric: DashboardMetric }) {
   const TrendIcon =
     metric.trend === "up" ? TrendingUp : metric.trend === "down" ? TrendingDown : Minus;
   const trendColor =
     metric.trend === "up" ? "text-emerald-600" : metric.trend === "down" ? "text-red-500" : "text-muted";
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <div className="hover-lift rounded-lg border bg-card p-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-wide text-muted">{metric.label}</span>
         {metric.trend && <TrendIcon size={14} className={trendColor} />}
