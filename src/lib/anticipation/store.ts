@@ -103,3 +103,15 @@ export function anticipationMetrics(decisions: Decision[]) {
     acceptanceRate: total ? accepted / total : 0,
   };
 }
+
+/**
+ * Calibración de confianza por tipo (bucle de feedback del blueprint §8.3):
+ * los tipos que sueles aceptar suben su confianza; los que descartas, bajan.
+ * Devuelve un multiplicador en [0.82, 1.15]; neutral (1) con muestra < 3.
+ */
+export function typeCalibration(decisions: Decision[], type: string): number {
+  const d = decisions.filter((x) => x.type === type);
+  if (d.length < 3) return 1;
+  const acc = d.filter((x) => x.value === "accepted").length / d.length;
+  return Math.max(0.82, Math.min(1.15, 0.82 + acc * 0.33));
+}

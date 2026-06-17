@@ -17,7 +17,7 @@ import { gmailSearch, calendarEvents } from "@/lib/connectors/google";
 import { ghFetchAll } from "@/lib/connectors/github";
 import { useWorkspace } from "@/lib/store";
 import { useMonitor, statusOf, latest, avgLatency, uptime } from "@/lib/monitor/store";
-import { useAnticipation, type TrustMode } from "@/lib/anticipation/store";
+import { useAnticipation, typeCalibration, type TrustMode } from "@/lib/anticipation/store";
 
 export interface Anticipation {
   /** Clave estable por capacidad (para feedback/snooze). */
@@ -299,7 +299,14 @@ export async function resolveAnticipations(): Promise<ResolveResult> {
   if (!a.enabled) return { visible: [], shadow: 0, signals: { workspace: { openTodos: 0 }, missing: [] } };
 
   const signals = await gatherSignals();
-  const candidates = rules(signals).filter((c) => c.confidence >= CONFIDENCE_FLOOR);
+  // Calibra la confianza con el feedback histórico por tipo (bucle §8.3).
+  const decisions = a.decisions;
+  const candidates = rules(signals)
+    .map((c) => ({
+      ...c,
+      confidence: Math.min(0.99, c.confidence * typeCalibration(decisions, c.type)),
+    }))
+    .filter((c) => c.confidence >= CONFIDENCE_FLOOR);
 
   let shadow = 0;
   const visible: Anticipation[] = [];
