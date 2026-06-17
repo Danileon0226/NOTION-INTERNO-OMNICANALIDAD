@@ -12,34 +12,99 @@ import {
   TrendingUp,
   Minus,
   RefreshCw,
+  Wifi,
 } from "lucide-react";
-import type { Connector, DashboardMetric, EmailCategory, EmailItem } from "@/lib/types";
+import type { DashboardMetric, EmailCategory, EmailItem } from "@/lib/types";
 import { categoryColors, categoryLabels } from "@/lib/data/emails";
-import { getEmailsData, getConnectors, type EmailsData } from "@/lib/clientData";
+import { getEmailsData, type EmailsData } from "@/lib/clientData";
+import { useConnectors, googleTokenValid, GMAIL_SCOPE, DRIVE_SCOPE } from "@/lib/connectors/store";
+import { gmailProfile, gmailFetchInbox } from "@/lib/connectors/google";
+import { computeMetrics, groupByCategory, actionItems } from "@/lib/dashboard";
 
 export default function DashboardPage() {
   const [data, setData] = useState<EmailsData | null>(null);
-  const [connectors, setConnectors] = useState<Connector[]>([]);
+  const [live, setLive] = useState(false);
   const [loading, setLoading] = useState(true);
+  const conn = useConnectors();
 
-  function load() {
+  async function load() {
     setLoading(true);
+    // Si Gmail está conectado, usa la bandeja real en vivo; si no, datos sembrados.
+    if (googleTokenValid(conn.google, GMAIL_SCOPE)) {
+      try {
+        const token = conn.google.accessToken;
+        const emails = await gmailFetchInbox(token);
+        let email = "Gmail conectado";
+        try {
+          email = (await gmailProfile(token)).emailAddress;
+        } catch {
+          /* perfil opcional */
+        }
+        setData({
+          email,
+          syncedAt: new Date().toISOString(),
+          metrics: computeMetrics(emails),
+          categories: groupByCategory(emails),
+          actions: actionItems(emails),
+          emails,
+        });
+        setLive(true);
+        setLoading(false);
+        return;
+      } catch {
+        /* token expirado → cae a datos sembrados */
+      }
+    }
     setData(getEmailsData());
-    setConnectors(getConnectors());
+    setLive(false);
     setLoading(false);
   }
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const liveConnectors = [
+    {
+      id: "gmail",
+      name: "Gmail",
+      connected: googleTokenValid(conn.google, GMAIL_SCOPE),
+      detail: googleTokenValid(conn.google, GMAIL_SCOPE) ? "Bandeja en vivo" : "Sin conectar",
+    },
+    {
+      id: "drive",
+      name: "Google Drive",
+      connected: googleTokenValid(conn.google, DRIVE_SCOPE),
+      detail: googleTokenValid(conn.google, DRIVE_SCOPE) ? "Archivos sincronizados" : "Sin conectar",
+    },
+    {
+      id: "github",
+      name: "GitHub",
+      connected: !!conn.github.account || !!conn.github.token,
+      detail: conn.github.account ? `@${conn.github.account}` : conn.github.token ? "Token configurado" : "Sin conectar",
+    },
+    {
+      id: "telegram",
+      name: "Telegram",
+      connected: !!conn.telegram.botToken,
+      detail: conn.telegram.botToken ? "Bot configurado" : "Sin conectar",
+    },
+  ];
 
   return (
     <div className="mx-auto max-w-6xl px-8 py-8">
       <header className="mb-6 flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-bold text-ink">Dashboard de la agencia</h1>
-          <p className="mt-1 text-sm text-muted">
-            Contexto en vivo de{" "}
+          <p className="mt-1 flex items-center gap-2 text-sm text-muted">
+            <span
+              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium ${
+                live ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              <Wifi size={11} /> {live ? "En vivo" : "Demo"}
+            </span>
             <span className="font-medium text-ink">{data?.email ?? "tu correo"}</span> ·{" "}
             {data ? new Date(data.syncedAt).toLocaleString("es-CO") : "sincronizando…"}
           </p>
@@ -100,8 +165,8 @@ export default function DashboardPage() {
           <div>
             <SectionTitle title="Conectores" />
             <div className="space-y-2">
-              {connectors.map((c) => (
-                <ConnectorMini key={c.id} connector={c} />
+              {liveConnectors.map((c) => (
+                <ConnectorMini key={c.id} name={c.name} connected={c.connected} detail={c.detail} />
               ))}
               <Link
                 href="/connectors"
@@ -216,21 +281,13 @@ function CategoryBar({
   );
 }
 
-function ConnectorMini({ connector }: { connector: Connector }) {
-  const dot =
-    connector.status === "connected"
-      ? "bg-emerald-500"
-      : connector.status === "pending"
-        ? "bg-amber-500"
-        : connector.status === "error"
-          ? "bg-red-500"
-          : "bg-gray-300";
+function ConnectorMini({ name, connected, detail }: { name: string; connected: boolean; detail: string }) {
   return (
     <div className="flex items-center gap-2.5 rounded-md border bg-white px-3 py-2">
-      <span className={`h-2 w-2 rounded-full ${dot}`} />
+      <span className={`h-2 w-2 rounded-full ${connected ? "bg-emerald-500" : "bg-gray-300"}`} />
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm text-ink">{connector.name}</div>
-        <div className="truncate text-[11px] text-muted">{connector.detail}</div>
+        <div className="truncate text-sm text-ink">{name}</div>
+        <div className="truncate text-[11px] text-muted">{detail}</div>
       </div>
     </div>
   );
