@@ -24,7 +24,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { useAi } from "@/lib/ai/store";
-import { askAi } from "@/lib/ai/client";
+import { askAi, listModels, type GeminiModel } from "@/lib/ai/client";
 import {
   useConnectors,
   GMAIL_SCOPE,
@@ -796,7 +796,7 @@ function GeminiCard() {
           placeholder="AIza…"
           type="password"
         />
-        <Field label="Modelo" value={model} onChange={setModel} placeholder="gemini-2.5-flash" />
+        <ModelPicker value={model} onChange={setModel} hasKey={!!apiKey} />
       </div>
       <div className="mt-3 flex gap-2">
         <Btn onClick={test} busy={busy} disabled={!apiKey}>
@@ -889,5 +889,97 @@ function CalendarCard() {
         </div>
       )}
     </Shell>
+  );
+}
+
+// Modelos de respaldo si aún no se pueden cargar desde Google (key sin validar
+// o sin conexión). En cuanto la key funcione, la lista real los reemplaza.
+const FALLBACK_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
+  "gemini-1.5-pro",
+];
+
+function ModelPicker({
+  value,
+  onChange,
+  hasKey,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  hasKey: boolean;
+}) {
+  const [models, setModels] = useState<GeminiModel[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function load() {
+    setErr("");
+    setBusy(true);
+    try {
+      const list = await listModels();
+      setModels(list);
+      // Si el modelo guardado ya no está disponible, cae al primero de la lista.
+      if (list.length && !list.some((m) => m.id === value)) onChange(list[0].id);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Intenta cargar automáticamente cuando hay key y todavía no hay lista.
+  useEffect(() => {
+    if (hasKey && models.length === 0) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasKey]);
+
+  // Opciones: las reales de Google, o el respaldo. Garantiza incluir el valor actual.
+  const ids = models.length ? models.map((m) => m.id) : FALLBACK_MODELS;
+  const options = ids.includes(value) ? ids : [value, ...ids];
+
+  return (
+    <label className="block">
+      <span className="mb-1 flex items-center justify-between text-xs font-medium text-muted">
+        Modelo
+        <button
+          type="button"
+          onClick={load}
+          disabled={!hasKey || busy}
+          className="inline-flex items-center gap-1 text-[11px] text-accent hover:underline disabled:opacity-40"
+          title="Cargar modelos disponibles desde Google"
+        >
+          {busy ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
+          {models.length ? "Actualizar" : "Cargar de Google"}
+        </button>
+      </span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-md border bg-white px-3 py-1.5 text-sm text-ink outline-none focus:border-accent"
+      >
+        {options.map((id) => {
+          const found = models.find((m) => m.id === id);
+          return (
+            <option key={id} value={id}>
+              {found ? `${found.label} (${id})` : id}
+            </option>
+          );
+        })}
+      </select>
+      {err ? (
+        <span className="mt-1 block text-[11px] text-red-600">
+          No se pudieron cargar los modelos: {err}
+        </span>
+      ) : (
+        <span className="mt-1 block text-[11px] text-muted">
+          {models.length
+            ? `${models.length} modelos disponibles para tu key.`
+            : "Lista de respaldo — pulsa “Cargar de Google” para ver los tuyos."}
+        </span>
+      )}
+    </label>
   );
 }

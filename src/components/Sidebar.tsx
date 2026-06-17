@@ -17,6 +17,8 @@ import {
   Search,
   Activity,
   Bot,
+  Mic,
+  Rocket,
 } from "lucide-react";
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
@@ -79,6 +81,12 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </NavLink>
         <NavLink href="/assistant" active={pathname === "/assistant"} icon={<Bot size={16} />} onClick={onNavigate}>
           Asistente IA
+        </NavLink>
+        <NavLink href="/zero" active={pathname === "/zero"} icon={<Mic size={16} />} onClick={onNavigate}>
+          ZERO (voz)
+        </NavLink>
+        <NavLink href="/autopilot" active={pathname === "/autopilot"} icon={<Rocket size={16} />} onClick={onNavigate}>
+          Piloto automático
         </NavLink>
         <NavLink href="/canvas" active={pathname === "/canvas"} icon={<Activity size={16} />} onClick={onNavigate}>
           Canvas / Grafo
