@@ -1,8 +1,8 @@
 name: Deploy a GitHub Pages
 
-# Despliega la app estática en GitHub Pages.
-# No requiere ninguna credencial externa: usa el GITHUB_TOKEN interno.
-# La URL queda en la salida del job (entorno github-pages).
+# Despliega la app estática en GitHub Pages publicando en la rama `gh-pages`.
+# No usa el entorno protegido `github-pages` (que falla tras el rename del repo):
+# empuja el build con el GITHUB_TOKEN interno. Sirve si Pages está en modo "rama".
 
 on:
   push:
@@ -10,9 +10,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
@@ -21,9 +19,6 @@ concurrency:
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,23 +32,15 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Configurar Pages
-        id: pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
       - name: Build (exportación estática)
         env:
           NEXT_OUTPUT_EXPORT: "true"
-          NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
         run: npm run build
 
-      - name: Subir artefacto
-        uses: actions/upload-pages-artifact@v3
+      - name: Publicar en gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: ./out
-
-      - name: Desplegar a GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out
+          publish_branch: gh-pages
