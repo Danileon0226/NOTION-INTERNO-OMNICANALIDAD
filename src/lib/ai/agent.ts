@@ -19,8 +19,12 @@ Capacidades (encadena varias herramientas para completar la tarea):
   guarda un reporte con create_note.
 - Creación de páginas web: create_webpage (genera tú el HTML COMPLETO, moderno y responsive,
   con <style> embebido; landing pages, propuestas, one-pagers de cliente).
-- Documentación/operaciones: create_note (briefs, actas, planes, reportes), list_notes.
-- Comunicación: telegram_alert para avisar al equipo.
+- Documentación/operaciones: create_note, create_subpage, read_note, append_to_note,
+  search_notes, delete_note, list_notes (briefs, actas, planes, reportes, wikis).
+- Drive avanzado: drive_read (lee el contenido de un documento), drive_search.
+- GitHub avanzado: github_commits (últimos commits), github_create_issue (crea tareas/bugs).
+- Utilidades: now (fecha/hora), calc (cálculos para finanzas/métricas).
+- Comunicación: telegram_alert (enviar) y telegram_updates (leer mensajes del bot).
 
 Reglas:
 - Usa herramientas siempre que necesites datos reales o ejecutar una acción; nunca inventes datos.

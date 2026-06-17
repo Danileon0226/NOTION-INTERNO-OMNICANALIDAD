@@ -234,3 +234,23 @@ export async function calendarEvents(token: string, max = 10): Promise<CalendarE
   );
   return data.items ?? [];
 }
+
+/** Lee el texto de un archivo de Drive (exporta Google Docs/Sheets a texto). */
+export async function driveReadText(token: string, file: DriveFile): Promise<string> {
+  const id = file.id;
+  if (file.mimeType.startsWith("application/vnd.google-apps")) {
+    const exportMime = file.mimeType.includes("spreadsheet") ? "text/csv" : "text/plain";
+    const res = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${id}/export?mimeType=${encodeURIComponent(exportMime)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) throw new Error(`Drive export ${res.status}`);
+    return (await res.text()).slice(0, 6000);
+  }
+  // Archivos de texto plano
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Drive download ${res.status}`);
+  return (await res.text()).slice(0, 6000);
+}
