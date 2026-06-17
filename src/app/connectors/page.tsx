@@ -22,6 +22,7 @@ import {
   ChevronRight,
   Home,
   CalendarDays,
+  ShieldAlert,
 } from "lucide-react";
 import { useAi } from "@/lib/ai/store";
 import { askAi, listModels, type GeminiModel } from "@/lib/ai/client";
@@ -56,16 +57,52 @@ import {
 } from "@/lib/connectors/google";
 import type { EmailItem } from "@/lib/types";
 
+function wipeLocalData() {
+  if (typeof window === "undefined") return;
+  // Borra todo el estado de la app (tokens, keys y workspace) del navegador.
+  for (const k of Object.keys(localStorage)) {
+    if (k.startsWith("zero-agency-")) localStorage.removeItem(k);
+  }
+}
+
 export default function ConnectorsPage() {
+  function handleWipe() {
+    if (
+      confirm(
+        "¿Borrar TODAS las credenciales y datos locales (API keys, tokens de Google/GitHub/Telegram y tu workspace)? Esta acción no se puede deshacer."
+      )
+    ) {
+      wipeLocalData();
+      location.reload();
+    }
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-ink">Conectores omnicanal</h1>
-        <p className="mt-1 text-sm text-muted">
-          Integraciones reales y funcionales. Las credenciales se guardan solo en tu navegador
-          (localStorage) y las llamadas salen directo a cada API — sin servidores intermedios.
-        </p>
+      <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-ink">Conectores omnicanal</h1>
+          <p className="mt-1 text-sm text-muted">
+            Integraciones reales y funcionales. Las credenciales se guardan solo en tu navegador
+            (localStorage) y las llamadas salen directo a cada API — sin servidores intermedios.
+          </p>
+        </div>
+        <button
+          onClick={handleWipe}
+          className="shrink-0 self-start rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+        >
+          Borrar sesión y credenciales
+        </button>
       </header>
+
+      <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        <ShieldAlert size={15} className="mt-0.5 shrink-0" />
+        <span>
+          Por seguridad, tus credenciales viven solo en este dispositivo. Si usas un equipo
+          compartido, pulsa &quot;Borrar sesión y credenciales&quot; al terminar. Usa siempre
+          tokens con el mínimo alcance posible.
+        </span>
+      </div>
 
       <div className="space-y-4">
         <GeminiCard />

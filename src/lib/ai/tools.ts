@@ -297,6 +297,54 @@ function logActivity(source: ActivitySource, label: string) {
   useActivity.getState().push({ source, kind: "integrate", label, count: 0 });
 }
 
+/**
+ * Evaluador aritmético seguro (shunting-yard). Soporta + - * / ( ) y %
+ * (porcentaje = /100). No usa eval ni Function: cero ejecución de código.
+ */
+function safeCalc(input: string): number | null {
+  const src = input.replace(/%/g, "/100");
+  const tokens = src.match(/(\d+\.?\d*|\.\d+|[+\-*/()])/g);
+  if (!tokens) return null;
+  const out: (number | string)[] = [];
+  const ops: string[] = [];
+  const prec: Record<string, number> = { "+": 1, "-": 1, "*": 2, "/": 2 };
+  let prev: string | null = null;
+  for (const t of tokens) {
+    if (/^[\d.]+$/.test(t)) {
+      out.push(parseFloat(t));
+    } else if (t === "(") {
+      ops.push(t);
+    } else if (t === ")") {
+      while (ops.length && ops[ops.length - 1] !== "(") out.push(ops.pop()!);
+      if (!ops.length) return null;
+      ops.pop();
+    } else {
+      // Unario (p. ej. "-5" o "(-3)"): inserta un 0 implícito.
+      if ((t === "-" || t === "+") && (prev === null || prev === "(" || prev in prec)) out.push(0);
+      while (ops.length && ops[ops.length - 1] !== "(" && prec[ops[ops.length - 1]] >= prec[t])
+        out.push(ops.pop()!);
+      ops.push(t);
+    }
+    prev = t;
+  }
+  while (ops.length) {
+    const op = ops.pop()!;
+    if (op === "(") return null;
+    out.push(op);
+  }
+  const st: number[] = [];
+  for (const tok of out) {
+    if (typeof tok === "number") st.push(tok);
+    else {
+      const b = st.pop();
+      const a = st.pop();
+      if (a === undefined || b === undefined) return null;
+      st.push(tok === "+" ? a + b : tok === "-" ? a - b : tok === "*" ? a * b : a / b);
+    }
+  }
+  return st.length === 1 ? st[0] : null;
+}
+
 export async function runTool(name: string, args: any): Promise<unknown> {
   const c = useConnectors.getState();
   const g = c.google;
@@ -434,8 +482,9 @@ export async function runTool(name: string, args: any): Promise<unknown> {
       const expr = String(args?.expression || "");
       if (!/^[\d\s.+\-*/()%]+$/.test(expr)) return { error: "Expresión no permitida." };
       try {
-        // eslint-disable-next-line no-new-func
-        const val = Function(`"use strict"; return (${expr.replace(/%/g, "/100")})`)();
+        // Evaluador seguro (sin eval/Function): no ejecuta código arbitrario.
+        const val = safeCalc(expr);
+        if (val === null || !Number.isFinite(val)) return { error: "No pude calcular la expresión." };
         return { expression: expr, result: val };
       } catch {
         return { error: "No pude calcular la expresión." };
@@ -655,7 +704,24 @@ export async function runTool(name: string, args: any): Promise<unknown> {
     }
     case "fetch_url": {
       const url = String(args?.url || "");
-      if (!/^https?:\/\//i.test(url)) return { error: "URL inválida (debe empezar por http(s)://)." };
+      let parsed: URL;
+      try {
+        parsed = new URL(url);
+      } catch {
+        return { error: "URL inválida." };
+      }
+      // Solo https público: bloquea http, esquemas raros y hosts internos.
+      if (parsed.protocol !== "https:") return { error: "Solo se permiten URLs https://." };
+      const host = parsed.hostname.toLowerCase();
+      const isPrivate =
+        host === "localhost" ||
+        host.endsWith(".local") ||
+        host.endsWith(".internal") ||
+        /^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(host) ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+        /^\[?::1\]?$/.test(host) ||
+        /^\[?(fc|fd)/i.test(host);
+      if (isPrivate) return { error: "Host no permitido (red interna/loopback)." };
       try {
         const res = await fetch(url);
         if (!res.ok) return { error: `La página respondió ${res.status}.` };
