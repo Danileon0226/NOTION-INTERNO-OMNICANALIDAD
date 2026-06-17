@@ -157,7 +157,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       <div className="border-t px-4 py-2.5 text-[11px] text-muted">
         <FileText size={12} className="mr-1 inline" />
-        {AGENCY_EMAIL}
+        {AGENCY_EMAIL || "Zero Agency OS"}
       </div>
     </aside>
   );

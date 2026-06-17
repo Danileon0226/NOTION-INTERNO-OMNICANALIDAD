@@ -16,20 +16,22 @@ import {
 } from "lucide-react";
 import type { DashboardMetric, EmailCategory, EmailItem } from "@/lib/types";
 import { categoryColors, categoryLabels } from "@/lib/data/emails";
-import { getEmailsData, type EmailsData } from "@/lib/clientData";
-import { useConnectors, googleTokenValid, GMAIL_SCOPE, DRIVE_SCOPE } from "@/lib/connectors/store";
+import { emptyEmailsData, buildEmailsData, type EmailsData } from "@/lib/clientData";
+import { useConnectors, googleTokenValid, GMAIL_SCOPE, DRIVE_SCOPE, CALENDAR_SCOPE } from "@/lib/connectors/store";
 import { gmailProfile, gmailFetchInbox } from "@/lib/connectors/google";
-import { computeMetrics, groupByCategory, actionItems } from "@/lib/dashboard";
+import { connectGoogle } from "@/lib/connectors/googleConnect";
 
 export default function DashboardPage() {
   const [data, setData] = useState<EmailsData | null>(null);
   const [live, setLive] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
   const conn = useConnectors();
 
   async function load() {
     setLoading(true);
-    // Si Gmail está conectado, usa la bandeja real en vivo; si no, datos sembrados.
+    setErr("");
+    // La bandeja llega SIEMPRE en vivo desde Gmail. Sin datos de ejemplo.
     if (googleTokenValid(conn.google, GMAIL_SCOPE)) {
       try {
         const token = conn.google.accessToken;
@@ -40,24 +42,30 @@ export default function DashboardPage() {
         } catch {
           /* perfil opcional */
         }
-        setData({
-          email,
-          syncedAt: new Date().toISOString(),
-          metrics: computeMetrics(emails),
-          categories: groupByCategory(emails),
-          actions: actionItems(emails),
-          emails,
-        });
+        setData(buildEmailsData(emails, email));
         setLive(true);
         setLoading(false);
         return;
       } catch {
-        /* token expirado → cae a datos sembrados */
+        /* token expirado → pide reconectar */
       }
     }
-    setData(getEmailsData());
+    setData(emptyEmailsData());
     setLive(false);
     setLoading(false);
+  }
+
+  async function connect() {
+    setErr("");
+    setLoading(true);
+    try {
+      // Un clic = Gmail + Drive + Calendar.
+      await connectGoogle();
+      await load();
+    } catch (e) {
+      setErr((e as Error).message);
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -77,6 +85,12 @@ export default function DashboardPage() {
       name: "Google Drive",
       connected: googleTokenValid(conn.google, DRIVE_SCOPE),
       detail: googleTokenValid(conn.google, DRIVE_SCOPE) ? "Archivos sincronizados" : "Sin conectar",
+    },
+    {
+      id: "calendar",
+      name: "Google Calendar",
+      connected: googleTokenValid(conn.google, CALENDAR_SCOPE),
+      detail: googleTokenValid(conn.google, CALENDAR_SCOPE) ? "Eventos en vivo" : "Sin conectar",
     },
     {
       id: "github",
@@ -103,20 +117,43 @@ export default function DashboardPage() {
                 live ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500"
               }`}
             >
-              <Wifi size={11} /> {live ? "En vivo" : "Demo"}
+              <Wifi size={11} /> {live ? "En vivo" : "Sin conectar"}
             </span>
-            <span className="font-medium text-ink">{data?.email ?? "tu correo"}</span> ·{" "}
+            <span className="font-medium text-ink">{data?.email || "tu correo"}</span> ·{" "}
             {data ? new Date(data.syncedAt).toLocaleString("es-CO") : "sincronizando…"}
           </p>
         </div>
         <button
-          onClick={load}
+          onClick={live ? load : connect}
           className="flex items-center gap-1.5 rounded-md border bg-white px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
         >
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-          Sincronizar
+          {live ? "Sincronizar" : "Conectar Google"}
         </button>
       </header>
+
+      {!live && !loading && (
+        <div className="mb-5 flex flex-col gap-3 rounded-xl border border-accent/30 bg-accent/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-2.5">
+            <Sparkles size={18} className="mt-0.5 shrink-0 text-accent" />
+            <div>
+              <p className="text-sm font-semibold text-ink">Conecta tu Google para alimentar el dashboard</p>
+              <p className="text-xs text-muted">
+                Un solo clic conecta Gmail, Drive y Calendar. Sin datos de ejemplo: todo en vivo.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={connect}
+            className="shrink-0 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+          >
+            Conectar Gmail + Drive + Calendar
+          </button>
+        </div>
+      )}
+      {err && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{err}</div>
+      )}
 
       {/* Métricas */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">

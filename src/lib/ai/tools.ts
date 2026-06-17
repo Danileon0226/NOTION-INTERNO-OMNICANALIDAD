@@ -10,11 +10,12 @@ import {
   DRIVE_SCOPE,
   CALENDAR_SCOPE,
 } from "@/lib/connectors/store";
-import { gmailSearch, driveList, calendarEvents, driveReadText } from "@/lib/connectors/google";
-import { ghFetchAll, ghCommits, ghCreateIssue } from "@/lib/connectors/github";
-import { tgSendMessage, tgGetUpdates, alertText } from "@/lib/connectors/telegram";
+import { gmailSearch, gmailProfile, driveList, calendarEvents, driveReadText } from "@/lib/connectors/google";
+import { ghFetchAll, ghCommits, ghCreateIssue, repoFromUrl } from "@/lib/connectors/github";
+import { tgSendMessage, tgGetUpdates, tgGetMe, alertText } from "@/lib/connectors/telegram";
 import { useWorkspace } from "@/lib/store";
 import { useActivity, type ActivitySource } from "@/lib/activity";
+import { useVault } from "@/lib/obsidian";
 import { templates } from "@/lib/data/templates";
 import type { Block } from "@/lib/types";
 
@@ -203,6 +204,91 @@ export const toolDeclarations = [
         html: { type: "string", description: "Documento HTML completo (<!doctype html>…)." },
       },
       required: ["title", "html"],
+    },
+  },
+  // ── Conectores ampliados ──────────────────────────────────────
+  {
+    name: "gmail_profile",
+    description: "Perfil/estadísticas de la cuenta de Gmail conectada: correo, total de mensajes e hilos.",
+    parameters: { type: "object", properties: {} },
+  },
+  {
+    name: "drive_folder",
+    description: "Lista el contenido de una carpeta de Google Drive buscada por nombre (devuelve sus archivos).",
+    parameters: {
+      type: "object",
+      properties: { name: { type: "string", description: "Nombre de la carpeta." } },
+      required: ["name"],
+    },
+  },
+  {
+    name: "github_pulls",
+    description: "Lista los pull requests abiertos de un usuario/organización de GitHub.",
+    parameters: {
+      type: "object",
+      properties: { account: { type: "string", description: "Usuario u organización (opcional)." } },
+    },
+  },
+  {
+    name: "telegram_bot_info",
+    description: "Información del bot de Telegram conectado (nombre, usuario). Útil para verificar la conexión.",
+    parameters: { type: "object", properties: {} },
+  },
+  {
+    name: "list_templates",
+    description: "Lista las plantillas de página disponibles (brief, propuesta, contrato, onboarding, reporte, acta, roadmap, wiki, crm, etc.).",
+    parameters: { type: "object", properties: {} },
+  },
+  {
+    name: "create_from_template",
+    description:
+      "Crea una página nueva a partir de una plantilla por su id (usa list_templates para ver los ids). Sustituye '[Cliente]' por el nombre indicado.",
+    parameters: {
+      type: "object",
+      properties: {
+        templateId: { type: "string", description: "Id de la plantilla (p. ej. 'propuesta', 'contrato')." },
+        title: { type: "string", description: "Título de la página (opcional)." },
+        client: { type: "string", description: "Nombre de cliente para rellenar la plantilla (opcional)." },
+      },
+      required: ["templateId"],
+    },
+  },
+  {
+    name: "toggle_task",
+    description: "Marca como hecha (o pendiente) una tarea/checkbox dentro de una nota, identificándola por un fragmento de su texto.",
+    parameters: {
+      type: "object",
+      properties: {
+        noteTitle: { type: "string", description: "Título de la nota que contiene la tarea." },
+        taskText: { type: "string", description: "Fragmento del texto de la tarea." },
+        done: { type: "boolean", description: "true = marcar hecha (por defecto), false = desmarcar." },
+      },
+      required: ["noteTitle", "taskText"],
+    },
+  },
+  {
+    name: "vault_overview",
+    description:
+      "Resumen de la bóveda de Obsidian conectada (grafo de conocimiento): nº de notas, etiquetas más usadas y notas más enlazadas.",
+    parameters: { type: "object", properties: {} },
+  },
+  {
+    name: "vault_search",
+    description: "Busca notas en la bóveda de Obsidian conectada por título o etiqueta.",
+    parameters: {
+      type: "object",
+      properties: { query: { type: "string", description: "Texto o etiqueta a buscar." } },
+      required: ["query"],
+    },
+  },
+  {
+    name: "fetch_url",
+    description:
+      "Descarga el texto visible de una URL pública (investigación/lectura web). Devuelve el contenido sin etiquetas HTML (puede fallar por CORS en algunos sitios).",
+    parameters: {
+      type: "object",
+      properties: { url: { type: "string", description: "URL https:// a leer." } },
+      required: ["url"],
     },
   },
 ];
@@ -473,6 +559,119 @@ export async function runTool(name: string, args: any): Promise<unknown> {
       );
       logActivity("ai", `Gemini generó la página web "${args?.title}"`);
       return { created: true, pageId: id, title: args?.title };
+    }
+    case "gmail_profile": {
+      if (!googleTokenValid(g, GMAIL_SCOPE)) return { error: "Gmail no está conectado." };
+      const p = await gmailProfile(g.accessToken);
+      logActivity("gmail", "Gemini consultó el perfil de Gmail");
+      return { email: p.emailAddress, messages: p.messagesTotal, threads: p.threadsTotal };
+    }
+    case "drive_folder": {
+      if (!googleTokenValid(g, DRIVE_SCOPE)) return { error: "Google Drive no está conectado." };
+      const matches = await driveList(g.accessToken, 5, { query: String(args?.name || "") });
+      const folder = matches.find((f) => f.mimeType === "application/vnd.google-apps.folder");
+      if (!folder) return { error: `No encontré la carpeta "${args?.name}".` };
+      const files = await driveList(g.accessToken, 50, { parentId: folder.id });
+      logActivity("google-drive", `Gemini abrió la carpeta "${folder.name}" de Drive`);
+      return {
+        folder: folder.name,
+        count: files.length,
+        files: files.map((f) => ({ name: f.name, mimeType: f.mimeType, link: f.webViewLink })),
+      };
+    }
+    case "github_pulls": {
+      const account = args?.account || c.github.account;
+      if (!account && !c.github.token) return { error: "GitHub no está conectado." };
+      const d = await ghFetchAll(account, c.github.token || undefined);
+      logActivity("github", "Gemini revisó los PRs de GitHub");
+      return {
+        openPRs: d.openPRs,
+        pulls: d.pulls.map((pr) => ({
+          title: pr.title,
+          repo: repoFromUrl(pr.repository_url),
+          state: pr.state,
+          url: pr.html_url,
+        })),
+      };
+    }
+    case "telegram_bot_info": {
+      if (!c.telegram.botToken) return { error: "Telegram no está conectado." };
+      const bot = await tgGetMe(c.telegram.botToken);
+      return { username: bot.username, name: bot.first_name, id: bot.id, chatConfigured: !!c.telegram.chatId };
+    }
+    case "list_templates": {
+      return {
+        templates: templates.map((t) => ({ id: t.id, name: t.name, description: t.description })),
+      };
+    }
+    case "create_from_template": {
+      const t = templates.find((x) => x.id === String(args?.templateId || "").toLowerCase());
+      if (!t) return { error: `No existe la plantilla "${args?.templateId}". Usa list_templates.` };
+      const client = args?.client ? String(args.client) : "";
+      const blocks: Block[] = t.blocks.map((b) => ({
+        ...b,
+        content: client ? b.content.replace(/\[Cliente\]/g, client) : b.content,
+      }));
+      const title = String(args?.title || (client ? `${t.name} — ${client}` : t.name));
+      const ws = useWorkspace.getState();
+      const id = ws.createPageFromTemplate(blocks, { title, icon: t.icon }, null);
+      logActivity("ai", `Gemini creó "${title}" desde la plantilla ${t.name}`);
+      return { created: true, pageId: id, title, template: t.id };
+    }
+    case "toggle_task": {
+      const ws = useWorkspace.getState();
+      const p = ws.pages.find((x) => x.title.toLowerCase() === String(args?.noteTitle || "").toLowerCase());
+      if (!p) return { error: `No encontré la nota "${args?.noteTitle}".` };
+      const frag = String(args?.taskText || "").toLowerCase();
+      const block = p.blocks.find((b) => b.type === "todo" && b.content.toLowerCase().includes(frag));
+      if (!block) return { error: `No encontré una tarea con "${args?.taskText}" en "${p.title}".` };
+      const done = args?.done === undefined ? true : !!args.done;
+      ws.updateBlock(p.id, block.id, { checked: done });
+      logActivity("ai", `Gemini marcó la tarea "${block.content}" como ${done ? "hecha" : "pendiente"}`);
+      return { updated: true, task: block.content, done };
+    }
+    case "vault_overview": {
+      const v = useVault.getState();
+      if (!v.notes.length) return { error: "No hay una bóveda de Obsidian conectada (ve a Canvas/Grafo)." };
+      const tagCount: Record<string, number> = {};
+      const linkCount: Record<string, number> = {};
+      for (const n of v.notes) {
+        n.tags.forEach((t) => (tagCount[t] = (tagCount[t] || 0) + 1));
+        n.links.forEach((l) => (linkCount[l] = (linkCount[l] || 0) + 1));
+      }
+      const top = (o: Record<string, number>) =>
+        Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, n]) => ({ name: k, count: n }));
+      return { vault: v.name, notes: v.notes.length, topTags: top(tagCount), mostLinked: top(linkCount) };
+    }
+    case "vault_search": {
+      const v = useVault.getState();
+      if (!v.notes.length) return { error: "No hay una bóveda de Obsidian conectada (ve a Canvas/Grafo)." };
+      const q = String(args?.query || "").toLowerCase().replace(/^#/, "");
+      const hits = v.notes
+        .filter((n) => n.title.toLowerCase().includes(q) || n.tags.some((t) => t.toLowerCase().includes(q)))
+        .slice(0, 20)
+        .map((n) => ({ title: n.title, path: n.path, tags: n.tags, links: n.links.length }));
+      return { count: hits.length, notes: hits };
+    }
+    case "fetch_url": {
+      const url = String(args?.url || "");
+      if (!/^https?:\/\//i.test(url)) return { error: "URL inválida (debe empezar por http(s)://)." };
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return { error: `La página respondió ${res.status}.` };
+        const raw = await res.text();
+        const text = raw
+          .replace(/<script[\s\S]*?<\/script>/gi, " ")
+          .replace(/<style[\s\S]*?<\/style>/gi, " ")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 6000);
+        logActivity("ai", `Gemini leyó la web ${url}`);
+        return { url, text };
+      } catch (e) {
+        return { error: `No pude leer la URL (posible bloqueo CORS): ${(e as Error).message}` };
+      }
     }
     default:
       return { error: `Herramienta desconocida: ${name}` };

@@ -75,14 +75,14 @@ export default function CanvasPage() {
   }, []);
 
   const bump = useCallback(
-    (src: Src, delta: number, total: number, real: boolean) => {
+    (src: Src, delta: number, total: number) => {
       setCounts((c) => ({ ...c, [src]: total }));
       setSamples((s) => ({ ...s, [src]: [...s[src], total].slice(-24) }));
       spawnFlow(src);
       push({
         source: src as ActivitySource,
-        kind: real ? "integrate" : "info",
-        label: `La IA ${VERBS[src]}${delta > 0 ? ` · +${delta}` : ""}${real ? "" : " (demo)"}`,
+        kind: "integrate",
+        label: `La IA ${VERBS[src]}${delta > 0 ? ` · +${delta}` : ""}`,
         count: delta,
       });
     },
@@ -129,29 +129,20 @@ export default function CanvasPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Ticker en tiempo real.
+  // Ticker en tiempo real: SOLO lee conectores reales conectados.
   useEffect(() => {
-    if (!running) return;
-    const pool = anyLive ? SRCS.filter((s) => connected[s]) : SRCS;
+    if (!running || !anyLive) return;
+    const pool = SRCS.filter((s) => connected[s]);
+    if (!pool.length) return;
     const t = setInterval(async () => {
       const src = pool[rr.current % pool.length];
       rr.current += 1;
-      if (connected[src]) {
-        const v = await probe(src);
-        if (v != null) {
-          setCounts((prev) => {
-            const delta = Math.max(0, v - (prev[src] ?? 0));
-            bump(src, delta, v, true);
-            return prev; // bump ya actualiza counts
-          });
-          return;
-        }
-      }
-      // Modo demo / sin lectura: simula integración de la IA.
-      const delta = 1 + Math.floor(Math.random() * 4);
+      const v = await probe(src);
+      if (v == null) return;
       setCounts((prev) => {
-        bump(src, delta, (prev[src] ?? 0) + delta, false);
-        return prev;
+        const delta = Math.max(0, v - (prev[src] ?? 0));
+        bump(src, delta, v);
+        return prev; // bump ya actualiza counts
       });
     }, TICK_MS);
     return () => clearInterval(t);
@@ -173,7 +164,7 @@ export default function CanvasPage() {
                 anyLive ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500"
               }`}
             >
-              <Wifi size={11} /> {anyLive ? "En vivo" : "Demo"}
+              <Wifi size={11} /> {anyLive ? "En vivo" : "Sin conectar"}
             </span>
             Lo que la IA va integrando desde tus conectores, actualizado solo.
           </p>
@@ -382,7 +373,7 @@ function Tile({
         <span className="h-2 w-2 rounded-full" style={{ background: color }} />
         <span className="text-xs font-medium text-ink">{sourceMeta[src].label}</span>
         <span className={`ml-auto text-[10px] ${live ? "text-emerald-600" : "text-muted"}`}>
-          {live ? "en vivo" : "demo"}
+          {live ? "en vivo" : "sin conectar"}
         </span>
       </div>
       <div className="mt-1 text-2xl font-bold tabular-nums text-ink">{count}</div>

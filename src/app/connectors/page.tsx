@@ -30,6 +30,8 @@ import {
   GMAIL_SCOPE,
   DRIVE_SCOPE,
   CALENDAR_SCOPE,
+  GOOGLE_SCOPES,
+  GOOGLE_CLIENT_ID,
   googleTokenValid,
 } from "@/lib/connectors/store";
 import { ghFetchAll, repoFromUrl, type GithubData } from "@/lib/connectors/github";
@@ -488,17 +490,19 @@ function useGoogleConnect() {
   // Autocompleta el Client ID desde el entorno (NEXT_PUBLIC_GOOGLE_CLIENT_ID)
   // para que conectar la cuenta real sea de un solo clic en el sitio desplegado.
   useEffect(() => {
-    const env = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (env && !google.clientId) setGoogle({ clientId: env });
+    if (GOOGLE_CLIENT_ID && !google.clientId) setGoogle({ clientId: GOOGLE_CLIENT_ID });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Pide SIEMPRE los tres scopes: un clic conecta Gmail + Drive + Calendar.
   async function ensureToken(scope: string): Promise<string> {
     if (googleTokenValid(google, scope)) return google.accessToken;
-    if (!google.clientId.trim()) throw new Error("Falta el Google OAuth Client ID.");
-    const wanted = Array.from(new Set([...google.scopes, scope]));
-    const tok = await requestGoogleToken(google.clientId.trim(), wanted);
+    const clientId = (google.clientId || GOOGLE_CLIENT_ID).trim();
+    if (!clientId) throw new Error("Falta el Google OAuth Client ID (configúralo en Vercel: NEXT_PUBLIC_GOOGLE_CLIENT_ID).");
+    const wanted = Array.from(new Set([...google.scopes, ...GOOGLE_SCOPES, scope]));
+    const tok = await requestGoogleToken(clientId, wanted);
     setGoogle({
+      clientId,
       accessToken: tok.access_token,
       expiry: Date.now() + tok.expires_in * 1000,
       scopes: tok.scope ? tok.scope.split(" ") : wanted,
