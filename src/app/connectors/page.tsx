@@ -894,12 +894,16 @@ function CalendarCard() {
 
 // Modelos de respaldo si aún no se pueden cargar desde Google (key sin validar
 // o sin conexión). En cuanto la key funcione, la lista real los reemplaza.
+// Catálogo de modelos Gemini (respaldo cuando la key bloquea ListModels).
 const FALLBACK_MODELS = [
-  "gemini-2.5-flash",
   "gemini-2.5-pro",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
   "gemini-2.0-flash",
-  "gemini-1.5-flash",
+  "gemini-2.0-flash-lite",
   "gemini-1.5-pro",
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b",
 ];
 
 function ModelPicker({
@@ -970,14 +974,15 @@ function ModelPicker({
         })}
       </select>
       {err ? (
-        <span className="mt-1 block text-[11px] text-red-600">
-          No se pudieron cargar los modelos: {err}
+        <span className="mt-1 block text-[11px] text-amber-600">
+          No se pudo listar en vivo (tu key bloquea ListModels). Usa el catálogo de arriba —
+          igual funciona para generar. Detalle: {err}
         </span>
       ) : (
         <span className="mt-1 block text-[11px] text-muted">
           {models.length
             ? `${models.length} modelos disponibles para tu key.`
-            : "Lista de respaldo — pulsa “Cargar de Google” para ver los tuyos."}
+            : "Catálogo de modelos Gemini. Pulsa “Cargar de Google” si tu key permite ListModels."}
         </span>
       )}
     </label>
