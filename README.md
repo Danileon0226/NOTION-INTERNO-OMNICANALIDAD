@@ -5,9 +5,14 @@ correo de la agencia** e integraciones omnicanal con **Gmail, Google Drive, GitH
 
 ## ✨ Funcionalidades
 
-- **Workspace tipo Notion** — páginas con íconos, títulos y un editor de bloques
-  (encabezados, texto, listas de tareas, viñetas, citas, resaltados, divisores) con
-  comandos `/` y persistencia local. Crea, edita y elimina páginas desde la barra lateral.
+- **Workspace tipo Notion** — editor de bloques completo: encabezados, texto, listas de
+  tareas, viñetas, **listas numeradas, código, imágenes, citas, resaltados y divisores**.
+  **Menú slash (`/`)** flotante y filtrable, **atajos de Markdown** (`#`, `-`, `[]`, `>`,
+  ` ``` `), **acciones de bloque** (subir/bajar, duplicar, eliminar), **subpáginas anidadas**
+  con breadcrumbs, y **barra lateral con árbol de páginas y búsqueda**. Persistencia local.
+- **Bloques de conectores en vivo** — inserta con `/` bloques que muestran datos reales
+  dentro de tus páginas: **GitHub** (repos/PRs), **Gmail** (bandeja), **Google Drive**
+  (archivos) y **Telegram** (enviar alertas al equipo desde la propia nota).
 - **Dashboard de la agencia** — métricas en vivo derivadas del correo: no leídos, acciones
   sugeridas por IA, prioridad alta y alertas de finanzas; desglose por categoría, lista de
   acciones y estado de los conectores.

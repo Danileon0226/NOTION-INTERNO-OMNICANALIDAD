@@ -20,6 +20,10 @@ interface WorkspaceState {
   addBlock: (pageId: string, afterBlockId: string | null, type?: BlockType) => string;
   deleteBlock: (pageId: string, blockId: string) => void;
   setBlockType: (pageId: string, blockId: string, type: BlockType) => void;
+  moveBlock: (pageId: string, blockId: string, dir: -1 | 1) => void;
+  duplicateBlock: (pageId: string, blockId: string) => void;
+  /** Crea una subpágina e inserta un bloque `page` que la enlaza. */
+  createSubpage: (pageId: string, afterBlockId: string | null) => string;
 }
 
 const touch = (p: WorkspacePage): WorkspacePage => ({ ...p, updatedAt: new Date().toISOString() });
@@ -93,6 +97,65 @@ export const useWorkspace = create<WorkspaceState>()(
         })),
 
       setBlockType: (pageId, blockId, type) => get().updateBlock(pageId, blockId, { type }),
+
+      moveBlock: (pageId, blockId, dir) =>
+        set((s) => ({
+          pages: s.pages.map((p) => {
+            if (p.id !== pageId) return p;
+            const idx = p.blocks.findIndex((b) => b.id === blockId);
+            const to = idx + dir;
+            if (idx < 0 || to < 0 || to >= p.blocks.length) return p;
+            const blocks = [...p.blocks];
+            [blocks[idx], blocks[to]] = [blocks[to], blocks[idx]];
+            return touch({ ...p, blocks });
+          }),
+        })),
+
+      duplicateBlock: (pageId, blockId) =>
+        set((s) => ({
+          pages: s.pages.map((p) => {
+            if (p.id !== pageId) return p;
+            const idx = p.blocks.findIndex((b) => b.id === blockId);
+            if (idx < 0) return p;
+            const blocks = [...p.blocks];
+            blocks.splice(idx + 1, 0, { ...p.blocks[idx], id: uid("b") });
+            return touch({ ...p, blocks });
+          }),
+        })),
+
+      createSubpage: (pageId, afterBlockId) => {
+        const childId = uid("page");
+        const now = new Date().toISOString();
+        const child: WorkspacePage = {
+          id: childId,
+          title: "Página sin título",
+          icon: "📄",
+          parentId: pageId,
+          createdAt: now,
+          updatedAt: now,
+          blocks: [{ id: uid("b"), type: "text", content: "" }],
+        };
+        set((s) => ({
+          pages: [
+            ...s.pages.map((p) => {
+              if (p.id !== pageId) return p;
+              const idx = afterBlockId
+                ? p.blocks.findIndex((b) => b.id === afterBlockId)
+                : p.blocks.length - 1;
+              const blocks = [...p.blocks];
+              blocks.splice(idx + 1, 0, {
+                id: uid("b"),
+                type: "page",
+                content: "Página sin título",
+                refId: childId,
+              });
+              return touch({ ...p, blocks });
+            }),
+            child,
+          ],
+        }));
+        return childId;
+      },
     }),
     { name: "zero-agency-workspace" }
   )

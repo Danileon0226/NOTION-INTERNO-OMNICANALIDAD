@@ -54,15 +54,28 @@ export type BlockType =
   | "text"
   | "todo"
   | "bulleted"
+  | "numbered"
   | "quote"
   | "divider"
-  | "callout";
+  | "callout"
+  | "code"
+  | "toggle"
+  | "image"
+  | "page"
+  | "embed-github"
+  | "embed-gmail"
+  | "embed-drive"
+  | "embed-telegram";
 
 export interface Block {
   id: string;
   type: BlockType;
   content: string;
   checked?: boolean;
+  /** Toggle plegado / desplegado. */
+  collapsed?: boolean;
+  /** Para bloques `page`: id de la subpágina enlazada. */
+  refId?: string;
 }
 
 export interface WorkspacePage {
