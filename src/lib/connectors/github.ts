@@ -104,3 +104,36 @@ export async function ghFetchAll(account: string, token?: string): Promise<Githu
 export function repoFromUrl(url: string): string {
   return url.replace("https://api.github.com/repos/", "");
 }
+
+// ── Acciones extra (commits / crear issue) ───────────────────
+
+export interface GithubCommit {
+  sha: string;
+  html_url: string;
+  commit: { message: string; author?: { name?: string; date?: string } };
+}
+
+/** Últimos commits de un repo "owner/name". */
+export async function ghCommits(repo: string, token?: string): Promise<GithubCommit[]> {
+  return gh<GithubCommit[]>(`/repos/${repo}/commits?per_page=8`, token);
+}
+
+/** Crea un issue (requiere token con permiso de escritura). */
+export async function ghCreateIssue(
+  repo: string,
+  title: string,
+  body: string,
+  token: string
+): Promise<{ number: number; html_url: string }> {
+  const res = await fetch(`${API}/repos/${repo}/issues`, {
+    method: "POST",
+    headers: { ...(headers(token) as Record<string, string>), "Content-Type": "application/json" },
+    body: JSON.stringify({ title, body }),
+  });
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}));
+    throw new Error((b as { message?: string }).message || `GitHub ${res.status}`);
+  }
+  const d = (await res.json()) as { number: number; html_url: string };
+  return { number: d.number, html_url: d.html_url };
+}
