@@ -58,6 +58,7 @@ const SLASH: SlashItem[] = [
 const NON_EDITABLE: BlockType[] = [
   "divider",
   "image",
+  "html",
   "page",
   "embed-github",
   "embed-gmail",
@@ -313,6 +314,47 @@ function BlockRow({
     return (
       <Row {...rowProps}>
         <ConnectorEmbed type={block.type} />
+      </Row>
+    );
+  }
+  if (block.type === "html") {
+    return (
+      <Row {...rowProps}>
+        <div className="my-1 w-full overflow-hidden rounded-lg border bg-white">
+          <div className="flex items-center gap-2 border-b bg-bg-subtle px-3 py-1.5 text-xs text-muted">
+            🌐 Página web generada
+            <button
+              onClick={() => {
+                const w = window.open();
+                if (w) {
+                  w.document.write(block.content);
+                  w.document.close();
+                }
+              }}
+              className="ml-auto rounded px-1.5 py-0.5 hover:bg-white hover:text-ink"
+            >
+              Abrir
+            </button>
+            <button
+              onClick={() => {
+                const blob = new Blob([block.content], { type: "text/html" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "pagina.html";
+                a.click();
+              }}
+              className="rounded px-1.5 py-0.5 hover:bg-white hover:text-ink"
+            >
+              Descargar
+            </button>
+          </div>
+          <iframe
+            title="preview"
+            sandbox="allow-scripts"
+            srcDoc={block.content}
+            className="h-80 w-full bg-white"
+          />
+        </div>
       </Row>
     );
   }

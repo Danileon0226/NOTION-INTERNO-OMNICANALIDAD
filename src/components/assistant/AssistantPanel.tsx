@@ -3,32 +3,23 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bot, Send, X, Sparkles, Loader2, AlertTriangle } from "lucide-react";
-import { useWorkspace } from "@/lib/store";
-import { useConnectors } from "@/lib/connectors/store";
 import { useAi } from "@/lib/ai/store";
-import { seedEmails } from "@/lib/data/emails";
-import { buildFullContext } from "@/lib/ai/context";
-import { ZERO_SYSTEM_PROMPT } from "@/lib/ai/prompt";
-import { chatAi, type ChatMessage } from "@/lib/ai/client";
+import { runAgent, type ChatMsg } from "@/lib/ai/agent";
 
 const SUGGESTIONS = [
   "¿Qué es lo más urgente hoy en la agencia?",
-  "Resume el estado de cada cliente.",
-  "¿Qué pagos o facturas están pendientes?",
-  "¿Qué tareas siguen sin completar?",
+  "Analiza los datos de la agencia y crea un reporte",
+  "Crea una landing page para el cliente Aurora",
+  "Avísale al equipo por Telegram las tareas urgentes",
 ];
 
 export function AssistantPanel() {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const pages = useWorkspace((s) => s.pages);
-  const github = useConnectors((s) => s.github);
-  const telegram = useConnectors((s) => s.telegram);
-  const google = useConnectors((s) => s.google);
   const apiKey = useAi((s) => s.apiKey);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -41,21 +32,16 @@ export function AssistantPanel() {
     const question = text.trim();
     if (!question || loading) return;
 
-    const history: ChatMessage[] = [...messages, { role: "user", text: question }];
-    setMessages(history);
+    const prior = messages;
+    setMessages([...messages, { role: "user", text: question }]);
     setInput("");
     setLoading(true);
     setError(null);
 
     try {
-      // Snapshot fresco del banco de datos en cada turno (incluye conectores en vivo).
-      const context = await buildFullContext({
-        pages,
-        emails: seedEmails,
-        connectors: { github, telegram, google },
-      });
-      const reply = await chatAi(history, { context, system: ZERO_SYSTEM_PROMPT });
-      setMessages((m) => [...m, { role: "model", text: reply }]);
+      // Gemini orquesta los conectores y ejecuta operaciones (function calling).
+      const res = await runAgent(question, prior);
+      setMessages((m) => [...m, { role: "model", text: res.text }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al consultar el asistente.");
     } finally {

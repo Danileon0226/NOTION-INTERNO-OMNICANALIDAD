@@ -77,6 +77,25 @@ export const toolDeclarations = [
     description: "Lista los títulos de las páginas existentes en el workspace.",
     parameters: { type: "object", properties: {} },
   },
+  {
+    name: "analyze_agency",
+    description:
+      "Analítica consolidada en tiempo real de la agencia: métricas de Gmail (no leídos, categorías), GitHub (repos/PRs/issues), Drive y Calendar de los conectores conectados. Úsala para reportes y análisis de datos.",
+    parameters: { type: "object", properties: {} },
+  },
+  {
+    name: "create_webpage",
+    description:
+      "Crea una página web (landing/sitio) en el workspace. Pasa el HTML COMPLETO y autónomo (con <style> y, si hace falta, <script>). Se renderiza y se puede abrir/descargar.",
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        html: { type: "string", description: "Documento HTML completo (<!doctype html>…)." },
+      },
+      required: ["title", "html"],
+    },
+  },
 ];
 
 function logActivity(source: ActivitySource, label: string) {
@@ -162,6 +181,46 @@ export async function runTool(name: string, args: any): Promise<unknown> {
     case "list_notes": {
       const pages = useWorkspace.getState().pages;
       return { notes: pages.map((p) => ({ title: p.title, icon: p.icon })) };
+    }
+    case "analyze_agency": {
+      const out: Record<string, unknown> = { connected: [] as string[] };
+      const conn = out.connected as string[];
+      if (googleTokenValid(g, GMAIL_SCOPE)) {
+        const em = await gmailSearch(g.accessToken, "in:inbox", 25);
+        const byCategory: Record<string, number> = {};
+        em.forEach((e) => (byCategory[e.category] = (byCategory[e.category] || 0) + 1));
+        out.gmail = { total: em.length, unread: em.filter((e) => e.unread).length, byCategory };
+        conn.push("gmail");
+      }
+      if (c.github.account || c.github.token) {
+        const d = await ghFetchAll(c.github.account, c.github.token || undefined);
+        out.github = { repos: d.repos.length, openPRs: d.openPRs, openIssues: d.openIssues };
+        conn.push("github");
+      }
+      if (googleTokenValid(g, DRIVE_SCOPE)) {
+        out.drive = { recentItems: (await driveList(g.accessToken, 30)).length };
+        conn.push("drive");
+      }
+      if (googleTokenValid(g, CALENDAR_SCOPE)) {
+        out.calendar = { upcoming: (await calendarEvents(g.accessToken, 10)).length };
+        conn.push("calendar");
+      }
+      logActivity("ai", "Gemini ejecutó analítica de la agencia");
+      return out;
+    }
+    case "create_webpage": {
+      const ws = useWorkspace.getState();
+      const id = ws.createPage(null);
+      ws.applyTemplate(
+        id,
+        [
+          { id: "t", type: "heading1", content: String(args?.title || "Página web") },
+          { id: "t", type: "html", content: String(args?.html || "<!doctype html><html><body></body></html>") },
+        ],
+        { title: String(args?.title || "Página web"), icon: "🌐" }
+      );
+      logActivity("ai", `Gemini generó la página web "${args?.title}"`);
+      return { created: true, pageId: id, title: args?.title };
     }
     default:
       return { error: `Herramienta desconocida: ${name}` };
