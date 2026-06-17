@@ -123,7 +123,7 @@ export default function ZeroVoicePage() {
     setStatus("thinking");
     setSteps([]);
     try {
-      const res = await runAgent(text, historyRef.current, (s) => setSteps((p) => [...p, s]));
+      const res = await runAgent(text, historyRef.current, (s) => setSteps((p) => [...p, s]), "voz");
       historyRef.current = [
         ...historyRef.current,
         { role: "user", text } as ChatMsg,

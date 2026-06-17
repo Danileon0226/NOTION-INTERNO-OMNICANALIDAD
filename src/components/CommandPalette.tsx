@@ -11,6 +11,7 @@ import {
   Activity,
   Radar,
   Brain,
+  History,
   Plug,
   Mail,
   Calendar,
@@ -93,6 +94,7 @@ export function CommandPalette() {
       { id: "zero", label: "ZERO (voz)", icon: <Mic size={16} />, run: () => nav("/zero") },
       { id: "memory", label: "Memoria de ZERO", icon: <Brain size={16} />, run: () => nav("/memory") },
       { id: "auto", label: "Piloto automático", icon: <Rocket size={16} />, run: () => nav("/autopilot") },
+      { id: "runs", label: "Actividad agéntica", icon: <History size={16} />, run: () => nav("/runs") },
       { id: "anticipation", label: "Anticipación", icon: <Radar size={16} />, run: () => nav("/anticipation") },
       { id: "canvas", label: "Canvas / Grafo", icon: <Activity size={16} />, run: () => nav("/canvas") },
       { id: "calendar", label: "Calendario", icon: <Calendar size={16} />, run: () => nav("/calendar") },
@@ -153,7 +155,7 @@ export function CommandPalette() {
     setAsking(true);
     setAnswer("");
     try {
-      const res = await runAgent(query.trim(), []);
+      const res = await runAgent(query.trim(), [], undefined, "comando");
       setAnswer(res.text);
     } catch (e) {
       setAnswer(`⚠️ ${(e as Error).message}`);

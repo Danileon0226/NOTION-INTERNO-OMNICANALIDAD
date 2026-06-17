@@ -91,8 +91,11 @@ export default function AutopilotPage() {
   async function run(r: Routine) {
     setState((s) => ({ ...s, [r.id]: { ...s[r.id], busy: true, steps: [] } }));
     try {
-      const res = await runAgent(r.prompt, [], (step) =>
-        setState((s) => ({ ...s, [r.id]: { ...s[r.id], steps: [...(s[r.id]?.steps ?? []), step] } }))
+      const res = await runAgent(
+        r.prompt,
+        [],
+        (step) => setState((s) => ({ ...s, [r.id]: { ...s[r.id], steps: [...(s[r.id]?.steps ?? []), step] } })),
+        `rutina: ${r.name}`
       );
       setState((s) => ({ ...s, [r.id]: { busy: false, text: res.text, steps: res.steps, lastRun: Date.now() } }));
     } catch (e) {

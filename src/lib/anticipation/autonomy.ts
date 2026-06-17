@@ -102,7 +102,7 @@ export async function runAutonomyCycle(): Promise<number> {
         count: 0,
       });
       try {
-        const r = await runAgent(a.suggestPrompt!, []);
+        const r = await runAgent(a.suggestPrompt!, [], undefined, "autonomía");
         ant.recordFeedback(a.key, a.type, "accepted");
         useAutonomy.getState().pushLog({
           id: a.explainId || Math.random().toString(36).slice(2),
