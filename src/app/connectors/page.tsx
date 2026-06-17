@@ -17,7 +17,10 @@ import {
   Folder,
   FileText,
   Trash2,
+  Bot,
 } from "lucide-react";
+import { useAi } from "@/lib/ai/store";
+import { askAi } from "@/lib/ai/client";
 import {
   useConnectors,
   GMAIL_SCOPE,
@@ -56,6 +59,7 @@ export default function ConnectorsPage() {
       </header>
 
       <div className="space-y-4">
+        <GeminiCard />
         <GithubCard />
         <TelegramCard />
         <GmailCard />
@@ -661,6 +665,59 @@ function DriveCard() {
             ))}
           </div>
         </div>
+      )}
+    </Shell>
+  );
+}
+
+/* ───────────────────────────── Gemini (IA) ───────────────────────────── */
+
+function GeminiCard() {
+  const { apiKey, model, setApiKey, setModel } = useAi();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [reply, setReply] = useState("");
+
+  async function test() {
+    setErr("");
+    setReply("");
+    setBusy(true);
+    try {
+      const text = await askAi("Responde en una frase: ¿estás listo para ayudar a la agencia?");
+      setReply(text);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Shell
+      icon={<Bot size={22} />}
+      title="Asistente IA · Gemini"
+      desc="Pega tu API key de Google AI Studio y la IA queda lista para resumir correos, redactar y potenciar el dashboard. La clave se guarda solo en tu navegador."
+      connected={!!apiKey}
+      docsUrl="https://aistudio.google.com/apikey"
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field
+          label="API key de Gemini"
+          value={apiKey}
+          onChange={setApiKey}
+          placeholder="AIza…"
+          type="password"
+        />
+        <Field label="Modelo" value={model} onChange={setModel} placeholder="gemini-2.5-flash" />
+      </div>
+      <div className="mt-3 flex gap-2">
+        <Btn onClick={test} busy={busy} disabled={!apiKey}>
+          Probar IA
+        </Btn>
+      </div>
+      <ErrorMsg msg={err} />
+      {reply && (
+        <div className="mt-3 rounded-md bg-bg-subtle px-3 py-2 text-sm text-ink">{reply}</div>
       )}
     </Shell>
   );
