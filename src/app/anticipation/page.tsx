@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Radar, ShieldCheck, History, Gauge, Bot, Zap, Play, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { AnticipationPanel } from "@/components/anticipation/AnticipationPanel";
+import { MaturityPanel } from "@/components/anticipation/MaturityPanel";
 import { useAnticipation, anticipationMetrics, type TrustMode } from "@/lib/anticipation/store";
 import { useAutonomy, runAutonomyCycle, activateTotalAutonomy } from "@/lib/anticipation/autonomy";
 import { useAi } from "@/lib/ai/store";
@@ -49,6 +50,11 @@ export default function AnticipationPage() {
           deterministas y explicables (Nivel 1), gobernadas por la escalera de confianza.
         </p>
       </header>
+
+      {/* Madurez */}
+      <div className="mb-5">
+        <MaturityPanel />
+      </div>
 
       {/* Gobernanza */}
       <div className="mb-5 rounded-xl border bg-card p-4">

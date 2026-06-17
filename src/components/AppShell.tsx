@@ -7,6 +7,8 @@ import { Menu, Search, Moon, Sun } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import { CommandPalette } from "@/components/CommandPalette";
+import { NotificationsBell } from "@/components/NotificationsBell";
+import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { AutonomyDaemon } from "@/components/anticipation/AutonomyDaemon";
 import { MonitorDaemon } from "@/components/monitor/MonitorDaemon";
 import { useTheme, applyTheme } from "@/lib/theme";
@@ -57,6 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Image src={zeroMark} alt="ZERO AGENCY" width={24} height={24} className="h-6 w-6 shrink-0 rounded-md" />
           <span className="text-sm font-semibold tracking-wide text-ink">ZERO AGENCY</span>
           <div className="ml-auto flex items-center gap-1">
+            <NotificationsBell />
             <button
               onClick={() => openPalette(true)}
               className="rounded-md p-1.5 text-muted hover:bg-bg-subtle hover:text-ink"
@@ -83,6 +86,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Paleta de comandos global (⌘K / Ctrl+K) */}
       <CommandPalette />
+
+      {/* Centro de notificaciones */}
+      <NotificationsPanel />
 
       {/* Demonio de autonomía: ZERO actúa solo (con guardrails) */}
       <AutonomyDaemon />
