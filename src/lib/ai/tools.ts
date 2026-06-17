@@ -20,6 +20,12 @@ import { useMonitor, statusOf, uptime, avgLatency } from "@/lib/monitor/store";
 import { useMemory, searchMemory } from "@/lib/ai/memory";
 import { sendSlack } from "@/lib/connectors/slack";
 import { fireWebhooks } from "@/lib/connectors/webhooks";
+import {
+  useGoogleInsights,
+  searchConsoleSummary,
+  ga4Summary,
+  SEARCH_CONSOLE_SCOPE,
+} from "@/lib/connectors/googleInsights";
 import { resolveAnticipations } from "@/lib/anticipation/engine";
 import { templates } from "@/lib/data/templates";
 import type { Block } from "@/lib/types";
@@ -349,6 +355,12 @@ export const toolDeclarations = [
       properties: { message: { type: "string", description: "Mensaje/carga del evento." } },
       required: ["message"],
     },
+  },
+  {
+    name: "seo_status",
+    description:
+      "Métricas reales de SEO (Search Console: clics, impresiones, CTR, posición, top búsquedas) y tráfico (GA4: sesiones, usuarios, vistas) del sitio en los últimos 28 días. Requiere haber conectado Search Console/Analytics en /connectors.",
+    parameters: { type: "object", properties: {} },
   },
   {
     name: "site_status",
@@ -816,6 +828,28 @@ export async function runTool(name: string, args: any): Promise<unknown> {
       const n = await fireWebhooks("manual", { message });
       logActivity("system", `Evento enviado a ${n} webhook(s)`);
       return { delivered: n };
+    }
+    case "seo_status": {
+      const g = useConnectors.getState().google;
+      if (!googleTokenValid(g, SEARCH_CONSOLE_SCOPE)) {
+        return { error: "Search Console no está conectado. Conéctalo en /connectors (Search Console + Analytics)." };
+      }
+      const { scSite, gaProperty } = useGoogleInsights.getState();
+      const out: Record<string, unknown> = {};
+      try {
+        out.searchConsole = await searchConsoleSummary(g.accessToken, scSite.trim());
+      } catch (e) {
+        out.searchConsole = { error: (e as Error).message };
+      }
+      if (gaProperty.trim()) {
+        try {
+          out.analytics = await ga4Summary(g.accessToken, gaProperty.trim());
+        } catch (e) {
+          out.analytics = { error: (e as Error).message };
+        }
+      }
+      logActivity("system", "ZERO consultó SEO/Analytics");
+      return out;
     }
     case "site_status": {
       const sites = useMonitor.getState().sites;
