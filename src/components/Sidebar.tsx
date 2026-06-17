@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import zeroLogo from "@/brand/zero-logo-violet.png";
+import zeroMark from "@/brand/zero-mark.png";
 import { useWorkspace } from "@/lib/store";
 import { AGENCY_EMAIL } from "@/lib/data/emails";
 import type { WorkspacePage } from "@/lib/types";
@@ -56,7 +56,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r bg-sidebar">
       <div className="flex items-center gap-2.5 px-4 py-3.5">
-        <Image src={zeroLogo} alt="ZERO AGENCY" height={34} className="w-auto" priority />
+        <Image src={zeroMark} alt="ZERO AGENCY" width={32} height={32} className="h-8 w-8 shrink-0 rounded-lg" priority />
         <div className="leading-tight">
           <div className="text-sm font-semibold tracking-wide text-ink">ZERO AGENCY</div>
           <div className="text-[11px] text-muted">OS Omnicanal</div>
