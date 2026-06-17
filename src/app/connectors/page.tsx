@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Mail,
   HardDrive,
@@ -23,7 +23,9 @@ import {
   Home,
   CalendarDays,
   ShieldAlert,
+  Database,
 } from "lucide-react";
+import { exportBackup, restoreBackup, backupKeyCount } from "@/lib/backup";
 import { useAi } from "@/lib/ai/store";
 import { askAi, listModels, type GeminiModel } from "@/lib/ai/client";
 import {
@@ -111,8 +113,73 @@ export default function ConnectorsPage() {
         <GmailCard />
         <DriveCard />
         <CalendarCard />
+        <BackupCard />
       </div>
     </div>
+  );
+}
+
+/* ───────────────────────────── Datos y respaldo ───────────────────────────── */
+
+function BackupCard() {
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function onExport() {
+    setErr("");
+    setMsg("");
+    try {
+      exportBackup();
+      setMsg(`Respaldo descargado (${backupKeyCount()} secciones).`);
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  }
+
+  async function onImport(file: File) {
+    setErr("");
+    setMsg("");
+    try {
+      const n = restoreBackup(await file.text());
+      setMsg(`Restauradas ${n} secciones. Recargando…`);
+      setTimeout(() => location.reload(), 900);
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  }
+
+  return (
+    <Shell
+      icon={<Database size={22} />}
+      title="Datos y respaldo"
+      desc="Exporta o importa todo tu Zero Agency OS (workspace, memoria de ZERO, conectores y ajustes). Útil para mover tus datos entre dominios o navegadores: el estado vive en este dispositivo."
+      connected={false}
+    >
+      <div className="flex flex-wrap gap-2">
+        <Btn onClick={onExport}>Exportar datos</Btn>
+        <Btn variant="ghost" onClick={() => fileRef.current?.click()}>
+          Importar datos
+        </Btn>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onImport(f);
+            e.target.value = "";
+          }}
+        />
+      </div>
+      {msg && <p className="mt-2 text-xs text-emerald-600">{msg}</p>}
+      <ErrorMsg msg={err} />
+      <p className="mt-2 text-[11px] text-muted">
+        Importar sobrescribe las secciones presentes en el archivo. La API key/credenciales también
+        se incluyen: comparte el respaldo con cuidado.
+      </p>
+    </Shell>
   );
 }
 
