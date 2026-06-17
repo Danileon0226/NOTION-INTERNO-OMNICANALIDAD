@@ -41,7 +41,7 @@ export function PageClient({ id }: { id: string }) {
 
   if (!page) {
     return (
-      <div className="mx-auto max-w-3xl px-12 py-16 text-muted">
+      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-8 lg:px-12 text-muted">
         Página no encontrada.{" "}
         <button onClick={() => router.push("/dashboard")} className="text-accent underline">
           Volver al dashboard
@@ -56,7 +56,7 @@ export function PageClient({ id }: { id: string }) {
     page.blocks.length === 1 && page.blocks[0].type === "text" && page.blocks[0].content === "";
 
   return (
-    <div className="mx-auto max-w-3xl px-12 py-12">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
       {trail.length > 0 && (
         <nav className="mb-3 flex flex-wrap items-center gap-1 text-xs text-muted">
           {trail.map((a) => (
@@ -74,7 +74,7 @@ export function PageClient({ id }: { id: string }) {
         <div className="relative">
           <button
             onClick={() => setShowPicker((v) => !v)}
-            className="rounded-md p-1 text-4xl hover:bg-bg-subtle"
+            className="rounded-md p-1 text-3xl sm:text-4xl hover:bg-bg-subtle"
           >
             {page.icon}
           </button>
@@ -126,7 +126,7 @@ export function PageClient({ id }: { id: string }) {
         value={page.title}
         onChange={(e) => updatePageMeta(page.id, { title: e.target.value })}
         placeholder="Página sin título"
-        className="mb-4 w-full bg-transparent text-4xl font-bold text-ink outline-none placeholder:text-muted/40"
+        className="mb-4 w-full bg-transparent text-3xl sm:text-4xl font-bold text-ink outline-none placeholder:text-muted/40"
       />
 
       {(showTemplates || isEmpty) && (

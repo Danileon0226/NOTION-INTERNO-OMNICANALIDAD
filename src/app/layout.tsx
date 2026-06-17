@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { Sidebar } from "@/components/Sidebar";
+import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = {
   title: "Zero Agency OS · Notion Interno Omnicanal",
@@ -8,14 +8,17 @@ export const metadata: Metadata = {
     "Plataforma interna tipo Notion con dashboard alimentado por el correo de la agencia e integraciones omnicanal (Gmail, Drive, GitHub, Telegram).",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
       <body>
-        <div className="flex h-screen w-screen overflow-hidden">
-          <Sidebar />
-          <main className="flex-1 overflow-y-auto bg-bg">{children}</main>
-        </div>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

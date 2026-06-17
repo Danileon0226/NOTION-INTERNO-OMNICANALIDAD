@@ -161,8 +161,8 @@ export default function CanvasPage() {
   const total = SRCS.reduce((a, s) => a + counts[s], 0);
 
   return (
-    <div className="mx-auto max-w-6xl px-8 py-8">
-      <header className="mb-6 flex items-end justify-between">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
+      <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-ink">
             <Activity size={22} className="text-accent" /> Canvas de datos en tiempo real

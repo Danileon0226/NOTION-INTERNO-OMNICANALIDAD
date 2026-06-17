@@ -441,7 +441,7 @@ function RowActions({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="relative flex w-5 shrink-0 items-center justify-center pt-1.5 opacity-0 transition group-hover:opacity-100">
+    <div className="relative flex w-5 shrink-0 items-center justify-center pt-1.5 opacity-40 transition lg:opacity-0 lg:group-hover:opacity-100">
       <button
         onClick={() => setOpen((v) => !v)}
         draggable

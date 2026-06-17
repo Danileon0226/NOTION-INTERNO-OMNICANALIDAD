@@ -22,7 +22,7 @@ export default function InboxPage() {
   const filtered = filter === "all" ? emails : emails.filter((e) => e.category === filter);
 
   return (
-    <div className="mx-auto max-w-4xl px-8 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-8">
       <header className="mb-5">
         <h1 className="text-2xl font-bold text-ink">Bandeja unificada</h1>
         <p className="mt-1 text-sm text-muted">Correo de la agencia clasificado por categoría.</p>
