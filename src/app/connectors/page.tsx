@@ -536,6 +536,17 @@ function useGoogleConnect() {
     if (googleTokenValid(google, scope)) return google.accessToken;
     const clientId = (google.clientId || GOOGLE_CLIENT_ID).trim();
     if (!clientId) throw new Error("Falta el Google OAuth Client ID (configúralo en Vercel: NEXT_PUBLIC_GOOGLE_CLIENT_ID).");
+    // Atajo a errores comunes: confundir la API key de Gemini con el Client ID.
+    if (/^AIza|^AQ\./.test(clientId)) {
+      throw new Error(
+        "Eso parece la API key de Gemini, no el Client ID de OAuth. El Client ID termina en '.apps.googleusercontent.com' y se crea en Google Cloud Console → Credenciales → ID de cliente de OAuth (tipo Aplicación web)."
+      );
+    }
+    if (!clientId.endsWith(".apps.googleusercontent.com")) {
+      throw new Error(
+        "El Client ID no tiene el formato correcto: debe terminar en '.apps.googleusercontent.com'. Créalo en Google Cloud Console → Credenciales → ID de cliente de OAuth (Aplicación web) y añade este dominio en 'Orígenes de JavaScript autorizados'."
+      );
+    }
     const wanted = Array.from(new Set([...google.scopes, ...GOOGLE_SCOPES, scope]));
     const tok = await requestGoogleToken(clientId, wanted);
     setGoogle({
@@ -590,10 +601,17 @@ function GmailCard() {
         onChange={(v) => setGoogle({ clientId: v })}
         placeholder="xxxxx.apps.googleusercontent.com"
       />
-      <p className="mt-1 text-[11px] text-muted">
-        Crea un Client ID de tipo &quot;Web&quot; en Google Cloud Console y añade este origen a
-        &quot;Authorized JavaScript origins&quot;.
-      </p>
+      {google.clientId && !google.clientId.trim().endsWith(".apps.googleusercontent.com") ? (
+        <p className="mt-1 text-[11px] font-medium text-amber-600">
+          ⚠️ Esto no parece un Client ID de OAuth (debe terminar en &quot;.apps.googleusercontent.com&quot;).
+          Ojo: la API key de Gemini (AIza…/AQ.…) va en la tarjeta de Asistente IA, no aquí.
+        </p>
+      ) : (
+        <p className="mt-1 text-[11px] text-muted">
+          Crea un Client ID de tipo &quot;Web&quot; en Google Cloud Console y añade este origen a
+          &quot;Authorized JavaScript origins&quot;.
+        </p>
+      )}
       <div className="mt-3 flex gap-2">
         <Btn onClick={connect} busy={busy}>
           {connected ? "Sincronizar bandeja" : "Conectar con Google"}
