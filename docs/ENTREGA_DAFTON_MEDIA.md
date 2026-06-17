@@ -40,14 +40,12 @@ La certificación completa está en [`docs/GOBIERNO_DE_DATOS.md`](./GOBIERNO_DE_
 Estado de los controles:
 
 - ✅ Working tree (rama de entrega) sin PII real (datos de demo anonimizados, dominios `.example`).
+- ✅ Historial de git purgado (un único commit limpio `b1943eb`, sin PII real alcanzable).
 - ✅ Credenciales fuera de control de versiones (`.env.local`).
 - ✅ Acceso a fuentes reales bajo OAuth y principio de menor privilegio.
 - ✅ Anonimización por defecto y minimización de datos.
 - ✅ Pipeline auditable y reproducible (infra como código).
-- ⚠️ **Hallazgo abierto:** el historial de git contiene PII real previa; remediación (purga de
-  historial vía `push --force`) definida en la sección 8.1 de la certificación, **pendiente de
-  autorización del titular**. Hasta su ejecución, el repo no debe publicarse ni entregarse a
-  terceros fuera de este canal.
+- ✅ **Sin hallazgos abiertos** — remediación de historial ejecutada con autorización del titular.
 
 ---
 

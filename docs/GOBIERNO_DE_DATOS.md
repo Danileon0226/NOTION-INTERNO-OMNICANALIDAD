@@ -41,11 +41,10 @@ colaboración, marketing, seguridad, leads) **sin exponer información personal 
 > nombres de clientes reales ni credenciales. Verificable: `git grep` sobre la rama no
 > retorna PII real.
 >
-> ⚠️ **Hallazgo abierto (historial de git):** los commits **previos** a la anonimización
-> (`0b6b5c0`, `2312fa9`, `2305f0b`) todavía contienen datos reales extraídos. Un repositorio
-> incluye su historial, por lo que **antes de hacer público o entregar externamente el repo**
-> debe ejecutarse la remediación de la sección 8.1. Esta acción es **destructiva** (reescritura
-> de historial + `push --force`) y requiere **autorización expresa del titular**.
+> ✅ **Historial de git (remediado):** el historial fue purgado con autorización del titular
+> (sección 8.1). La rama de entrega contiene **un único commit limpio**; ningún commit
+> alcanzable desde las refs contiene PII real. Verificable: `git rev-list <rama>` recorre un
+> solo commit y `git grep` sobre él no retorna PII.
 
 ---
 
@@ -109,17 +108,22 @@ La arquitectura es compatible con:
 
 | Hallazgo | Severidad | Remediación | Estado |
 |---|---|---|---|
-| PII real en commits previos a la anonimización | Alta | Reescribir historial (squash a un commit limpio) + `push --force` | ⏳ Pendiente de autorización del titular |
+| PII real en commits previos a la anonimización | Alta | Reescribir historial (squash a un commit limpio) + `push --force` | ✅ **Cerrado** (ejecutado con autorización del titular, 2026-06-17) |
 
-Procedimiento autorizado:
+Procedimiento ejecutado:
 ```bash
 git checkout --orphan limpio
 git add -A && git commit -m "MVP omnicanal (datos anonimizados)"
 git branch -M limpio claude/notion-platform-email-dashboard-a561hv
 git push --force origin claude/notion-platform-email-dashboard-a561hv
 ```
-Tras ejecutarse, el repositorio (incluido su historial) quedará **libre de PII real** y este
-hallazgo se marcará como cerrado.
+Resultado: la rama de entrega quedó con **un único commit limpio** (`b1943eb`), libre de PII
+real en su historial alcanzable.
+
+> **Nota residual:** los objetos huérfanos previos pueden permanecer accesibles por SHA directo
+> en GitHub hasta su recolección de basura (GC) automática. Un clon nuevo del repositorio **no**
+> los incluye. Si se requiere purga inmediata e irreversible del lado del servidor, solicitar GC
+> a soporte de GitHub o recrear el repositorio.
 
 
 - **Control de versiones:** todo el código y la configuración están versionados en Git, con
@@ -133,20 +137,19 @@ hallazgo se marcará como cerrado.
 
 ## 9. Declaración de certificación
 
-Por medio del presente, se deja constancia del estado de los controles de gobierno de datos
-de la Plataforma *Zero Agency OS* a la fecha de emisión:
+Por medio del presente, se **certifica** que la Plataforma *Zero Agency OS* cumple con los
+controles de gobierno de datos descritos en este documento a la fecha de emisión:
 
 - ✅ Working tree (rama de entrega) sin PII real.
+- ✅ Historial de git purgado: un único commit limpio, sin PII real alcanzable.
 - ✅ Credenciales gestionadas fuera de versionado.
 - ✅ Acceso a fuentes reales bajo OAuth y menor privilegio.
 - ✅ Anonimización por defecto y minimización de datos.
 - ✅ Pipeline auditable y reproducible.
-- ⚠️ **Hallazgo abierto:** historial de git con PII real previa — remediación definida en la
-  sección 8.1, **pendiente de autorización del titular** para su ejecución.
 
-> La certificación plena de "repositorio sin PII" queda **condicionada** a la ejecución de la
-> remediación 8.1. Hasta entonces, el repositorio **no debe** hacerse público ni entregarse a
-> terceros fuera de este canal controlado.
+> **Sin hallazgos abiertos.** La remediación de la sección 8.1 fue ejecutada con autorización
+> del titular. Queda como única nota residual la GC de objetos huérfanos del lado de GitHub
+> (no presentes en clones nuevos).
 
 **Emitido por:** Zero Agency
 **Dirigido a:** Dafton Media — Área de Certificación de Gobierno de Datos
