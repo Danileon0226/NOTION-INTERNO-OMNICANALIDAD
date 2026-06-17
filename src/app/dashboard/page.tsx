@@ -25,6 +25,7 @@ import { useConnectors, googleTokenValid, GMAIL_SCOPE, DRIVE_SCOPE, CALENDAR_SCO
 import { gmailProfile, gmailFetchInbox } from "@/lib/connectors/google";
 import { connectGoogle } from "@/lib/connectors/googleConnect";
 import { AnticipationPanel } from "@/components/anticipation/AnticipationPanel";
+import { SystemHealthPanel } from "@/components/SystemHealthPanel";
 
 export default function DashboardPage() {
   const [data, setData] = useState<EmailsData | null>(null);
@@ -159,6 +160,11 @@ export default function DashboardPage() {
       {err && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{err}</div>
       )}
+
+      {/* Estado del sistema (torre de control) */}
+      <div className="mb-5">
+        <SystemHealthPanel />
+      </div>
 
       {/* Accesos rápidos (navegación de un toque, mobile-first) */}
       <section className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
