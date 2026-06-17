@@ -15,6 +15,7 @@ import {
   ChevronDown,
   Mail,
   Search,
+  Activity,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -73,6 +74,9 @@ export function Sidebar() {
       <nav className="px-2">
         <NavLink href="/dashboard" active={pathname === "/dashboard"} icon={<LayoutDashboard size={16} />}>
           Dashboard
+        </NavLink>
+        <NavLink href="/canvas" active={pathname === "/canvas"} icon={<Activity size={16} />}>
+          Canvas / Grafo
         </NavLink>
         <NavLink href="/connectors" active={pathname === "/connectors"} icon={<Plug size={16} />}>
           Conectores
