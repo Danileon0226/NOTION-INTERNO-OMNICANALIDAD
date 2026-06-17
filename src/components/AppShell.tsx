@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Menu } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
-import zeroLogo from "@/brand/zero-logo-violet.png";
+import zeroMark from "@/brand/zero-mark.png";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <Menu size={20} />
           </button>
-          <Image src={zeroLogo} alt="ZERO AGENCY" height={24} className="w-auto" />
+          <Image src={zeroMark} alt="ZERO AGENCY" width={24} height={24} className="h-6 w-6 shrink-0 rounded-md" />
           <span className="text-sm font-semibold tracking-wide text-ink">ZERO AGENCY</span>
         </div>
 
