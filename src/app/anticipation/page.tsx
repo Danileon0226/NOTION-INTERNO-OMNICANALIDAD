@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Radar, ShieldCheck, History, Gauge, Bot, Zap, Play, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { AnticipationPanel } from "@/components/anticipation/AnticipationPanel";
 import { MaturityPanel } from "@/components/anticipation/MaturityPanel";
+import { TrustByCapability } from "@/components/anticipation/TrustByCapability";
 import { useAnticipation, anticipationMetrics, type TrustMode } from "@/lib/anticipation/store";
 import { useAutonomy, runAutonomyCycle, activateTotalAutonomy } from "@/lib/anticipation/autonomy";
 import { useAi } from "@/lib/ai/store";
@@ -179,6 +180,11 @@ export default function AnticipationPage() {
             </span>
           )}
         </div>
+      </div>
+
+      {/* Confianza por capacidad */}
+      <div className="mb-5">
+        <TrustByCapability />
       </div>
 
       {/* Métricas */}
