@@ -43,14 +43,34 @@ export interface GoogleToken {
 export async function requestGoogleToken(clientId: string, scopes: string[]): Promise<GoogleToken> {
   await loadGis();
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const done = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(watchdog);
+      fn();
+    };
+    // Si el popup no responde (origen no autorizado, bloqueo de pop-ups…),
+    // evita quedarse "conectando" para siempre.
+    const watchdog = setTimeout(() => {
+      done(() =>
+        reject(
+          new Error(
+            "El consentimiento de Google no respondió. Revisa: (1) que este dominio esté en 'Orígenes de JavaScript autorizados' de tu Client ID, y (2) que el navegador no bloquee ventanas emergentes."
+          )
+        )
+      );
+    }, 90_000);
+
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: scopes.join(" "),
       callback: (resp: any) => {
-        if (resp.error) return reject(new Error(resp.error_description || resp.error));
-        resolve({ access_token: resp.access_token, expires_in: resp.expires_in, scope: resp.scope });
+        if (resp.error) return done(() => reject(new Error(resp.error_description || resp.error)));
+        done(() => resolve({ access_token: resp.access_token, expires_in: resp.expires_in, scope: resp.scope }));
       },
-      error_callback: (err: any) => reject(new Error(err?.message || "OAuth cancelado")),
+      error_callback: (err: any) =>
+        done(() => reject(new Error(err?.message || "OAuth cancelado o bloqueado (revisa el origen autorizado)."))),
     });
     client.requestAccessToken({ prompt: "" });
   });
