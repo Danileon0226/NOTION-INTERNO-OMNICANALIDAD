@@ -1,77 +1,76 @@
 # Zero Agency OS · Notion Interno Omnicanal
 
-Plataforma interna tipo **Notion** para Zero Agency, con un **dashboard alimentado por el
-correo de la agencia** e integraciones omnicanal con **Gmail, Google Drive, GitHub y Telegram**.
+Plataforma interna tipo **Notion** para Zero Agency: un **workspace** con editor de bloques,
+un **dashboard alimentado en vivo por el correo de la agencia** e integraciones omnicanal con
+**Gmail, Google Drive, Google Calendar, GitHub y Telegram**, orquestadas por **ZERO**, el
+gestor de IA (Gemini) que anticipa, automatiza y monitorea.
+
+> **Sin datos de ejemplo.** Todo se alimenta en vivo desde tus conectores; nada sale del
+> navegador salvo a las APIs oficiales de cada servicio.
 
 ## ✨ Funcionalidades
 
-- **Workspace tipo Notion** — editor de bloques completo: encabezados, texto, listas de
-  tareas, viñetas, **listas numeradas, código, imágenes, citas, resaltados y divisores**.
-  **Menú slash (`/`)** flotante y filtrable, **atajos de Markdown** (`#`, `-`, `[]`, `>`,
-  ` ``` `), **acciones de bloque** (subir/bajar, duplicar, eliminar), **subpáginas anidadas**
-  con breadcrumbs, y **barra lateral con árbol de páginas y búsqueda**. Persistencia local.
-- **Bloques de conectores en vivo** — inserta con `/` bloques que muestran datos reales
-  dentro de tus páginas: **GitHub** (repos/PRs), **Gmail** (bandeja), **Google Drive**
-  (archivos) y **Telegram** (enviar alertas al equipo desde la propia nota).
-- **Dashboard de la agencia** — métricas en vivo derivadas del correo: no leídos, acciones
-  sugeridas por IA, prioridad alta y alertas de finanzas; desglose por categoría, lista de
-  acciones y estado de los conectores.
-- **Bandeja unificada** — correo clasificado por categoría (Finanzas, Colaboración,
-  Marketing, Seguridad, Leads, Comunidad, Producto) con acciones sugeridas.
-- **Conectores omnicanal** — tarjetas de integración para Gmail, Google Drive, GitHub y
-  Telegram, con estado, métricas y flujos de conexión (OAuth / token / webhook).
-
-La demo pública viene **sembrada con datos de ejemplo anonimizados** que representan el
-flujo típico de una agencia: alertas de facturación, carpetas compartidas de clientes,
-métricas SEO, alertas de seguridad y leads. En producción, el módulo de datos se reemplaza
-por la sincronización vía OAuth con la cuenta de Gmail real de la agencia.
+- **Workspace tipo Notion** — editor de bloques completo (encabezados, listas, tareas, código,
+  imágenes, citas, resaltados, divisores), **menú slash (`/`)**, **atajos de Markdown**,
+  acciones de bloque, **subpáginas anidadas**, plantillas y **exportar a Markdown**. Persistencia local.
+- **Dashboard de la agencia** — métricas en vivo del correo, accesos rápidos y estado de conectores.
+- **Anticipación** — motor de reglas que lee señales reales de tus conectores y propone las
+  próximas mejores acciones (NBA) con confianza, lead-time y explicabilidad. Escalera de
+  confianza `shadow → suggest → auto` con opt-out, feedback y auditoría.
+- **Autonomía** — demonio que ejecuta las anticipaciones por encima del umbral con guardrails
+  (tope por ciclo, cooldown, solo acciones reversibles).
+- **Monitoreo web** — vigila el sitio de la agencia (zeroagency.com.co): disponibilidad,
+  latencia y uptime; las caídas/lentitud se convierten en anticipaciones accionables.
+- **ZERO (voz)** — asistente estilo JARVIS (reconocimiento + síntesis de voz, voz configurable).
+- **Asistente IA + Piloto automático** — copiloto y rutinas que ZERO ejecuta con function calling.
+- **Canvas / Grafo** — visualización en tiempo real de lo que la IA integra (estilo Obsidian).
+- **Conectores omnicanal** — Gmail, Drive, Calendar (OAuth de un clic), GitHub y Telegram.
+- **PWA instalable**, **modo oscuro**, **paleta de comandos (⌘K)** y diseño **mobile-first**.
 
 ## 🧱 Stack
 
 - **Next.js 15** (App Router) + **React 19** + **TypeScript**
 - **Tailwind CSS v4**
-- **Zustand** (estado del workspace, persistido en `localStorage`)
+- **Zustand** (estado persistido en `localStorage`)
 - **lucide-react** (iconografía)
+- **Gemini** (REST, client-side) como motor de IA / function calling
+
+Arquitectura **100% client-side**: las credenciales viven solo en el navegador y las llamadas
+van directo a cada API. Compatible con **Vercel** (SSR) y **GitHub Pages** (export estático).
 
 ## 🚀 Desarrollo
 
 ```bash
 npm install
-npm run dev      # http://localhost:3000
-npm run build    # build de producción
+npm run dev                         # http://localhost:3000
+npm run build                       # build de producción (Vercel)
+NEXT_OUTPUT_EXPORT=true npm run build  # export estático (GitHub Pages)
 ```
 
 ## 🔌 Conectar datos reales
 
-La app **no usa datos de ejemplo**: todo se alimenta en vivo desde los conectores.
-
-1. Configura `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (Client ID OAuth de tipo Web) en Vercel o en
-   `.env.local`. Con eso, conectar Gmail + Drive + Calendar es de un solo clic.
-2. En **Conectores** conecta GitHub (token/usuario) y Telegram (bot token + chat id).
-3. El dashboard, la bandeja y el Canvas/Grafo se hidratan automáticamente desde esos
-   conectores. ZERO (Gemini) los orquesta con function calling.
+1. Configura `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (Client ID OAuth tipo Web) en Vercel o `.env.local`:
+   conectar Gmail + Drive + Calendar es de un solo clic.
+2. En **Conectores**: pega la API key de **Gemini**, conecta **GitHub** (usuario/token) y
+   **Telegram** (bot token + chat id).
+3. El dashboard, la bandeja, el calendario, Drive, el Canvas y la anticipación se hidratan
+   automáticamente desde esos conectores.
 
 ## 📁 Estructura
 
 ```
 src/
-├── app/
-│   ├── dashboard/        # dashboard principal
-│   ├── inbox/            # bandeja unificada clasificada
-│   ├── connectors/       # gestión de integraciones
-│   ├── pages/[id]/       # editor de páginas tipo Notion
-│   └── api/
-│       ├── emails/       # correos + métricas derivadas
-│       └── connectors/   # estado y flujos de conexión
-├── components/
-│   ├── Sidebar.tsx
-│   ├── editor/BlockEditor.tsx
-│   └── ...
+├── app/                 # rutas (dashboard, inbox, calendar, drive, monitor,
+│   │                    #         anticipation, autopilot, canvas, zero, connectors, pages)
+│   └── manifest.ts      # PWA
+├── components/          # Sidebar, AppShell, editor, anticipación, monitor, ...
 └── lib/
-    ├── types.ts
-    ├── store.ts          # store Zustand del workspace
-    ├── dashboard.ts      # cálculo de métricas
-    └── data/             # datos sembrados (emails, conectores, workspace)
+    ├── store.ts         # workspace (Zustand)
+    ├── connectors/      # Gmail/Drive/Calendar, GitHub, Telegram
+    ├── ai/              # agente Gemini + herramientas (function calling)
+    ├── anticipation/    # motor, gobernanza y autonomía
+    ├── monitor/         # monitoreo de sitios
+    └── data/            # configuración de UI, plantillas, página en blanco
 ```
 
 ---

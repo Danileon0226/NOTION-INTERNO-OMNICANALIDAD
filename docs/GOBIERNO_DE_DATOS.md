@@ -22,20 +22,19 @@ datos requerida por **Dafton Media**.
 
 | Categoría | Ejemplos | Sensibilidad | Tratamiento |
 |---|---|---|---|
-| **Datos de demostración** | Correos de ejemplo, métricas, conectores | Pública | Anonimizados, incluidos en el repositorio |
-| **Datos operativos (producción)** | Bandeja Gmail real, archivos Drive, repos GitHub | Confidencial | Solo vía OAuth en tiempo de ejecución; **nunca** persistidos en el repositorio |
+| **Datos operativos (producción)** | Bandeja Gmail real, archivos Drive, eventos Calendar, repos GitHub | Confidencial | Solo vía OAuth en tiempo de ejecución; **nunca** persistidos en el repositorio |
 | **Credenciales** | Tokens OAuth, `TELEGRAM_BOT_TOKEN`, `GITHUB_TOKEN` | Secreta | Variables de entorno (`.env.local`), fuera de control de versiones |
 | **Estado del workspace** | Páginas, bloques y notas del usuario | Interna | `localStorage` del navegador del usuario; no sale del dispositivo |
 
 ---
 
-## 3. Principio rector: minimización y anonimización
+## 3. Principio rector: minimización y datos en vivo
 
-La Plataforma se entrega con **datos de ejemplo anonimizados** (`src/lib/data/emails.ts`).
-Cualquier contenido derivado de bandejas reales fue reemplazado por registros ficticios
-(dominios `.example`) que representan el *flujo típico* de una agencia (facturación,
-colaboración, marketing, seguridad, leads) **sin exponer información personal identificable
-(PII)**.
+La Plataforma **no incluye datos de ejemplo**: toda la información operativa (correos,
+archivos, eventos, repos) se obtiene **en vivo vía OAuth en tiempo de ejecución** y **nunca**
+se persiste en el repositorio. El estado del workspace vive solo en el `localStorage` del
+navegador del usuario. Así se minimiza la superficie de datos y se evita exponer información
+personal identificable (PII) en el control de versiones.
 
 > ✅ **Estado actual (working tree):** el árbol de trabajo **no contiene** correos reales,
 > nombres de clientes reales ni credenciales. Verificable: `git grep` sobre la rama no
@@ -70,8 +69,8 @@ persistente del lado del servidor.
 - **Plantilla de configuración:** `.env.example` documenta las variables sin valores reales.
 - **Transporte cifrado:** todas las integraciones usan HTTPS/TLS hacia las APIs de Google,
   GitHub y Telegram.
-- **Sin backend con estado:** la demo es una exportación estática; no expone endpoints que
-  almacenen PII.
+- **Sin backend con estado:** la app es 100% client-side (SSR en Vercel o export estático);
+  no expone endpoints que almacenen PII.
 - **Aislamiento del estado del usuario:** las páginas del workspace viven en `localStorage`
   del cliente; no se transmiten a terceros.
 
@@ -130,8 +129,8 @@ real en su historial alcanzable.
   historial de commits firmados por el responsable.
 - **Pipeline reproducible:** el build (`npm run build`) y el despliegue están definidos como
   código (`.github/workflows/pages.yml`), auditables y reproducibles.
-- **Separación de entornos:** la demo usa datos anonimizados; producción se conecta a fuentes
-  reales solo mediante credenciales inyectadas en tiempo de ejecución.
+- **Datos en vivo:** la app se conecta a las fuentes reales solo mediante credenciales
+  inyectadas en tiempo de ejecución (OAuth/tokens); no se versiona ningún dato operativo.
 
 ---
 
