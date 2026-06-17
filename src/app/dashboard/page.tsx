@@ -93,8 +93,8 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl px-8 py-8">
-      <header className="mb-6 flex items-end justify-between">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
+      <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-ink">Dashboard de la agencia</h1>
           <p className="mt-1 flex items-center gap-2 text-sm text-muted">

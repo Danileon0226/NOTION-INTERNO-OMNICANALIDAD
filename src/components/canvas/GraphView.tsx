@@ -230,7 +230,7 @@ export function GraphView() {
     function resize() {
       const parent = canvas!.parentElement!;
       const w = parent.clientWidth;
-      const h = 460;
+      const h = w < 640 ? 340 : 460;
       sizeRef.current = { w, h };
       const dpr = window.devicePixelRatio || 1;
       canvas!.width = w * dpr;
@@ -368,13 +368,14 @@ export function GraphView() {
       }
       return best;
     }
-    function pos(ev: MouseEvent) {
+    function pos(ev: PointerEvent) {
       const rect = canvas!.getBoundingClientRect();
       return { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
     }
-    function onMove(ev: MouseEvent) {
+    function onMove(ev: PointerEvent) {
       const { x, y } = pos(ev);
       if (dragRef.current) {
+        ev.preventDefault();
         const n = nodesRef.current.get(dragRef.current);
         if (n) {
           n.x = x;
@@ -388,12 +389,19 @@ export function GraphView() {
       hoverRef.current = hit?.id ?? null;
       canvas!.style.cursor = hit ? "pointer" : "default";
     }
-    function onDown(ev: MouseEvent) {
+    function onDown(ev: PointerEvent) {
       const { x, y } = pos(ev);
       const hit = pick(x, y);
-      if (hit) dragRef.current = hit.id;
+      if (hit) {
+        dragRef.current = hit.id;
+        try {
+          canvas!.setPointerCapture(ev.pointerId);
+        } catch {
+          /* noop */
+        }
+      }
     }
-    function onUp(ev: MouseEvent) {
+    function onUp(ev: PointerEvent) {
       const id = dragRef.current;
       dragRef.current = null;
       if (!id) return;
@@ -404,16 +412,16 @@ export function GraphView() {
         router.push("/pages");
       }
     }
-    canvas.addEventListener("mousemove", onMove);
-    canvas.addEventListener("mousedown", onDown);
-    window.addEventListener("mouseup", onUp);
+    canvas.addEventListener("pointermove", onMove);
+    canvas.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointerup", onUp);
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
-      canvas.removeEventListener("mousemove", onMove);
-      canvas.removeEventListener("mousedown", onDown);
-      window.removeEventListener("mouseup", onUp);
+      canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointerup", onUp);
     };
   }, [router, setActivePage]);
 
@@ -467,7 +475,7 @@ export function GraphView() {
           Tu navegador no soporta acceso a carpetas. Usa Chrome o Edge (escritorio) para conectar la bóveda.
         </div>
       )}
-      <canvas ref={canvasRef} className="block w-full rounded-b-xl" />
+      <canvas ref={canvasRef} className="block w-full touch-none rounded-b-xl" />
     </div>
   );
 }

@@ -18,7 +18,7 @@ import {
   Activity,
 } from "lucide-react";
 
-export function Sidebar() {
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const pages = useWorkspace((s) => s.pages);
@@ -34,6 +34,7 @@ export function Sidebar() {
   function openPage(id: string) {
     setActivePage(id);
     router.push("/pages");
+    onNavigate?.();
   }
   function toggle(id: string) {
     setExpanded((prev) => {
@@ -72,16 +73,16 @@ export function Sidebar() {
       </div>
 
       <nav className="px-2">
-        <NavLink href="/dashboard" active={pathname === "/dashboard"} icon={<LayoutDashboard size={16} />}>
+        <NavLink href="/dashboard" active={pathname === "/dashboard"} icon={<LayoutDashboard size={16} />} onClick={onNavigate}>
           Dashboard
         </NavLink>
-        <NavLink href="/canvas" active={pathname === "/canvas"} icon={<Activity size={16} />}>
+        <NavLink href="/canvas" active={pathname === "/canvas"} icon={<Activity size={16} />} onClick={onNavigate}>
           Canvas / Grafo
         </NavLink>
-        <NavLink href="/connectors" active={pathname === "/connectors"} icon={<Plug size={16} />}>
+        <NavLink href="/connectors" active={pathname === "/connectors"} icon={<Plug size={16} />} onClick={onNavigate}>
           Conectores
         </NavLink>
-        <NavLink href="/inbox" active={pathname === "/inbox"} icon={<Mail size={16} />}>
+        <NavLink href="/inbox" active={pathname === "/inbox"} icon={<Mail size={16} />} onClick={onNavigate}>
           Bandeja
         </NavLink>
       </nav>
@@ -92,6 +93,7 @@ export function Sidebar() {
           onClick={() => {
             createPage(null);
             router.push("/pages");
+            onNavigate?.();
           }}
           className="rounded p-0.5 text-muted hover:bg-bg-subtle hover:text-ink"
           title="Nueva página"
@@ -257,15 +259,18 @@ function NavLink({
   active,
   icon,
   children,
+  onClick,
 }: {
   href: string;
   active: boolean;
   icon: React.ReactNode;
   children: React.ReactNode;
+  onClick?: () => void;
 }) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
         active ? "bg-bg-subtle font-medium text-ink" : "text-ink/80 hover:bg-bg-subtle"
       }`}
