@@ -1,0 +1,57 @@
+name: Deploy MVP a Vercel
+
+# Despliega la plataforma a Vercel desde los runners de GitHub.
+# Requisito único: añadir el secreto `VERCEL_TOKEN` en
+# Settings → Secrets and variables → Actions del repositorio.
+# (Genera el token en https://vercel.com/account/tokens con scope "Zero Agency").
+
+on:
+  workflow_dispatch:
+    inputs:
+      vercel_token:
+        description: "Token de Vercel (déjalo vacío si ya configuraste el secreto VERCEL_TOKEN)"
+        required: false
+        type: string
+
+concurrency:
+  group: vercel-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Deploy a producción
+        id: deploy
+        env:
+          TOKEN_SECRET: ${{ secrets.VERCEL_TOKEN }}
+          TOKEN_INPUT: ${{ github.event.inputs.vercel_token }}
+        run: |
+          TOKEN="${TOKEN_SECRET:-$TOKEN_INPUT}"
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Falta el token. Añade el secreto VERCEL_TOKEN o pásalo como input vercel_token."
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          URL=$(vercel deploy --prod --yes \
+            --token="$TOKEN" \
+            --scope=danis-projects-b2ee6899)
+          echo "Deployment URL: $URL"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Publicar URL del MVP
+        run: |
+          echo "## 🚀 MVP desplegado en Vercel" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**URL:** ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"

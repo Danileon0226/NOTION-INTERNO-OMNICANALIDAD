@@ -1,0 +1,75 @@
+import type { WorkspacePage } from "@/lib/types";
+
+const now = "2026-06-16T12:00:00Z";
+
+// Páginas iniciales del workspace tipo Notion (datos de ejemplo).
+export const seedPages: WorkspacePage[] = [
+  {
+    id: "page-onboarding",
+    title: "Bienvenido a Zero Agency OS",
+    icon: "🚀",
+    parentId: null,
+    createdAt: now,
+    updatedAt: now,
+    blocks: [
+      { id: "b1", type: "heading1", content: "Zero Agency OS" },
+      {
+        id: "b2",
+        type: "callout",
+        content:
+          "Tu plataforma interna omnicanal: documentos tipo Notion + un dashboard alimentado por el correo de la agencia e integraciones con Drive, GitHub y Telegram.",
+      },
+      { id: "b3", type: "heading2", content: "Cómo empezar" },
+      { id: "b4", type: "todo", content: "Revisar el Dashboard con el contexto de tu correo", checked: true },
+      { id: "b5", type: "todo", content: "Conectar Google Drive para montar las carpetas de clientes", checked: false },
+      { id: "b6", type: "todo", content: "Conectar GitHub para ver los repos de la agencia", checked: false },
+      { id: "b7", type: "todo", content: "Activar el bot de Telegram para alertas", checked: false },
+      { id: "b8", type: "divider", content: "" },
+      { id: "b9", type: "heading2", content: "Espacios de trabajo" },
+      { id: "b10", type: "bulleted", content: "Clientes — entregables y carpetas compartidas" },
+      { id: "b11", type: "bulleted", content: "Finanzas — facturación y suscripciones" },
+      { id: "b12", type: "bulleted", content: "Marketing — SEO, redes y campañas" },
+    ],
+  },
+  {
+    id: "page-clientes",
+    title: "Clientes",
+    icon: "🤝",
+    parentId: null,
+    createdAt: now,
+    updatedAt: now,
+    blocks: [
+      { id: "c1", type: "heading1", content: "Clientes activos" },
+      { id: "c2", type: "heading3", content: "Montaña Viva — Identidad & Campaña" },
+      { id: "c3", type: "text", content: "Carpeta compartida en Drive: 'Campaña Gráfica Q3' (vía Estudio Pixel)." },
+      { id: "c4", type: "todo", content: "Preparar 2 variantes adicionales del logotipo", checked: false },
+      { id: "c5", type: "todo", content: "Reasignar presupuesto de Meta Ads de la semana", checked: false },
+      { id: "c6", type: "heading3", content: "Tienda Aurora" },
+      { id: "c7", type: "text", content: "Tienda de e-commerce — crecimiento SEO de +32% este mes." },
+      { id: "c8", type: "todo", content: "⚠️ Resolver el pago fallido de la suscripción", checked: false },
+      { id: "c9", type: "heading3", content: "Cafetería del Parque (lead)" },
+      { id: "c10", type: "todo", content: "Agendar llamada de descubrimiento (branding + redes)", checked: false },
+    ],
+  },
+  {
+    id: "page-finanzas",
+    title: "Finanzas",
+    icon: "💰",
+    parentId: null,
+    createdAt: now,
+    updatedAt: now,
+    blocks: [
+      { id: "f1", type: "heading1", content: "Finanzas & Suscripciones" },
+      {
+        id: "f2",
+        type: "callout",
+        content: "⚠️ Tienda Aurora: pago de suscripción rechazado (25,00 USD). Próximo reintento el 18 de junio.",
+      },
+      { id: "f3", type: "heading3", content: "Pendientes de cobro" },
+      { id: "f4", type: "bulleted", content: "Montaña Viva — retainer mensual — 480 USD — factura #0142 por enviar" },
+      { id: "f5", type: "bulleted", content: "Cafetería del Parque — renovación de dominio — 30 de junio" },
+      { id: "f6", type: "todo", content: "Enviar factura #0142 del retainer de Montaña Viva", checked: false },
+      { id: "f7", type: "todo", content: "Actualizar método de pago de Tienda Aurora", checked: false },
+    ],
+  },
+];

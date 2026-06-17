@@ -1,0 +1,27 @@
+{
+  "name": "notion-interno-omnicanalidad",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma interna tipo Notion con omnicanalidad para Zero Agency: dashboard alimentado por el correo de la agencia e integraciones con Gmail, Google Drive, GitHub y Telegram.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "lucide-react": "^0.460.0",
+    "next": "15.1.6",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}
