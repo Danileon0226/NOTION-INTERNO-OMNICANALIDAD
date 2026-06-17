@@ -8,6 +8,7 @@ import zeroMark from "@/brand/zero-mark.png";
 import { useWorkspace } from "@/lib/store";
 import { useTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
+import { NotificationsBell } from "@/components/NotificationsBell";
 import { AGENCY_EMAIL } from "@/lib/data/emails";
 import type { WorkspacePage } from "@/lib/types";
 import {
@@ -97,6 +98,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <div className="text-sm font-semibold tracking-wide text-ink">ZERO AGENCY</div>
           <div className="text-[11px] text-muted">OS Omnicanal</div>
         </div>
+        <NotificationsBell className="ml-auto" />
       </div>
 
       {/* Comando global: descubrible (no solo ⌘K) */}

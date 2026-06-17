@@ -16,7 +16,7 @@ import {
 import { gmailSearch, calendarEvents } from "@/lib/connectors/google";
 import { ghFetchAll } from "@/lib/connectors/github";
 import { useWorkspace } from "@/lib/store";
-import { useMonitor, statusOf, latest, avgLatency } from "@/lib/monitor/store";
+import { useMonitor, statusOf, latest, avgLatency, uptime } from "@/lib/monitor/store";
 import { useAnticipation, type TrustMode } from "@/lib/anticipation/store";
 
 export interface Anticipation {
@@ -44,7 +44,11 @@ export interface Signals {
   calendar?: { soon: { summary: string; inHours: number }[] };
   github?: { openPRs: number; openIssues: number };
   workspace: { openTodos: number };
-  site?: { down: { label: string; url: string }[]; slow: { label: string; url: string; ms: number }[] };
+  site?: {
+    down: { label: string; url: string }[];
+    slow: { label: string; url: string; ms: number }[];
+    degraded: { label: string; url: string; up: number }[];
+  };
   missing: string[]; // conectores sin conectar (cold-start)
 }
 
@@ -87,6 +91,9 @@ export async function gatherSignals(): Promise<Signals> {
         slow: mon.sites
           .filter((s) => statusOf(s) === "slow")
           .map((s) => ({ label: s.label, url: s.url, ms: avgLatency(s) })),
+        degraded: mon.sites
+          .filter((s) => s.checks.length >= 5 && uptime(s) < 0.98 && statusOf(s) !== "down")
+          .map((s) => ({ label: s.label, url: s.url, up: Math.round(uptime(s) * 100) })),
       }
     : undefined;
 
@@ -222,6 +229,31 @@ function rules(s: Signals): Anticipation[] {
       suggestPrompt: `El sitio ${d.url} parece caído. Verifícalo con fetch_url; si confirmas la caída, redacta una alerta breve para el equipo (y envíala por Telegram si está conectado) y crea una nota de incidente con la hora y los siguientes pasos.`,
     });
   }
+  if (s.gmail && s.gmail.unread >= 10) {
+    out.push({
+      key: "gmail.triage",
+      type: "smart.defaults",
+      title: `${s.gmail.unread}+ correos sin leer`,
+      reason: "La bandeja acumula correos sin leer; conviene triagearlos.",
+      confidence: Math.min(0.55 + s.gmail.unread * 0.01, 0.8),
+      source: "gmail",
+      suggestPrompt:
+        "Revisa mis correos no leídos, agrúpalos por tema y dame un triage con qué responder hoy, qué delegar y qué archivar.",
+    });
+  }
+
+  for (const dg of s.site?.degraded ?? []) {
+    out.push({
+      key: `site.degraded.${dg.url}`,
+      type: "error.prevention",
+      title: `${dg.label}: uptime ${dg.up}%`,
+      reason: "La disponibilidad histórica cayó por debajo del umbral saludable.",
+      confidence: 0.75,
+      source: "system",
+      suggestPrompt: `El sitio ${dg.url} tuvo caídas recientes (uptime ${dg.up}%). Analiza el patrón y propón medidas para estabilizarlo.`,
+    });
+  }
+
   for (const sl of s.site?.slow ?? []) {
     out.push({
       key: `site.slow.${sl.url}`,
