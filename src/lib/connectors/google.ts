@@ -173,10 +173,29 @@ export interface DriveFile {
   owners?: { displayName: string; emailAddress: string }[];
 }
 
-export async function driveList(token: string, max = 12): Promise<DriveFile[]> {
-  const fields = "files(id,name,mimeType,modifiedTime,webViewLink,iconLink,shared,owners(displayName,emailAddress))";
+export interface DriveQuery {
+  /** Lista el contenido de una carpeta concreta. */
+  parentId?: string;
+  /** Búsqueda por nombre (name contains). */
+  query?: string;
+}
+
+export async function driveList(token: string, max = 12, opts: DriveQuery = {}): Promise<DriveFile[]> {
+  const clauses = ["trashed = false"];
+  if (opts.parentId) clauses.push(`'${opts.parentId}' in parents`);
+  if (opts.query) clauses.push(`name contains '${opts.query.replace(/'/g, "\\'")}'`);
+  const fields =
+    "files(id,name,mimeType,modifiedTime,webViewLink,iconLink,shared,owners(displayName,emailAddress))";
+  const params = new URLSearchParams({
+    pageSize: String(max),
+    q: clauses.join(" and "),
+    orderBy: "folder,modifiedTime desc",
+    fields,
+    supportsAllDrives: "true",
+    includeItemsFromAllDrives: "true",
+  });
   const data = await gapi<{ files: DriveFile[] }>(
-    `https://www.googleapis.com/drive/v3/files?pageSize=${max}&orderBy=modifiedTime desc&fields=${encodeURIComponent(fields)}`,
+    `https://www.googleapis.com/drive/v3/files?${params.toString()}`,
     token
   );
   return data.files ?? [];

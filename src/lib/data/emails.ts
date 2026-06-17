@@ -8,7 +8,10 @@ import type { EmailItem, EmailCategory } from "@/lib/types";
 //  la estructura es idéntica a la que devolvería esa integración.
 // ─────────────────────────────────────────────────────────────
 
-export const AGENCY_EMAIL = "equipo@zeroagency.example";
+// Correo de la agencia para mostrar en la UI. Configurable por entorno
+// (NEXT_PUBLIC_AGENCY_EMAIL) para no fijar datos reales en el repositorio.
+export const AGENCY_EMAIL =
+  process.env.NEXT_PUBLIC_AGENCY_EMAIL || "equipo@zeroagency.example";
 
 export const seedEmails: EmailItem[] = [
   {
