@@ -48,7 +48,9 @@ export default function MonitorPage() {
     try {
       const res = await runAgent(
         `Analiza el sitio web ${site.url}: léelo con fetch_url y dame un diagnóstico breve de contenido, mensajes clave y 3 mejoras de SEO/conversión accionables. Si no puedes leerlo, dilo.`,
-        []
+        [],
+        undefined,
+        "monitor"
       );
       setAnalysis({ id: site.id, text: res.text });
     } catch (e) {

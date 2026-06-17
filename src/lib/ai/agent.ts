@@ -7,6 +7,7 @@ import { useAi } from "@/lib/ai/store";
 import { geminiError } from "@/lib/ai/client";
 import { toolDeclarations, runTool } from "@/lib/ai/tools";
 import { useMemory, memoryContext } from "@/lib/ai/memory";
+import { useRuns } from "@/lib/ai/runs";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -63,11 +64,13 @@ export interface AgentResult {
 export async function runAgent(
   userText: string,
   history: ChatMsg[] = [],
-  onStep?: (s: AgentStep) => void
+  onStep?: (s: AgentStep) => void,
+  source = "agente"
 ): Promise<AgentResult> {
   const { apiKey, model, temperature } = useAi.getState();
   if (!apiKey) throw new Error("Falta la API key de Gemini. Configúrala en Conectores → Asistente IA.");
 
+  const started = Date.now();
   const contents: any[] = [
     ...history.map((h) => ({ role: h.role, parts: [{ text: h.text }] })),
     { role: "user", parts: [{ text: userText }] },
@@ -79,45 +82,57 @@ export async function runAgent(
   const mem = memoryContext(useMemory.getState().items);
   const system = mem ? `${SYSTEM}\n\n${mem}` : SYSTEM;
 
-  for (let i = 0; i < 6; i++) {
-    const res = await fetch(`${ENDPOINT}/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents,
-        tools,
-        generationConfig: { temperature },
-        systemInstruction: { parts: [{ text: system }] },
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw geminiError(data?.error?.message || `Gemini ${res.status}`);
+  // Registra la ejecución para trazabilidad agéntica (éxito o error).
+  const record = (text: string, ok: boolean) =>
+    useRuns.getState().push({ source, prompt: userText, steps, text, ok, ms: Date.now() - started });
 
-    const parts: any[] = data?.candidates?.[0]?.content?.parts ?? [];
-    const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall);
+  try {
+    for (let i = 0; i < 6; i++) {
+      const res = await fetch(`${ENDPOINT}/${model}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
+        body: JSON.stringify({
+          contents,
+          tools,
+          generationConfig: { temperature },
+          systemInstruction: { parts: [{ text: system }] },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw geminiError(data?.error?.message || `Gemini ${res.status}`);
 
-    if (!calls.length) {
-      const text = parts.map((p) => p.text ?? "").join("").trim();
-      return { text: text || "(sin respuesta)", steps };
-    }
+      const parts: any[] = data?.candidates?.[0]?.content?.parts ?? [];
+      const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall);
 
-    // Turno del modelo (con las llamadas) + respuestas de las herramientas.
-    contents.push({ role: "model", parts });
-    const responseParts: any[] = [];
-    for (const call of calls) {
-      const step: AgentStep = { tool: call.name, args: call.args || {} };
-      steps.push(step);
-      onStep?.(step);
-      let result: unknown;
-      try {
-        result = await runTool(call.name, call.args || {});
-      } catch (e) {
-        result = { error: (e as Error).message };
+      if (!calls.length) {
+        const text = parts.map((p) => p.text ?? "").join("").trim() || "(sin respuesta)";
+        record(text, true);
+        return { text, steps };
       }
-      responseParts.push({ functionResponse: { name: call.name, response: { result } } });
-    }
-    contents.push({ role: "user", parts: responseParts });
-  }
 
-  return { text: "No pude completar la tarea en los pasos disponibles.", steps };
+      // Turno del modelo (con las llamadas) + respuestas de las herramientas.
+      contents.push({ role: "model", parts });
+      const responseParts: any[] = [];
+      for (const call of calls) {
+        const step: AgentStep = { tool: call.name, args: call.args || {} };
+        steps.push(step);
+        onStep?.(step);
+        let result: unknown;
+        try {
+          result = await runTool(call.name, call.args || {});
+        } catch (e) {
+          result = { error: (e as Error).message };
+        }
+        responseParts.push({ functionResponse: { name: call.name, response: { result } } });
+      }
+      contents.push({ role: "user", parts: responseParts });
+    }
+
+    const text = "No pude completar la tarea en los pasos disponibles.";
+    record(text, false);
+    return { text, steps };
+  } catch (e) {
+    record(`⚠️ ${(e as Error).message}`, false);
+    throw e;
+  }
 }

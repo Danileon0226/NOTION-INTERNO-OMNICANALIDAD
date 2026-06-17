@@ -49,7 +49,7 @@ export function AnticipationPanel({ limit }: { limit?: number }) {
     setBusy(a.key);
     setResult(null);
     try {
-      const res = await runAgent(a.suggestPrompt, []);
+      const res = await runAgent(a.suggestPrompt, [], undefined, "anticipación");
       recordFeedback(a.key, a.type, "accepted");
       setResult({ key: a.key, text: res.text });
       setItems((prev) => prev.filter((x) => x.key !== a.key));

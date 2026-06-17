@@ -40,7 +40,7 @@ export function AssistantPanel() {
 
     try {
       // Gemini orquesta los conectores y ejecuta operaciones (function calling).
-      const res = await runAgent(question, prior);
+      const res = await runAgent(question, prior, undefined, "copiloto");
       setMessages((m) => [...m, { role: "model", text: res.text }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al consultar el asistente.");

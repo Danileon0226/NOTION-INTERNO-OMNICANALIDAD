@@ -28,9 +28,9 @@ export async function askAi(prompt: string, opts: AskAiOptions = {}): Promise<st
   const { apiKey, model, temperature } = useAi.getState();
   if (!apiKey) throw new Error("Falta la API key de Gemini. Pégala en Conectores → Asistente IA.");
   const m = opts.model || model;
-  const res = await fetch(`${ENDPOINT}/${m}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+  const res = await fetch(`${ENDPOINT}/${m}:generateContent`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: { temperature },
@@ -66,7 +66,7 @@ export interface GeminiModel {
 export async function listModels(): Promise<GeminiModel[]> {
   const { apiKey } = useAi.getState();
   if (!apiKey) throw new Error("Falta la API key de Gemini.");
-  const res = await fetch(`${ENDPOINT}?key=${encodeURIComponent(apiKey)}&pageSize=200`);
+  const res = await fetch(`${ENDPOINT}?pageSize=200`, { headers: { "X-goog-api-key": apiKey } });
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data?.error?.message || `Gemini ${res.status}`);
@@ -107,9 +107,9 @@ export async function chatAi(messages: ChatMessage[], opts: ChatAiOptions = {}):
   const m = opts.model || model;
   // El contexto del banco de datos se inyecta en la instrucción de sistema.
   const systemInstruction = [opts.system, opts.context].filter(Boolean).join("\n\n");
-  const res = await fetch(`${ENDPOINT}/${m}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+  const res = await fetch(`${ENDPOINT}/${m}:generateContent`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
     body: JSON.stringify({
       contents: messages.map((msg) => ({ role: msg.role, parts: [{ text: msg.text }] })),
       generationConfig: { temperature },

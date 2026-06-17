@@ -40,7 +40,7 @@ export default function AssistantPage() {
     setBusy(true);
     setLiveSteps([]);
     try {
-      const res = await runAgent(text, history, (s) => setLiveSteps((p) => [...p, s]));
+      const res = await runAgent(text, history, (s) => setLiveSteps((p) => [...p, s]), "asistente");
       setTurns((t) => [...t, { role: "model", text: res.text, steps: res.steps }]);
     } catch (e) {
       setTurns((t) => [...t, { role: "model", text: `⚠️ ${(e as Error).message}` }]);

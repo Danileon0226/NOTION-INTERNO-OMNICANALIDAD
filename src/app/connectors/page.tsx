@@ -953,6 +953,8 @@ function CalendarCard() {
 // o sin conexión). En cuanto la key funcione, la lista real los reemplaza.
 // Catálogo de modelos Gemini (respaldo cuando la key bloquea ListModels).
 const FALLBACK_MODELS = [
+  "gemini-flash-latest",
+  "gemini-pro-latest",
   "gemini-3.5-pro",
   "gemini-3.5-flash",
   "gemini-3-pro",
