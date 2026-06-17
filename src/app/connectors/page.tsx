@@ -26,10 +26,20 @@ import {
   Database,
   MessageSquare,
   Webhook,
+  LineChart,
 } from "lucide-react";
 import { exportBackup, restoreBackup, backupKeyCount } from "@/lib/backup";
 import { useSlack, sendSlack } from "@/lib/connectors/slack";
 import { useWebhooks, fireWebhooks, WEBHOOK_EVENTS, type WebhookEvent } from "@/lib/connectors/webhooks";
+import {
+  useGoogleInsights,
+  searchConsoleSummary,
+  ga4Summary,
+  SEARCH_CONSOLE_SCOPE,
+  ANALYTICS_SCOPE,
+  type ScSummary,
+  type GaSummary,
+} from "@/lib/connectors/googleInsights";
 import { useAi } from "@/lib/ai/store";
 import { askAi, listModels, type GeminiModel } from "@/lib/ai/client";
 import {
@@ -117,10 +127,98 @@ export default function ConnectorsPage() {
         <GmailCard />
         <DriveCard />
         <CalendarCard />
+        <InsightsCard />
         <SlackCard />
         <WebhooksCard />
         <BackupCard />
       </div>
+    </div>
+  );
+}
+
+/* ──────────────────── Search Console + Analytics ──────────────────── */
+
+function InsightsCard() {
+  const { google, ensureToken } = useGoogleConnect();
+  const { scSite, gaProperty, setScSite, setGaProperty } = useGoogleInsights();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [sc, setSc] = useState<ScSummary | null>(null);
+  const [ga, setGa] = useState<GaSummary | null>(null);
+  const connected = googleTokenValid(google, SEARCH_CONSOLE_SCOPE);
+
+  async function load() {
+    setErr("");
+    setBusy(true);
+    try {
+      const wanted = gaProperty.trim() ? [SEARCH_CONSOLE_SCOPE, ANALYTICS_SCOPE] : [SEARCH_CONSOLE_SCOPE];
+      const token = await ensureToken(wanted);
+      const tasks: Promise<unknown>[] = [searchConsoleSummary(token, scSite.trim()).then(setSc)];
+      if (gaProperty.trim()) tasks.push(ga4Summary(token, gaProperty.trim()).then(setGa));
+      await Promise.all(tasks);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Shell
+      icon={<LineChart size={22} />}
+      title="Search Console + Analytics"
+      desc="SEO (clics, impresiones, posición) y tráfico (sesiones, usuarios) reales de tu sitio. Requiere habilitar Search Console API y Analytics Data API en tu proyecto."
+      connected={connected}
+      docsUrl="https://search.google.com/search-console"
+    >
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Field label="Propiedad de Search Console" value={scSite} onChange={setScSite} placeholder="sc-domain:zeroagency.com.co" />
+        <Field label="GA4 Property ID (opcional)" value={gaProperty} onChange={setGaProperty} placeholder="123456789" />
+      </div>
+      <div className="mt-3">
+        <Btn onClick={load} busy={busy} disabled={!scSite.trim()}>
+          {connected ? "Actualizar" : "Conectar y analizar"}
+        </Btn>
+      </div>
+      <ErrorMsg msg={err} />
+
+      {sc && (
+        <div className="mt-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Mini label="Clics (28d)" value={sc.clicks.toLocaleString("es-CO")} />
+            <Mini label="Impresiones" value={sc.impressions.toLocaleString("es-CO")} />
+            <Mini label="CTR" value={`${(sc.ctr * 100).toFixed(1)}%`} />
+            <Mini label="Posición" value={sc.position.toFixed(1)} />
+          </div>
+          {sc.topQueries.length > 0 && (
+            <div className="mt-2 rounded-lg border bg-bg-subtle p-2 text-xs">
+              <div className="mb-1 font-medium text-muted">Top búsquedas</div>
+              {sc.topQueries.map((q) => (
+                <div key={q.query} className="flex justify-between py-0.5">
+                  <span className="truncate text-ink">{q.query}</span>
+                  <span className="shrink-0 text-muted">{q.clicks} clics</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {ga && (
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          <Mini label="Sesiones (28d)" value={ga.sessions.toLocaleString("es-CO")} />
+          <Mini label="Usuarios" value={ga.users.toLocaleString("es-CO")} />
+          <Mini label="Vistas" value={ga.views.toLocaleString("es-CO")} />
+        </div>
+      )}
+    </Shell>
+  );
+}
+
+function Mini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border bg-card p-2.5">
+      <div className="text-[10px] uppercase tracking-wide text-muted">{label}</div>
+      <div className="mt-0.5 text-lg font-bold tabular-nums text-ink">{value}</div>
     </div>
   );
 }
@@ -744,9 +842,10 @@ function useGoogleConnect() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Pide SIEMPRE los tres scopes: un clic conecta Gmail + Drive + Calendar.
-  async function ensureToken(scope: string): Promise<string> {
-    if (googleTokenValid(google, scope)) return google.accessToken;
+  // Pide SIEMPRE los tres scopes base; acepta scopes extra (Search Console, GA…).
+  async function ensureToken(scope: string | string[]): Promise<string> {
+    const scopeArr = Array.isArray(scope) ? scope : [scope];
+    if (scopeArr.every((s) => googleTokenValid(google, s))) return google.accessToken;
     const clientId = (google.clientId || GOOGLE_CLIENT_ID).trim();
     if (!clientId) throw new Error("Falta el Google OAuth Client ID (configúralo en Vercel: NEXT_PUBLIC_GOOGLE_CLIENT_ID).");
     // Atajo a errores comunes: confundir la API key de Gemini con el Client ID.
@@ -760,7 +859,7 @@ function useGoogleConnect() {
         "El Client ID no tiene el formato correcto: debe terminar en '.apps.googleusercontent.com'. Créalo en Google Cloud Console → Credenciales → ID de cliente de OAuth (Aplicación web) y añade este dominio en 'Orígenes de JavaScript autorizados'."
       );
     }
-    const wanted = Array.from(new Set([...google.scopes, ...GOOGLE_SCOPES, scope]));
+    const wanted = Array.from(new Set([...google.scopes, ...GOOGLE_SCOPES, ...scopeArr]));
     const tok = await requestGoogleToken(clientId, wanted);
     setGoogle({
       clientId,
