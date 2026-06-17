@@ -6,6 +6,7 @@ import { resolveAnticipations } from "@/lib/anticipation/engine";
 import { useAnticipation } from "@/lib/anticipation/store";
 import { useAi } from "@/lib/ai/store";
 import { useActivity } from "@/lib/activity";
+import { fireWebhooks } from "@/lib/connectors/webhooks";
 import { runAgent } from "@/lib/ai/agent";
 
 // Nivel "Autónomo" del modelo de madurez: ZERO actúa solo, con guardrails.
@@ -113,6 +114,7 @@ export async function runAutonomyCycle(): Promise<number> {
           ok: true,
           result: r.text.slice(0, 600),
         });
+        void fireWebhooks("autonomy", { title: a.title, type: a.type, result: r.text.slice(0, 400) });
       } catch (e) {
         useAutonomy.getState().pushLog({
           id: Math.random().toString(36).slice(2),
