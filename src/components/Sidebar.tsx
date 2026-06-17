@@ -16,6 +16,7 @@ import {
   Mail,
   Search,
   Activity,
+  Bot,
 } from "lucide-react";
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
@@ -75,6 +76,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="px-2">
         <NavLink href="/dashboard" active={pathname === "/dashboard"} icon={<LayoutDashboard size={16} />} onClick={onNavigate}>
           Dashboard
+        </NavLink>
+        <NavLink href="/assistant" active={pathname === "/assistant"} icon={<Bot size={16} />} onClick={onNavigate}>
+          Asistente IA
         </NavLink>
         <NavLink href="/canvas" active={pathname === "/canvas"} icon={<Activity size={16} />} onClick={onNavigate}>
           Canvas / Grafo
