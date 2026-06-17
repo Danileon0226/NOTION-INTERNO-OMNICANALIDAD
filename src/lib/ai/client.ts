@@ -25,7 +25,7 @@ export function geminiError(raw: string): Error {
 
 /** Envía un prompt a Gemini y devuelve el texto generado. */
 export async function askAi(prompt: string, opts: AskAiOptions = {}): Promise<string> {
-  const { apiKey, model } = useAi.getState();
+  const { apiKey, model, temperature } = useAi.getState();
   if (!apiKey) throw new Error("Falta la API key de Gemini. Pégala en Conectores → Asistente IA.");
   const m = opts.model || model;
   const res = await fetch(`${ENDPOINT}/${m}:generateContent?key=${encodeURIComponent(apiKey)}`, {
@@ -33,6 +33,7 @@ export async function askAi(prompt: string, opts: AskAiOptions = {}): Promise<st
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { temperature },
       ...(opts.system ? { systemInstruction: { parts: [{ text: opts.system }] } } : {}),
     }),
   });
@@ -101,7 +102,7 @@ export interface ChatAiOptions {
 
 /** Envía el historial de conversación + contexto y devuelve la respuesta. */
 export async function chatAi(messages: ChatMessage[], opts: ChatAiOptions = {}): Promise<string> {
-  const { apiKey, model } = useAi.getState();
+  const { apiKey, model, temperature } = useAi.getState();
   if (!apiKey) throw new Error("Falta la API key de Gemini. Pégala en Conectores → Asistente IA.");
   const m = opts.model || model;
   // El contexto del banco de datos se inyecta en la instrucción de sistema.
@@ -111,6 +112,7 @@ export async function chatAi(messages: ChatMessage[], opts: ChatAiOptions = {}):
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: messages.map((msg) => ({ role: msg.role, parts: [{ text: msg.text }] })),
+      generationConfig: { temperature },
       ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
     }),
   });

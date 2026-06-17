@@ -6,12 +6,14 @@ import { persist } from "zustand/middleware";
 interface AiState {
   apiKey: string;
   model: string;
+  temperature: number;
   // Perfil de voz JARVIS para ZERO.
   voiceURI: string;
   voiceRate: number;
   voicePitch: number;
   setApiKey: (k: string) => void;
   setModel: (m: string) => void;
+  setTemperature: (t: number) => void;
   setVoice: (v: { voiceURI?: string; voiceRate?: number; voicePitch?: number }) => void;
 }
 
@@ -22,11 +24,13 @@ export const useAi = create<AiState>()(
     (set) => ({
       apiKey: "",
       model: "gemini-2.5-flash",
+      temperature: 0.4,
       voiceURI: "",
       voiceRate: 0.97,
       voicePitch: 0.82,
       setApiKey: (apiKey) => set({ apiKey }),
       setModel: (model) => set({ model: model || "gemini-2.5-flash" }),
+      setTemperature: (temperature) => set({ temperature }),
       setVoice: (v) => set((s) => ({ ...s, ...v })),
     }),
     { name: "zero-agency-ai" }

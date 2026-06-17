@@ -802,7 +802,7 @@ function DriveCard() {
 /* ───────────────────────────── Gemini (IA) ───────────────────────────── */
 
 function GeminiCard() {
-  const { apiKey, model, setApiKey, setModel } = useAi();
+  const { apiKey, model, setApiKey, setModel, temperature, setTemperature } = useAi();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [reply, setReply] = useState("");
@@ -839,6 +839,22 @@ function GeminiCard() {
         />
         <ModelPicker value={model} onChange={setModel} hasKey={!!apiKey} />
       </div>
+      <label className="mt-3 block">
+        <span className="mb-1 flex items-center justify-between text-xs font-medium text-muted">
+          <span>Creatividad (temperature)</span>
+          <span className="tabular-nums">{temperature.toFixed(2)}</span>
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          value={temperature}
+          onChange={(e) => setTemperature(Number(e.target.value))}
+          className="w-full accent-accent"
+        />
+        <span className="text-[11px] text-muted">Baja = precisa y consistente · Alta = creativa</span>
+      </label>
       <div className="mt-3 flex gap-2">
         <Btn onClick={test} busy={busy} disabled={!apiKey}>
           Probar IA
@@ -937,6 +953,10 @@ function CalendarCard() {
 // o sin conexión). En cuanto la key funcione, la lista real los reemplaza.
 // Catálogo de modelos Gemini (respaldo cuando la key bloquea ListModels).
 const FALLBACK_MODELS = [
+  "gemini-3.5-pro",
+  "gemini-3.5-flash",
+  "gemini-3-pro",
+  "gemini-3-flash",
   "gemini-2.5-pro",
   "gemini-2.5-flash",
   "gemini-2.5-flash-lite",

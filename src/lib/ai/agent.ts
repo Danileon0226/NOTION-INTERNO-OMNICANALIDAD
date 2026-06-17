@@ -65,7 +65,7 @@ export async function runAgent(
   history: ChatMsg[] = [],
   onStep?: (s: AgentStep) => void
 ): Promise<AgentResult> {
-  const { apiKey, model } = useAi.getState();
+  const { apiKey, model, temperature } = useAi.getState();
   if (!apiKey) throw new Error("Falta la API key de Gemini. Configúrala en Conectores → Asistente IA.");
 
   const contents: any[] = [
@@ -86,6 +86,7 @@ export async function runAgent(
       body: JSON.stringify({
         contents,
         tools,
+        generationConfig: { temperature },
         systemInstruction: { parts: [{ text: system }] },
       }),
     });
