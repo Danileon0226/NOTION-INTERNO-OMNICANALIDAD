@@ -1,6 +1,6 @@
-name: Deploy demo a GitHub Pages
+name: Deploy a GitHub Pages
 
-# Despliega una demo estática del MVP en GitHub Pages.
+# Despliega la app estática en GitHub Pages.
 # No requiere ninguna credencial externa: usa el GITHUB_TOKEN interno.
 # La URL queda en la salida del job (entorno github-pages).
 

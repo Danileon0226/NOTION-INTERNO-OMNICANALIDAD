@@ -39,7 +39,7 @@ despliegue y la **certificación de gobierno de datos**.
 La certificación completa está en [`docs/GOBIERNO_DE_DATOS.md`](./GOBIERNO_DE_DATOS.md).
 Estado de los controles:
 
-- ✅ Working tree (rama de entrega) sin PII real (datos de demo anonimizados, dominios `.example`).
+- ✅ Working tree sin PII real ni datos operativos versionados (todo se obtiene en vivo vía OAuth).
 - ✅ Historial de git purgado (un único commit limpio `b1943eb`, sin PII real alcanzable).
 - ✅ Credenciales fuera de control de versiones (`.env.local`).
 - ✅ Acceso a fuentes reales bajo OAuth y principio de menor privilegio.
@@ -56,7 +56,7 @@ una URL pública requiere **una acción del titular** (no automatizable desde el
 desarrollo por políticas de red y de credenciales):
 
 - **GitHub Pages (gratuito):** hacer el repositorio público y ejecutar el workflow
-  `Deploy demo a GitHub Pages`.
+  `Deploy a GitHub Pages`.
 - **Vercel:** importar el repo en `vercel.com/new` (Next.js autodetectado) o proveer un
   `VERCEL_TOKEN`.
 
