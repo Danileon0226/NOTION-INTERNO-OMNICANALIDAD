@@ -16,6 +16,7 @@ import {
 import { gmailSearch, calendarEvents } from "@/lib/connectors/google";
 import { ghFetchAll } from "@/lib/connectors/github";
 import { useWorkspace } from "@/lib/store";
+import { useMonitor, statusOf, latest, avgLatency } from "@/lib/monitor/store";
 import { useAnticipation, type TrustMode } from "@/lib/anticipation/store";
 
 export interface Anticipation {
@@ -43,6 +44,7 @@ export interface Signals {
   calendar?: { soon: { summary: string; inHours: number }[] };
   github?: { openPRs: number; openIssues: number };
   workspace: { openTodos: number };
+  site?: { down: { label: string; url: string }[]; slow: { label: string; url: string; ms: number }[] };
   missing: string[]; // conectores sin conectar (cold-start)
 }
 
@@ -74,6 +76,19 @@ export async function gatherSignals(): Promise<Signals> {
     (n, p) => n + p.blocks.filter((b) => b.type === "todo" && !b.checked).length,
     0
   );
+
+  // Estado del monitoreo del sitio web (sin red: lee los últimos chequeos).
+  const mon = useMonitor.getState();
+  const site = mon.enabled
+    ? {
+        down: mon.sites
+          .filter((s) => statusOf(s) === "down" && latest(s))
+          .map((s) => ({ label: s.label, url: s.url })),
+        slow: mon.sites
+          .filter((s) => statusOf(s) === "slow")
+          .map((s) => ({ label: s.label, url: s.url, ms: avgLatency(s) })),
+      }
+    : undefined;
 
   const [gmail, calendar, github] = await Promise.all([
     gmailOk
@@ -109,7 +124,7 @@ export async function gatherSignals(): Promise<Signals> {
       : Promise.resolve(undefined),
   ]);
 
-  return { gmail, calendar, github, workspace: { openTodos }, missing };
+  return { gmail, calendar, github, workspace: { openTodos }, site, missing };
 }
 
 // ── N1 · Reglas deterministas ─────────────────────────────────
@@ -192,6 +207,30 @@ function rules(s: Signals): Anticipation[] {
       source: "ai",
       suggestPrompt:
         "Revisa las tareas pendientes (todos) de mis páginas y propón un plan priorizado para hoy con las 3 más importantes.",
+    });
+  }
+
+  for (const d of s.site?.down ?? []) {
+    out.push({
+      key: `site.down.${d.url}`,
+      type: "error.prevention",
+      title: `${d.label} no responde`,
+      reason: "La sonda de disponibilidad no obtuvo respuesta del sitio.",
+      confidence: 0.95,
+      leadTime: "ahora",
+      source: "system",
+      suggestPrompt: `El sitio ${d.url} parece caído. Verifícalo con fetch_url; si confirmas la caída, redacta una alerta breve para el equipo (y envíala por Telegram si está conectado) y crea una nota de incidente con la hora y los siguientes pasos.`,
+    });
+  }
+  for (const sl of s.site?.slow ?? []) {
+    out.push({
+      key: `site.slow.${sl.url}`,
+      type: "right.sizing",
+      title: `${sl.label} está lento (${sl.ms} ms)`,
+      reason: "Latencia por encima del umbral saludable en los últimos chequeos.",
+      confidence: 0.7,
+      source: "system",
+      suggestPrompt: `El sitio ${sl.url} responde lento (~${sl.ms} ms). Analiza posibles causas y propón optimizaciones de rendimiento priorizadas.`,
     });
   }
 

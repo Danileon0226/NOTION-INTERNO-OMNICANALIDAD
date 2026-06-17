@@ -135,6 +135,22 @@ h2 {
   transform-origin: top left;
 }
 
+/* Tarjetas interactivas: lift sutil al pasar el cursor (intencional, rápido) */
+.hover-lift {
+  transition:
+    transform 0.16s var(--ease-out),
+    box-shadow 0.18s var(--ease-out),
+    border-color 0.15s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px -8px color-mix(in srgb, var(--brand) 35%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+.hover-lift:active {
+  transform: translateY(0);
+}
+
 /* Respeta la preferencia de menos movimiento */
 @media (prefers-reduced-motion: reduce) {
   *,

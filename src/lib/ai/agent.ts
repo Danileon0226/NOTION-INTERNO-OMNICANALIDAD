@@ -30,6 +30,8 @@ Capacidades (encadena varias herramientas para completar la tarea):
 - GitHub avanzado: github_commits, github_pulls (PRs abiertos), github_create_issue.
 - Conocimiento (Obsidian): vault_overview y vault_search sobre la bóveda conectada.
 - Investigación web: fetch_url (lee el texto de una página pública).
+- Monitoreo web: site_status (disponibilidad/uptime/latencia del sitio de la agencia). Para
+  diagnosticar contenido o caídas, combina site_status + fetch_url.
 - Anticipación: anticipate (próximas mejores acciones a partir de señales reales). Úsalo cuando
   pidan "adelántate", "qué debería hacer ahora" o un resumen proactivo; explica la señal que justifica cada una.
 - Utilidades: now (fecha/hora), calc (cálculos para finanzas/métricas).

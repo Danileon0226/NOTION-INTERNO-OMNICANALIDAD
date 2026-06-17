@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import zeroMark from "@/brand/zero-mark.png";
 import { useWorkspace } from "@/lib/store";
 import { useTheme } from "@/lib/theme";
+import { useCommandPalette } from "@/lib/ui/commandPalette";
 import { AGENCY_EMAIL } from "@/lib/data/emails";
 import type { WorkspacePage } from "@/lib/types";
 import {
@@ -27,7 +28,38 @@ import {
   Moon,
   Sun,
   Radar,
+  Globe,
 } from "lucide-react";
+
+// Navegación agrupada por intención → más fácil de escanear.
+const NAV_GROUPS: { label: string; items: { href: string; label: string; icon: React.ReactNode }[] }[] = [
+  {
+    label: "Principal",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} /> },
+      { href: "/anticipation", label: "Anticipación", icon: <Radar size={16} /> },
+      { href: "/assistant", label: "Asistente IA", icon: <Bot size={16} /> },
+      { href: "/zero", label: "ZERO (voz)", icon: <Mic size={16} /> },
+    ],
+  },
+  {
+    label: "Datos",
+    items: [
+      { href: "/inbox", label: "Bandeja", icon: <Mail size={16} /> },
+      { href: "/calendar", label: "Calendario", icon: <Calendar size={16} /> },
+      { href: "/drive", label: "Drive", icon: <FolderOpen size={16} /> },
+      { href: "/canvas", label: "Canvas / Grafo", icon: <Activity size={16} /> },
+      { href: "/monitor", label: "Monitoreo web", icon: <Globe size={16} /> },
+    ],
+  },
+  {
+    label: "Automatización",
+    items: [
+      { href: "/autopilot", label: "Piloto automático", icon: <Rocket size={16} /> },
+      { href: "/connectors", label: "Conectores", icon: <Plug size={16} /> },
+    ],
+  },
+];
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -39,7 +71,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const createSubpage = useWorkspace((s) => s.createSubpage);
   const mode = useTheme((s) => s.mode);
   const toggleTheme = useTheme((s) => s.toggle);
-  const [query, setQuery] = useState("");
+  const openPalette = useCommandPalette((s) => s.setOpen);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const roots = pages.filter((p) => p.parentId === null);
@@ -57,10 +89,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     });
   }
 
-  const results = query
-    ? pages.filter((p) => p.title.toLowerCase().includes(query.toLowerCase()))
-    : [];
-
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r bg-sidebar">
       <div className="flex items-center gap-2.5 px-4 py-3.5">
@@ -71,49 +99,35 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
+      {/* Comando global: descubrible (no solo ⌘K) */}
       <div className="px-3 pb-2">
-        <div className="flex items-center gap-1.5 rounded-md border bg-card px-2 py-1">
-          <Search size={13} className="text-muted" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar páginas…"
-            className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted"
-          />
-        </div>
+        <button
+          onClick={() => openPalette(true)}
+          className="flex w-full items-center gap-2 rounded-lg border bg-card px-2.5 py-1.5 text-sm text-muted hover:border-accent/40 hover:text-ink"
+        >
+          <Search size={14} />
+          <span className="flex-1 text-left">Buscar o preguntar…</span>
+          <kbd className="rounded border px-1 py-0.5 text-[9px]">⌘K</kbd>
+        </button>
       </div>
 
-      <nav className="px-2">
-        <NavLink href="/dashboard" active={pathname === "/dashboard"} icon={<LayoutDashboard size={16} />} onClick={onNavigate}>
-          Dashboard
-        </NavLink>
-        <NavLink href="/assistant" active={pathname === "/assistant"} icon={<Bot size={16} />} onClick={onNavigate}>
-          Asistente IA
-        </NavLink>
-        <NavLink href="/zero" active={pathname === "/zero"} icon={<Mic size={16} />} onClick={onNavigate}>
-          ZERO (voz)
-        </NavLink>
-        <NavLink href="/autopilot" active={pathname === "/autopilot"} icon={<Rocket size={16} />} onClick={onNavigate}>
-          Piloto automático
-        </NavLink>
-        <NavLink href="/anticipation" active={pathname === "/anticipation"} icon={<Radar size={16} />} onClick={onNavigate}>
-          Anticipación
-        </NavLink>
-        <NavLink href="/canvas" active={pathname === "/canvas"} icon={<Activity size={16} />} onClick={onNavigate}>
-          Canvas / Grafo
-        </NavLink>
-        <NavLink href="/calendar" active={pathname === "/calendar"} icon={<Calendar size={16} />} onClick={onNavigate}>
-          Calendario
-        </NavLink>
-        <NavLink href="/drive" active={pathname === "/drive"} icon={<FolderOpen size={16} />} onClick={onNavigate}>
-          Drive
-        </NavLink>
-        <NavLink href="/inbox" active={pathname === "/inbox"} icon={<Mail size={16} />} onClick={onNavigate}>
-          Bandeja
-        </NavLink>
-        <NavLink href="/connectors" active={pathname === "/connectors"} icon={<Plug size={16} />} onClick={onNavigate}>
-          Conectores
-        </NavLink>
+      <nav className="space-y-3 px-2 pb-1">
+        {NAV_GROUPS.map((g) => (
+          <div key={g.label}>
+            <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted/70">{g.label}</p>
+            {g.items.map((it) => (
+              <NavLink
+                key={it.href}
+                href={it.href}
+                active={pathname === it.href}
+                icon={it.icon}
+                onClick={onNavigate}
+              >
+                {it.label}
+              </NavLink>
+            ))}
+          </div>
+        ))}
       </nav>
 
       <div className="mt-4 flex items-center justify-between px-4 py-1">
@@ -132,24 +146,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-4">
-        {query ? (
-          results.length ? (
-            results.map((p) => (
-              <Item
-                key={p.id}
-                page={p}
-                depth={0}
-                active={activePageId === p.id && pathname === "/pages"}
-                hasChildren={false}
-                isExpanded={false}
-                onOpen={() => openPage(p.id)}
-                onToggle={() => {}}
-                onAddChild={() => {}}
-              />
-            ))
-          ) : (
-            <p className="px-3 py-2 text-xs text-muted">Sin resultados.</p>
-          )
+        {roots.length === 0 ? (
+          <p className="px-3 py-2 text-xs text-muted">Sin páginas todavía.</p>
         ) : (
           roots.map((p) => (
             <Tree
@@ -312,11 +310,18 @@ function NavLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
-        active ? "bg-bg-subtle font-medium text-ink" : "text-ink/80 hover:bg-bg-subtle"
+      aria-current={active ? "page" : undefined}
+      className={`group relative flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
+        active ? "bg-accent/10 font-medium text-accent" : "text-ink/80 hover:bg-bg-subtle hover:text-ink"
       }`}
     >
-      <span className="text-muted">{icon}</span>
+      {/* Indicador de acento del activo (microinteracción sutil) */}
+      <span
+        className={`absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-accent transition-opacity ${
+          active ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      <span className={active ? "text-accent" : "text-muted group-hover:text-ink"}>{icon}</span>
       {children}
     </Link>
   );
