@@ -16,6 +16,7 @@ import { tgSendMessage, tgGetUpdates, tgGetMe, alertText } from "@/lib/connector
 import { useWorkspace } from "@/lib/store";
 import { useActivity, type ActivitySource } from "@/lib/activity";
 import { useVault } from "@/lib/obsidian";
+import { resolveAnticipations } from "@/lib/anticipation/engine";
 import { templates } from "@/lib/data/templates";
 import type { Block } from "@/lib/types";
 
@@ -290,6 +291,12 @@ export const toolDeclarations = [
       properties: { url: { type: "string", description: "URL https:// a leer." } },
       required: ["url"],
     },
+  },
+  {
+    name: "anticipate",
+    description:
+      "Motor de anticipación: lee señales reales de los conectores y devuelve las próximas mejores acciones (Next Best Actions) con su confianza y la señal que las justifica. Úsalo cuando el usuario pida 'adelántate', 'qué debería hacer', 'anticípate' o un resumen proactivo.",
+    parameters: { type: "object", properties: {} },
   },
 ];
 
@@ -738,6 +745,23 @@ export async function runTool(name: string, args: any): Promise<unknown> {
       } catch (e) {
         return { error: `No pude leer la URL (posible bloqueo CORS): ${(e as Error).message}` };
       }
+    }
+    case "anticipate": {
+      const res = await resolveAnticipations();
+      logActivity("ai", "Gemini ejecutó el motor de anticipación");
+      return {
+        signals: res.signals,
+        anticipations: res.visible.map((a) => ({
+          title: a.title,
+          type: a.type,
+          reason: a.reason,
+          confidence: Math.round(a.confidence * 100) / 100,
+          leadTime: a.leadTime,
+          mode: a.mode,
+          suggestedAction: a.suggestPrompt,
+        })),
+        inShadow: res.shadow,
+      };
     }
     default:
       return { error: `Herramienta desconocida: ${name}` };

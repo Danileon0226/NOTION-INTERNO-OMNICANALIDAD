@@ -20,6 +20,7 @@ import { emptyEmailsData, buildEmailsData, type EmailsData } from "@/lib/clientD
 import { useConnectors, googleTokenValid, GMAIL_SCOPE, DRIVE_SCOPE, CALENDAR_SCOPE } from "@/lib/connectors/store";
 import { gmailProfile, gmailFetchInbox } from "@/lib/connectors/google";
 import { connectGoogle } from "@/lib/connectors/googleConnect";
+import { AnticipationPanel } from "@/components/anticipation/AnticipationPanel";
 
 export default function DashboardPage() {
   const [data, setData] = useState<EmailsData | null>(null);
@@ -160,6 +161,11 @@ export default function DashboardPage() {
         {(data?.metrics ?? []).map((m) => (
           <MetricCard key={m.label} metric={m} />
         ))}
+      </section>
+
+      {/* Anticipación: ZERO se adelanta */}
+      <section className="mt-6">
+        <AnticipationPanel limit={4} />
       </section>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
