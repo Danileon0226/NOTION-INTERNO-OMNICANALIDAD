@@ -26,6 +26,7 @@ import { gmailProfile, gmailFetchInbox } from "@/lib/connectors/google";
 import { connectGoogle } from "@/lib/connectors/googleConnect";
 import { AnticipationPanel } from "@/components/anticipation/AnticipationPanel";
 import { SystemHealthPanel } from "@/components/SystemHealthPanel";
+import { DailyBriefing } from "@/components/DailyBriefing";
 
 export default function DashboardPage() {
   const [data, setData] = useState<EmailsData | null>(null);
@@ -160,6 +161,11 @@ export default function DashboardPage() {
       {err && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{err}</div>
       )}
+
+      {/* Briefing del día (capstone: ZERO reúne prioridades) */}
+      <div className="mb-5">
+        <DailyBriefing />
+      </div>
 
       {/* Estado del sistema (torre de control) */}
       <div className="mb-5">
