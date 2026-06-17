@@ -65,11 +65,29 @@ const NON_EDITABLE: BlockType[] = [
   "embed-telegram",
 ];
 
+interface Dnd {
+  dragId: string | null;
+  overId: string | null;
+  setDrag: (id: string | null) => void;
+  setOver: (id: string | null) => void;
+  reorder: (from: string, to: string) => void;
+}
+
 export function BlockEditor({ pageId, blocks }: { pageId: string; blocks: Block[] }) {
+  const reorderBlock = useWorkspace((s) => s.reorderBlock);
+  const [dragId, setDrag] = useState<string | null>(null);
+  const [overId, setOver] = useState<string | null>(null);
+  const dnd: Dnd = {
+    dragId,
+    overId,
+    setDrag,
+    setOver,
+    reorder: (from, to) => reorderBlock(pageId, from, to),
+  };
   return (
     <div className="space-y-0.5">
       {blocks.map((block, i) => (
-        <BlockRow key={block.id} pageId={pageId} block={block} index={i} blocks={blocks} />
+        <BlockRow key={block.id} pageId={pageId} block={block} index={i} blocks={blocks} dnd={dnd} />
       ))}
     </div>
   );
@@ -86,17 +104,34 @@ function BlockRow({
   block,
   index,
   blocks,
+  dnd,
 }: {
   pageId: string;
   block: Block;
   index: number;
   blocks: Block[];
+  dnd: Dnd;
 }) {
   const store = useWorkspace.getState();
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
   const [sel, setSel] = useState(0);
   const [slashClosed, setSlashClosed] = useState(false);
+
+  const dropProps = {
+    onDragOver: (e: React.DragEvent) => {
+      if (!dnd.dragId) return;
+      e.preventDefault();
+      if (dnd.overId !== block.id) dnd.setOver(block.id);
+    },
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      if (dnd.dragId && dnd.dragId !== block.id) dnd.reorder(dnd.dragId, block.id);
+      dnd.setDrag(null);
+      dnd.setOver(null);
+    },
+  };
+  const isOver = dnd.overId === block.id && !!dnd.dragId && dnd.dragId !== block.id;
 
   const content = block.content;
   const showSlash =
@@ -212,20 +247,27 @@ function BlockRow({
       onDown={() => store.moveBlock(pageId, block.id, 1)}
       onDup={() => store.duplicateBlock(pageId, block.id)}
       onDelete={() => store.deleteBlock(pageId, block.id)}
+      onDragStart={() => dnd.setDrag(block.id)}
+      onDragEnd={() => {
+        dnd.setDrag(null);
+        dnd.setOver(null);
+      }}
     />
   );
+
+  const rowProps = { actions, dropProps, isOver };
 
   // ── Bloques no editables ──────────────────────────────────
   if (block.type === "divider") {
     return (
-      <Row actions={actions}>
+      <Row {...rowProps}>
         <hr className="my-2 w-full border-t" />
       </Row>
     );
   }
   if (block.type === "image") {
     return (
-      <Row actions={actions}>
+      <Row {...rowProps}>
         {content ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={content} alt="" className="max-h-96 rounded-lg border object-contain" />
@@ -249,7 +291,7 @@ function BlockRow({
   if (block.type === "page") {
     const child = store.pages.find((p) => p.id === block.refId);
     return (
-      <Row actions={actions}>
+      <Row {...rowProps}>
         <button
           onClick={() => {
             if (!child) return;
@@ -269,14 +311,14 @@ function BlockRow({
   }
   if (block.type.startsWith("embed-")) {
     return (
-      <Row actions={actions}>
+      <Row {...rowProps}>
         <ConnectorEmbed type={block.type} />
       </Row>
     );
   }
   if (block.type === "code") {
     return (
-      <Row actions={actions}>
+      <Row {...rowProps}>
         <textarea
           id={`block-${block.id}`}
           value={content}
@@ -338,7 +380,7 @@ function BlockRow({
 
   if (block.type === "callout") {
     return (
-      <Row actions={actions} slash={showSlash ? <SlashMenu matches={matches} sel={sel} onPick={applyType} /> : null}>
+      <Row {...rowProps} slash={showSlash ? <SlashMenu matches={matches} sel={sel} onPick={applyType} /> : null}>
         <div className="flex w-full gap-2 rounded-md bg-bg-subtle p-3">
           <span className="select-none">💡</span>
           <div className="flex-1">{editable}</div>
@@ -348,7 +390,7 @@ function BlockRow({
   }
 
   return (
-    <Row actions={actions} slash={showSlash ? <SlashMenu matches={matches} sel={sel} onPick={applyType} /> : null}>
+    <Row {...rowProps} slash={showSlash ? <SlashMenu matches={matches} sel={sel} onPick={applyType} /> : null}>
       {prefix}
       <div className="flex-1">{editable}</div>
     </Row>
@@ -359,13 +401,22 @@ function Row({
   children,
   actions,
   slash,
+  dropProps,
+  isOver,
 }: {
   children: React.ReactNode;
   actions: React.ReactNode;
   slash?: React.ReactNode;
+  dropProps?: { onDragOver: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void };
+  isOver?: boolean;
 }) {
   return (
-    <div className="group relative flex items-start gap-1">
+    <div
+      {...dropProps}
+      className={`group relative flex items-start gap-1 rounded ${
+        isOver ? "border-t-2 border-accent" : "border-t-2 border-transparent"
+      }`}
+    >
       {actions}
       {children}
       {slash}
@@ -378,16 +429,27 @@ function RowActions({
   onDown,
   onDup,
   onDelete,
+  onDragStart,
+  onDragEnd,
 }: {
   onUp: () => void;
   onDown: () => void;
   onDup: () => void;
   onDelete: () => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative flex w-5 shrink-0 items-center justify-center pt-1.5 opacity-0 transition group-hover:opacity-100">
-      <button onClick={() => setOpen((v) => !v)} title="Acciones" className="text-muted hover:text-ink">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        draggable
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        title="Arrastra para mover · clic para acciones"
+        className="cursor-grab text-muted hover:text-ink active:cursor-grabbing"
+      >
         <GripVertical size={13} />
       </button>
       {open && (

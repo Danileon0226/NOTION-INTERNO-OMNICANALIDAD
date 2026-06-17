@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/store";
 import { BlockEditor } from "@/components/editor/BlockEditor";
-import { Trash2, Plus, ChevronRight, FilePlus2 } from "lucide-react";
+import { Trash2, Plus, ChevronRight, FilePlus2, Copy, LayoutTemplate } from "lucide-react";
 import type { WorkspacePage } from "@/lib/types";
+import { templates } from "@/lib/data/templates";
 
 const EMOJIS = ["📄", "🚀", "🤝", "💰", "📈", "🧠", "📋", "🎯", "🛠️", "🔔", "📦", "✨", "📊", "🗂️", "⚡", "🌐"];
 
@@ -18,7 +19,10 @@ export function PageClient({ id }: { id: string }) {
   const addBlock = useWorkspace((s) => s.addBlock);
   const createSubpage = useWorkspace((s) => s.createSubpage);
   const setActivePage = useWorkspace((s) => s.setActivePage);
+  const applyTemplate = useWorkspace((s) => s.applyTemplate);
+  const duplicatePage = useWorkspace((s) => s.duplicatePage);
   const [showPicker, setShowPicker] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   function open(pid: string) {
     setActivePage(pid);
@@ -48,6 +52,8 @@ export function PageClient({ id }: { id: string }) {
 
   const children = pages.filter((p) => p.parentId === page.id);
   const trail = ancestors(page);
+  const isEmpty =
+    page.blocks.length === 1 && page.blocks[0].type === "text" && page.blocks[0].content === "";
 
   return (
     <div className="mx-auto max-w-3xl px-12 py-12">
@@ -89,17 +95,31 @@ export function PageClient({ id }: { id: string }) {
             </div>
           )}
         </div>
-        <button
-          onClick={() => {
-            if (confirm("¿Eliminar esta página?")) {
-              deletePage(page.id);
-              router.push("/dashboard");
-            }
-          }}
-          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-bg-subtle hover:text-red-500"
-        >
-          <Trash2 size={13} /> Eliminar
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowTemplates((v) => !v)}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-bg-subtle hover:text-ink"
+          >
+            <LayoutTemplate size={13} /> Plantillas
+          </button>
+          <button
+            onClick={() => duplicatePage(page.id)}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-bg-subtle hover:text-ink"
+          >
+            <Copy size={13} /> Duplicar
+          </button>
+          <button
+            onClick={() => {
+              if (confirm("¿Eliminar esta página?")) {
+                deletePage(page.id);
+                router.push("/dashboard");
+              }
+            }}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted hover:bg-bg-subtle hover:text-red-500"
+          >
+            <Trash2 size={13} /> Eliminar
+          </button>
+        </div>
       </div>
 
       <input
@@ -108,6 +128,37 @@ export function PageClient({ id }: { id: string }) {
         placeholder="Página sin título"
         className="mb-4 w-full bg-transparent text-4xl font-bold text-ink outline-none placeholder:text-muted/40"
       />
+
+      {(showTemplates || isEmpty) && (
+        <div className="mb-4 rounded-xl border bg-bg-subtle/50 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+              <LayoutTemplate size={15} /> Empieza con una plantilla
+            </span>
+            {showTemplates && (
+              <button onClick={() => setShowTemplates(false)} className="text-xs text-muted hover:text-ink">
+                Cerrar
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+            {templates.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => {
+                  applyTemplate(page.id, t.blocks, { title: t.name, icon: t.icon });
+                  setShowTemplates(false);
+                }}
+                className="rounded-lg border bg-white p-3 text-left hover:border-accent"
+              >
+                <div className="text-xl">{t.icon}</div>
+                <div className="mt-1 text-sm font-medium text-ink">{t.name}</div>
+                <div className="text-[11px] text-muted">{t.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <BlockEditor pageId={page.id} blocks={page.blocks} />
 

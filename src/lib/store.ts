@@ -22,8 +22,24 @@ interface WorkspaceState {
   setBlockType: (pageId: string, blockId: string, type: BlockType) => void;
   moveBlock: (pageId: string, blockId: string, dir: -1 | 1) => void;
   duplicateBlock: (pageId: string, blockId: string) => void;
+  /** Reordena moviendo `fromId` justo delante de `toId` (drag & drop). */
+  reorderBlock: (pageId: string, fromId: string, toId: string) => void;
   /** Crea una subpágina e inserta un bloque `page` que la enlaza. */
   createSubpage: (pageId: string, afterBlockId: string | null) => string;
+  /** Reemplaza el contenido de una página con los bloques de una plantilla. */
+  applyTemplate: (pageId: string, blocks: Block[], meta?: { title?: string; icon?: string }) => void;
+  /** Crea una página nueva a partir de una plantilla y la activa. */
+  createPageFromTemplate: (
+    blocks: Block[],
+    meta: { title: string; icon: string },
+    parentId?: string | null
+  ) => string;
+  /** Duplica una página (sin sus subpáginas) y la activa. */
+  duplicatePage: (id: string) => string;
+}
+
+function cloneBlocks(blocks: Block[]): Block[] {
+  return blocks.map((b) => ({ ...b, id: uid("b") }));
 }
 
 const touch = (p: WorkspacePage): WorkspacePage => ({ ...p, updatedAt: new Date().toISOString() });
@@ -122,6 +138,68 @@ export const useWorkspace = create<WorkspaceState>()(
             return touch({ ...p, blocks });
           }),
         })),
+
+      reorderBlock: (pageId, fromId, toId) =>
+        set((s) => ({
+          pages: s.pages.map((p) => {
+            if (p.id !== pageId) return p;
+            const from = p.blocks.findIndex((b) => b.id === fromId);
+            if (from < 0) return p;
+            const moved = p.blocks[from];
+            const rest = p.blocks.filter((b) => b.id !== fromId);
+            const to = rest.findIndex((b) => b.id === toId);
+            const at = to < 0 ? rest.length : to;
+            rest.splice(at, 0, moved);
+            return touch({ ...p, blocks: rest });
+          }),
+        })),
+
+      applyTemplate: (pageId, blocks, meta) =>
+        set((s) => ({
+          pages: s.pages.map((p) =>
+            p.id === pageId
+              ? touch({
+                  ...p,
+                  blocks: cloneBlocks(blocks),
+                  title: meta?.title && p.title.startsWith("Página sin") ? meta.title : p.title,
+                  icon: meta?.icon ?? p.icon,
+                })
+              : p
+          ),
+        })),
+
+      createPageFromTemplate: (blocks, meta, parentId = null) => {
+        const id = uid("page");
+        const now = new Date().toISOString();
+        const page: WorkspacePage = {
+          id,
+          title: meta.title,
+          icon: meta.icon,
+          parentId,
+          createdAt: now,
+          updatedAt: now,
+          blocks: cloneBlocks(blocks),
+        };
+        set((s) => ({ pages: [...s.pages, page], activePageId: id }));
+        return id;
+      },
+
+      duplicatePage: (id) => {
+        const src = get().pages.find((p) => p.id === id);
+        if (!src) return id;
+        const newId = uid("page");
+        const now = new Date().toISOString();
+        const copy: WorkspacePage = {
+          ...src,
+          id: newId,
+          title: `${src.title} (copia)`,
+          createdAt: now,
+          updatedAt: now,
+          blocks: cloneBlocks(src.blocks),
+        };
+        set((s) => ({ pages: [...s.pages, copy], activePageId: newId }));
+        return newId;
+      },
 
       createSubpage: (pageId, afterBlockId) => {
         const childId = uid("page");
