@@ -78,6 +78,24 @@ export const toolDeclarations = [
     parameters: { type: "object", properties: {} },
   },
   {
+    name: "read_note",
+    description: "Lee el contenido de una página/nota del workspace por su título.",
+    parameters: {
+      type: "object",
+      properties: { title: { type: "string" } },
+      required: ["title"],
+    },
+  },
+  {
+    name: "append_to_note",
+    description: "Añade contenido al final de una nota existente (cada línea es un párrafo; '- ' = tarea).",
+    parameters: {
+      type: "object",
+      properties: { title: { type: "string" }, content: { type: "string" } },
+      required: ["title", "content"],
+    },
+  },
+  {
     name: "analyze_agency",
     description:
       "Analítica consolidada en tiempo real de la agencia: métricas de Gmail (no leídos, categorías), GitHub (repos/PRs/issues), Drive y Calendar de los conectores conectados. Úsala para reportes y análisis de datos.",
@@ -181,6 +199,29 @@ export async function runTool(name: string, args: any): Promise<unknown> {
     case "list_notes": {
       const pages = useWorkspace.getState().pages;
       return { notes: pages.map((p) => ({ title: p.title, icon: p.icon })) };
+    }
+    case "read_note": {
+      const pages = useWorkspace.getState().pages;
+      const p = pages.find((x) => x.title.toLowerCase() === String(args?.title || "").toLowerCase());
+      if (!p) return { error: `No encontré la nota "${args?.title}".` };
+      return {
+        title: p.title,
+        content: p.blocks.map((b) => (b.type === "todo" ? `- ${b.content}` : b.content)).filter(Boolean).join("\n"),
+      };
+    }
+    case "append_to_note": {
+      const ws = useWorkspace.getState();
+      const p = ws.pages.find((x) => x.title.toLowerCase() === String(args?.title || "").toLowerCase());
+      if (!p) return { error: `No encontré la nota "${args?.title}".` };
+      let lastId = p.blocks[p.blocks.length - 1]?.id ?? null;
+      for (const line of String(args?.content || "").split("\n").filter((l: string) => l.trim())) {
+        const isTodo = line.trim().startsWith("- ");
+        const nid = ws.addBlock(p.id, lastId, isTodo ? "todo" : "text");
+        ws.updateBlock(p.id, nid, { content: line.replace(/^-\s*/, "") });
+        lastId = nid;
+      }
+      logActivity("ai", `Gemini amplió la nota "${p.title}"`);
+      return { updated: true, title: p.title };
     }
     case "analyze_agency": {
       const out: Record<string, unknown> = { connected: [] as string[] };
