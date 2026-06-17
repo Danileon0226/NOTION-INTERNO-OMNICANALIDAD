@@ -61,6 +61,7 @@ export type BlockType =
   | "code"
   | "toggle"
   | "image"
+  | "html"
   | "page"
   | "embed-github"
   | "embed-gmail"

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
+import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -44,6 +45,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 overflow-y-auto bg-bg">{children}</main>
       </div>
+
+      {/* Copiloto "Zero" — flotante en cualquier pantalla */}
+      <AssistantPanel />
     </div>
   );
 }

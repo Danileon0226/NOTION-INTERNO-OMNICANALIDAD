@@ -21,6 +21,7 @@ import {
   Search,
   ChevronRight,
   Home,
+  CalendarDays,
 } from "lucide-react";
 import { useAi } from "@/lib/ai/store";
 import { askAi } from "@/lib/ai/client";
@@ -28,6 +29,7 @@ import {
   useConnectors,
   GMAIL_SCOPE,
   DRIVE_SCOPE,
+  CALENDAR_SCOPE,
   googleTokenValid,
 } from "@/lib/connectors/store";
 import { ghFetchAll, repoFromUrl, type GithubData } from "@/lib/connectors/github";
@@ -45,8 +47,10 @@ import {
   gmailFetchInbox,
   driveList,
   isFolder,
+  calendarEvents,
   type GmailProfile,
   type DriveFile,
+  type CalendarEvent,
 } from "@/lib/connectors/google";
 import type { EmailItem } from "@/lib/types";
 
@@ -67,6 +71,7 @@ export default function ConnectorsPage() {
         <TelegramCard />
         <GmailCard />
         <DriveCard />
+        <CalendarCard />
       </div>
     </div>
   );
@@ -801,6 +806,87 @@ function GeminiCard() {
       <ErrorMsg msg={err} />
       {reply && (
         <div className="mt-3 rounded-md bg-bg-subtle px-3 py-2 text-sm text-ink">{reply}</div>
+      )}
+    </Shell>
+  );
+}
+
+/* ───────────────────────────── Google Calendar ───────────────────────────── */
+
+function CalendarCard() {
+  const { google, ensureToken } = useGoogleConnect();
+  const { disconnect } = useConnectors();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [events, setEvents] = useState<CalendarEvent[] | null>(null);
+  const connected = googleTokenValid(google, CALENDAR_SCOPE);
+
+  async function connect() {
+    setErr("");
+    setBusy(true);
+    try {
+      const token = await ensureToken(CALENDAR_SCOPE);
+      setEvents(await calendarEvents(token, 10));
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Shell
+      icon={<CalendarDays size={22} />}
+      title="Google Calendar"
+      desc="Próximos eventos de tu calendario. Mismo Client ID de Google. El asistente IA puede consultarlo."
+      connected={connected}
+      docsUrl="https://developers.google.com/calendar/api"
+    >
+      {!google.clientId && (
+        <p className="text-[11px] text-muted">
+          Configura primero el Google OAuth Client ID en la tarjeta de Gmail (es el mismo).
+        </p>
+      )}
+      <div className="mt-1 flex gap-2">
+        <Btn onClick={connect} busy={busy} disabled={!google.clientId}>
+          {connected ? "Actualizar eventos" : "Conectar Calendar"}
+        </Btn>
+        {connected && (
+          <Btn
+            variant="danger"
+            onClick={() => {
+              disconnect("gmail"); // limpia scope google; el usuario re-autoriza si hace falta
+              setEvents(null);
+            }}
+          >
+            <Trash2 size={14} /> Desconectar
+          </Btn>
+        )}
+      </div>
+      <ErrorMsg msg={err} />
+
+      {events && (
+        <div className="mt-4 divide-y rounded-lg border">
+          {events.length === 0 && <div className="px-3 py-4 text-center text-sm text-muted">Sin eventos próximos.</div>}
+          {events.map((e) => (
+            <a
+              key={e.id}
+              href={e.htmlLink ?? "#"}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-bg-subtle"
+            >
+              <CalendarDays size={13} className="shrink-0 text-accent" />
+              <span className="truncate text-ink">{e.summary || "(sin título)"}</span>
+              <span className="ml-auto shrink-0 text-[11px] text-muted">
+                {(() => {
+                  const d = e.start?.dateTime || e.start?.date;
+                  return d ? new Date(d).toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+                })()}
+              </span>
+            </a>
+          ))}
+        </div>
       )}
     </Shell>
   );

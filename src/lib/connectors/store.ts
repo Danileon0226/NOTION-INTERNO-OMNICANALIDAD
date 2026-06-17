@@ -67,6 +67,7 @@ export const useConnectors = create<ConnectorsState>()(
 
 export const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
+export const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
 
 export function googleTokenValid(g: GoogleConfig, scope?: string): boolean {
   if (!g.accessToken || g.expiry < Date.now() + 30_000) return false;

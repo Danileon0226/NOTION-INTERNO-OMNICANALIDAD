@@ -86,8 +86,13 @@ interface GmailMsgMeta {
 }
 
 export async function gmailFetchInbox(token: string, max = 12): Promise<EmailItem[]> {
+  return gmailSearch(token, "in:inbox", max);
+}
+
+/** Búsqueda en Gmail con sintaxis nativa (q). */
+export async function gmailSearch(token: string, q: string, max = 12): Promise<EmailItem[]> {
   const list = await gapi<{ messages?: { id: string; threadId: string }[] }>(
-    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&q=${encodeURIComponent("in:inbox")}`,
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${max}&q=${encodeURIComponent(q)}`,
     token
   );
   const ids = list.messages ?? [];
@@ -203,4 +208,29 @@ export async function driveList(token: string, max = 12, opts: DriveQuery = {}):
 
 export function isFolder(f: DriveFile): boolean {
   return f.mimeType === "application/vnd.google-apps.folder";
+}
+
+// ── Calendar ─────────────────────────────────────────────────
+
+export interface CalendarEvent {
+  id: string;
+  summary?: string;
+  start?: { dateTime?: string; date?: string };
+  end?: { dateTime?: string; date?: string };
+  location?: string;
+  htmlLink?: string;
+}
+
+export async function calendarEvents(token: string, max = 10): Promise<CalendarEvent[]> {
+  const params = new URLSearchParams({
+    maxResults: String(max),
+    orderBy: "startTime",
+    singleEvents: "true",
+    timeMin: new Date().toISOString(),
+  });
+  const data = await gapi<{ items: CalendarEvent[] }>(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`,
+    token
+  );
+  return data.items ?? [];
 }
