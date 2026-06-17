@@ -18,6 +18,9 @@ import {
   FileText,
   Trash2,
   Bot,
+  Search,
+  ChevronRight,
+  Home,
 } from "lucide-react";
 import { useAi } from "@/lib/ai/store";
 import { askAi } from "@/lib/ai/client";
@@ -477,6 +480,14 @@ function TelegramCard() {
 function useGoogleConnect() {
   const { google, setGoogle } = useConnectors();
 
+  // Autocompleta el Client ID desde el entorno (NEXT_PUBLIC_GOOGLE_CLIENT_ID)
+  // para que conectar la cuenta real sea de un solo clic en el sitio desplegado.
+  useEffect(() => {
+    const env = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (env && !google.clientId) setGoogle({ clientId: env });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function ensureToken(scope: string): Promise<string> {
     if (googleTokenValid(google, scope)) return google.accessToken;
     if (!google.clientId.trim()) throw new Error("Falta el Google OAuth Client ID.");
@@ -586,19 +597,21 @@ function GmailCard() {
 /* ───────────────────────────── Drive ───────────────────────────── */
 
 function DriveCard() {
-  const { google, setGoogle, ensureToken } = useGoogleConnect();
+  const { google, ensureToken } = useGoogleConnect();
   const { disconnect } = useConnectors();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [files, setFiles] = useState<DriveFile[] | null>(null);
+  const [stack, setStack] = useState<{ id: string; name: string }[]>([]);
+  const [search, setSearch] = useState("");
   const connected = googleTokenValid(google, DRIVE_SCOPE);
 
-  async function connect() {
+  async function load(opts: { parentId?: string; query?: string } = {}) {
     setErr("");
     setBusy(true);
     try {
       const token = await ensureToken(DRIVE_SCOPE);
-      setFiles(await driveList(token));
+      setFiles(await driveList(token, 60, opts));
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -606,11 +619,32 @@ function DriveCard() {
     }
   }
 
+  function openFolder(f: DriveFile) {
+    const next = [...stack, { id: f.id, name: f.name }];
+    setStack(next);
+    setSearch("");
+    load({ parentId: f.id });
+  }
+  function goTo(index: number) {
+    // index -1 = recientes (raíz lógica)
+    const next = stack.slice(0, index + 1);
+    setStack(next);
+    setSearch("");
+    load(next.length ? { parentId: next[next.length - 1].id } : {});
+  }
+  function runSearch() {
+    setStack([]);
+    load(search.trim() ? { query: search.trim() } : {});
+  }
+
+  const folders = (files ?? []).filter(isFolder);
+  const docs = (files ?? []).filter((f) => !isFolder(f));
+
   return (
     <Shell
       icon={<HardDrive size={22} />}
       title="Google Drive"
-      desc="Monta archivos y carpetas reales (incluidas las compartidas con la agencia). Usa el mismo Client ID de Google."
+      desc="Explora archivos y carpetas reales (incluidas las compartidas y unidades compartidas). Navega entre carpetas y busca por nombre."
       connected={connected}
       docsUrl="https://developers.google.com/drive/api"
     >
@@ -619,9 +653,9 @@ function DriveCard() {
           Configura primero el Google OAuth Client ID en la tarjeta de Gmail (es el mismo).
         </p>
       )}
-      <div className="mt-1 flex gap-2">
-        <Btn onClick={connect} busy={busy} disabled={!google.clientId}>
-          {connected ? "Actualizar archivos" : "Conectar Drive"}
+      <div className="mt-1 flex flex-wrap gap-2">
+        <Btn onClick={() => { setStack([]); setSearch(""); load(); }} busy={busy} disabled={!google.clientId}>
+          {connected ? "Actualizar" : "Conectar Drive"}
         </Btn>
         {connected && (
           <Btn
@@ -629,6 +663,7 @@ function DriveCard() {
             onClick={() => {
               disconnect("google-drive");
               setFiles(null);
+              setStack([]);
             }}
           >
             <Trash2 size={14} /> Desconectar
@@ -638,10 +673,56 @@ function DriveCard() {
       <ErrorMsg msg={err} />
 
       {files && (
-        <div className="mt-4">
-          <div className="mb-1 text-xs font-medium text-muted">{files.length} elementos recientes</div>
+        <div className="mt-4 space-y-2">
+          {/* búsqueda */}
+          <div className="flex items-center gap-1.5 rounded-md border bg-white px-2 py-1">
+            <Search size={13} className="text-muted" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && runSearch()}
+              placeholder="Buscar en Drive por nombre…"
+              className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted"
+            />
+            {search && (
+              <button onClick={runSearch} className="text-xs text-accent hover:underline">
+                Buscar
+              </button>
+            )}
+          </div>
+
+          {/* breadcrumb */}
+          <div className="flex flex-wrap items-center gap-1 text-xs text-muted">
+            <button onClick={() => goTo(-1)} className="flex items-center gap-1 rounded px-1 py-0.5 hover:bg-bg-subtle hover:text-ink">
+              <Home size={12} /> Recientes
+            </button>
+            {stack.map((s, i) => (
+              <span key={s.id} className="flex items-center gap-1">
+                <ChevronRight size={11} />
+                <button onClick={() => goTo(i)} className="rounded px-1 py-0.5 hover:bg-bg-subtle hover:text-ink">
+                  {s.name}
+                </button>
+              </span>
+            ))}
+          </div>
+
+          {/* listado: carpetas primero (navegables), luego archivos */}
           <div className="divide-y rounded-lg border">
-            {files.map((f) => (
+            {folders.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => openFolder(f)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-bg-subtle"
+              >
+                <Folder size={14} className="shrink-0 text-amber-500" />
+                <span className="truncate text-ink">{f.name}</span>
+                {f.shared && (
+                  <span className="rounded bg-blue-50 px-1 text-[10px] text-blue-600">compartida</span>
+                )}
+                <ChevronRight size={13} className="ml-auto shrink-0 text-muted" />
+              </button>
+            ))}
+            {docs.map((f) => (
               <a
                 key={f.id}
                 href={f.webViewLink ?? "#"}
@@ -649,11 +730,7 @@ function DriveCard() {
                 rel="noreferrer"
                 className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-bg-subtle"
               >
-                {isFolder(f) ? (
-                  <Folder size={14} className="shrink-0 text-amber-500" />
-                ) : (
-                  <FileText size={14} className="shrink-0 text-muted" />
-                )}
+                <FileText size={14} className="shrink-0 text-muted" />
                 <span className="truncate text-ink">{f.name}</span>
                 {f.shared && (
                   <span className="rounded bg-blue-50 px-1 text-[10px] text-blue-600">compartido</span>
@@ -663,6 +740,12 @@ function DriveCard() {
                 </span>
               </a>
             ))}
+            {files.length === 0 && (
+              <div className="px-3 py-4 text-center text-sm text-muted">Carpeta vacía o sin resultados.</div>
+            )}
+          </div>
+          <div className="text-[11px] text-muted">
+            {folders.length} carpetas · {docs.length} archivos
           </div>
         </div>
       )}
