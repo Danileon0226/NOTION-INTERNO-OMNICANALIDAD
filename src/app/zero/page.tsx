@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Mic, MicOff, Square, Volume2, Plug, Wrench } from "lucide-react";
+import { Mic, MicOff, Square, Volume2, Plug, Wrench, Settings2, Play } from "lucide-react";
 import { runAgent, type ChatMsg, type AgentStep } from "@/lib/ai/agent";
 import { useAi } from "@/lib/ai/store";
 import {
@@ -12,6 +12,7 @@ import {
   speak,
   stopSpeaking,
   synthesisSupported,
+  listVoices,
 } from "@/lib/voice";
 
 type Status = "idle" | "listening" | "thinking" | "speaking";
@@ -23,13 +24,18 @@ interface Turn {
 }
 
 export default function ZeroVoicePage() {
-  const { apiKey } = useAi();
+  const { apiKey, voiceURI, voiceRate, voicePitch, setVoice } = useAi();
   const [status, setStatus] = useState<Status>("idle");
   const [handsFree, setHandsFree] = useState(true);
   const [interim, setInterim] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [supported, setSupported] = useState(true);
   const [steps, setSteps] = useState<AgentStep[]>([]);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [showVoice, setShowVoice] = useState(false);
+
+  const voiceOptsRef = useRef({ voiceURI, voiceRate, voicePitch });
+  voiceOptsRef.current = { voiceURI, voiceRate, voicePitch };
 
   const recRef = useRef<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const historyRef = useRef<ChatMsg[]>([]);
@@ -39,6 +45,11 @@ export default function ZeroVoicePage() {
 
   useEffect(() => {
     setSupported(recognitionSupported());
+    if (!synthesisSupported()) return;
+    const load = () => setVoices(listVoices());
+    load();
+    window.speechSynthesis.addEventListener("voiceschanged", load);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
   }, []);
 
   const startListening = useCallback(() => {
@@ -121,6 +132,7 @@ export default function ZeroVoicePage() {
       setTurns((t) => [...t, { role: "model", text: res.text, steps: res.steps }]);
       setStatus("speaking");
       speak(res.text, {
+        ...voiceOptsRef.current,
         onEnd: () => {
           busyRef.current = false;
           if (handsFreeRef.current) {
@@ -138,7 +150,7 @@ export default function ZeroVoicePage() {
     } catch (e) {
       const msg = `Error: ${(e as Error).message}`;
       setTurns((t) => [...t, { role: "model", text: msg }]);
-      if (synthesisSupported()) speak(msg);
+      if (synthesisSupported()) speak(msg, voiceOptsRef.current);
       busyRef.current = false;
       setStatus("idle");
     }
@@ -259,7 +271,92 @@ export default function ZeroVoicePage() {
             <Square size={12} /> Detener
           </button>
         )}
+        <button
+          onClick={() => setShowVoice((v) => !v)}
+          className="inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-1 text-xs hover:bg-white/10"
+        >
+          <Settings2 size={12} /> Voz
+        </button>
       </div>
+
+      {/* Selector de voz JARVIS */}
+      {showVoice && (
+        <div className="zero-pop mt-4 w-full max-w-md space-y-3 rounded-xl border border-violet-400/30 bg-white/5 p-4 text-violet-50">
+          <p className="text-xs font-semibold uppercase tracking-wide text-violet-200">
+            Perfil de voz · JARVIS
+          </p>
+
+          <label className="block text-xs text-violet-100/70">
+            Voz
+            <select
+              value={voiceURI}
+              onChange={(e) => setVoice({ voiceURI: e.target.value })}
+              className="mt-1 w-full rounded-md border border-white/15 bg-[#0a0e1a] px-2 py-1.5 text-sm text-white"
+            >
+              <option value="">Automática (mejor perfil JARVIS)</option>
+              {voices.map((v) => (
+                <option key={v.voiceURI} value={v.voiceURI}>
+                  {v.name} · {v.lang}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block text-xs text-violet-100/70">
+            Velocidad: {voiceRate.toFixed(2)}
+            <input
+              type="range"
+              min={0.7}
+              max={1.2}
+              step={0.01}
+              value={voiceRate}
+              onChange={(e) => setVoice({ voiceRate: Number(e.target.value) })}
+              className="mt-1 w-full accent-violet-400"
+            />
+          </label>
+
+          <label className="block text-xs text-violet-100/70">
+            Tono (grave ↔ agudo): {voicePitch.toFixed(2)}
+            <input
+              type="range"
+              min={0.5}
+              max={1.3}
+              step={0.01}
+              value={voicePitch}
+              onChange={(e) => setVoice({ voicePitch: Number(e.target.value) })}
+              className="mt-1 w-full accent-violet-400"
+            />
+          </label>
+
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              onClick={() =>
+                speak("Sistemas en línea. Soy ZERO, su gestor de conciencia. ¿En qué puedo asistirle?", {
+                  voiceURI,
+                  rate: voiceRate,
+                  pitch: voicePitch,
+                })
+              }
+              className="inline-flex items-center gap-1.5 rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+            >
+              <Play size={12} /> Probar voz
+            </button>
+            <button
+              onClick={() => {
+                setVoice({ voiceURI: "", voiceRate: 0.97, voicePitch: 0.82 });
+                stopSpeaking();
+              }}
+              className="rounded-md border border-white/20 px-3 py-1.5 text-xs hover:bg-white/10"
+            >
+              Restaurar JARVIS
+            </button>
+          </div>
+          <p className="text-[11px] text-violet-100/50">
+            Para un timbre más cercano a JARVIS, elige una voz masculina en inglés británico
+            (en-GB) y baja un poco el tono. Las voces disponibles dependen de tu sistema/navegador.
+          </p>
+        </div>
+      )}
 
       {!supported && (
         <p className="mt-4 max-w-md text-center text-xs text-amber-200/80">
