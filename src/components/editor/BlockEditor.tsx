@@ -497,7 +497,7 @@ function RowActions({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-5 top-0 z-20 w-36 rounded-md border bg-white py-1 shadow-lg">
+          <div className="zero-pop absolute left-5 top-0 z-20 w-36 rounded-md border bg-white py-1 shadow-lg">
             <MenuItem icon={<ChevronUp size={13} />} label="Subir" onClick={() => { onUp(); setOpen(false); }} />
             <MenuItem icon={<ChevronDown size={13} />} label="Bajar" onClick={() => { onDown(); setOpen(false); }} />
             <MenuItem icon={<Copy size={13} />} label="Duplicar" onClick={() => { onDup(); setOpen(false); }} />
@@ -543,7 +543,7 @@ function SlashMenu({
 }) {
   if (!matches.length) return null;
   return (
-    <div className="absolute left-6 top-7 z-30 max-h-72 w-64 overflow-y-auto rounded-lg border bg-white py-1 shadow-xl">
+    <div className="zero-pop absolute left-6 top-7 z-30 max-h-72 w-64 overflow-y-auto rounded-lg border bg-white py-1 shadow-xl">
       {matches.map((m, i) => (
         <button
           key={m.type}

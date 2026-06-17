@@ -15,6 +15,7 @@ import { ghFetchAll, ghCommits, ghCreateIssue } from "@/lib/connectors/github";
 import { tgSendMessage, tgGetUpdates, alertText } from "@/lib/connectors/telegram";
 import { useWorkspace } from "@/lib/store";
 import { useActivity, type ActivitySource } from "@/lib/activity";
+import { templates } from "@/lib/data/templates";
 import type { Block } from "@/lib/types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -176,6 +177,19 @@ export const toolDeclarations = [
       type: "object",
       properties: { repo: { type: "string" }, title: { type: "string" }, body: { type: "string" } },
       required: ["repo", "title"],
+    },
+  },
+  {
+    name: "create_client_pack",
+    description:
+      "Pre-configura el expediente administrativo completo de un cliente en el workspace: crea una página de cliente con subpáginas de Propuesta/PPT, Contrato de servicios y Onboarding (checklist). Automatiza el alta del cliente. Después puedes elaborar cada documento con append_to_note o drive_read.",
+    parameters: {
+      type: "object",
+      properties: {
+        client: { type: "string", description: "Nombre del cliente." },
+        scope: { type: "string", description: "Alcance/servicios (opcional)." },
+      },
+      required: ["client"],
     },
   },
   {
@@ -417,6 +431,34 @@ export async function runTool(name: string, args: any): Promise<unknown> {
       const r = await ghCreateIssue(String(args?.repo || ""), String(args?.title || ""), String(args?.body || ""), c.github.token);
       logActivity("github", `Gemini creó el issue #${r.number} en ${args?.repo}`);
       return { created: true, number: r.number, url: r.html_url };
+    }
+    case "create_client_pack": {
+      const client = String(args?.client || "Cliente");
+      const ws = useWorkspace.getState();
+      const parentId = ws.createPage(null);
+      ws.applyTemplate(
+        parentId,
+        [
+          { id: "t", type: "heading1", content: `Cliente — ${client}` },
+          { id: "t", type: "callout", content: `Expediente de ${client}: propuesta, contrato y onboarding.` },
+          ...(args?.scope ? [{ id: "t", type: "text", content: `Alcance: ${args.scope}` } as Block] : []),
+        ],
+        { title: `Cliente — ${client}`, icon: "🤝" }
+      );
+      const made: string[] = [];
+      for (const tid of ["propuesta", "contrato", "onboarding"]) {
+        const t = templates.find((x) => x.id === tid);
+        if (!t) continue;
+        const childId = ws.createSubpage(parentId, null);
+        const blocks: Block[] = t.blocks.map((b) => ({
+          ...b,
+          content: b.content.replace(/\[Cliente\]/g, client),
+        }));
+        ws.applyTemplate(childId, blocks, { title: `${t.name} — ${client}`, icon: t.icon });
+        made.push(`${t.name} — ${client}`);
+      }
+      logActivity("ai", `Gemini pre-configuró el pack administrativo de "${client}"`);
+      return { created: true, client, pages: made };
     }
     case "create_webpage": {
       const ws = useWorkspace.getState();
