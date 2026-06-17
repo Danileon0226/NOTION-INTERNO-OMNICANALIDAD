@@ -7,6 +7,7 @@ import { Menu } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import { CommandPalette } from "@/components/CommandPalette";
+import { AutonomyDaemon } from "@/components/anticipation/AutonomyDaemon";
 import { useTheme, applyTheme } from "@/lib/theme";
 import zeroMark from "@/brand/zero-mark.png";
 
@@ -62,6 +63,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Paleta de comandos global (⌘K / Ctrl+K) */}
       <CommandPalette />
+
+      {/* Demonio de autonomía: ZERO actúa solo (con guardrails) */}
+      <AutonomyDaemon />
 
       {/* Copiloto "Zero" — flotante en cualquier pantalla */}
       <AssistantPanel />
