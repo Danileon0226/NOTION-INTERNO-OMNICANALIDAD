@@ -26,9 +26,31 @@ export const viewport: Viewport = {
   ],
 };
 
+// CSP también como <meta> para la exportación estática (GitHub Pages no puede
+// enviar cabeceras). DEBE coincidir con la de next.config.js (Vercel).
+const CSP_META = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "form-action 'self'",
+  "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https:",
+  "frame-src 'self' https://accounts.google.com",
+  "child-src 'self' blob:",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "upgrade-insecure-requests",
+].join("; ");
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={outfit.variable}>
+      <head>
+        <meta httpEquiv="Content-Security-Policy" content={CSP_META} />
+      </head>
       <body>
         <AppShell>{children}</AppShell>
       </body>

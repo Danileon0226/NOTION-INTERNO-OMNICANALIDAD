@@ -118,6 +118,7 @@ function BlockRow({
   const ref = useRef<HTMLDivElement>(null);
   const [sel, setSel] = useState(0);
   const [slashClosed, setSlashClosed] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const dropProps = {
     onDragOver: (e: React.DragEvent) => {
@@ -323,17 +324,13 @@ function BlockRow({
         <div className="my-1 w-full overflow-hidden rounded-lg border bg-card">
           <div className="flex items-center gap-2 border-b bg-bg-subtle px-3 py-1.5 text-xs text-muted">
             🌐 Página web generada
+            {/* Ampliar: usa un iframe sandbox (origin opaco) — el HTML NO puede
+                acceder al localStorage ni a la sesión de la app. */}
             <button
-              onClick={() => {
-                const w = window.open();
-                if (w) {
-                  w.document.write(block.content);
-                  w.document.close();
-                }
-              }}
+              onClick={() => setFullscreen(true)}
               className="ml-auto rounded px-1.5 py-0.5 hover:bg-card hover:text-ink"
             >
-              Abrir
+              Ampliar
             </button>
             <button
               onClick={() => {
@@ -342,6 +339,7 @@ function BlockRow({
                 a.href = URL.createObjectURL(blob);
                 a.download = "pagina.html";
                 a.click();
+                URL.revokeObjectURL(a.href);
               }}
               className="rounded px-1.5 py-0.5 hover:bg-card hover:text-ink"
             >
@@ -351,10 +349,29 @@ function BlockRow({
           <iframe
             title="preview"
             sandbox="allow-scripts"
+            referrerPolicy="no-referrer"
             srcDoc={block.content}
             className="h-80 w-full bg-card"
           />
         </div>
+        {fullscreen && (
+          <div className="fixed inset-0 z-[70] flex flex-col bg-black/70" onClick={() => setFullscreen(false)}>
+            <div className="flex items-center justify-between px-4 py-2 text-sm text-white">
+              <span>🌐 Vista previa (aislada)</span>
+              <button onClick={() => setFullscreen(false)} className="rounded px-2 py-1 hover:bg-white/10">
+                Cerrar ✕
+              </button>
+            </div>
+            <iframe
+              title="preview-full"
+              sandbox="allow-scripts"
+              referrerPolicy="no-referrer"
+              srcDoc={block.content}
+              className="m-2 flex-1 rounded-lg bg-white"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
       </Row>
     );
   }
