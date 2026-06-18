@@ -13,6 +13,7 @@ import {
   Brain,
   History,
   FileBarChart,
+  ShieldCheck,
   Plug,
   Mail,
   Calendar,
@@ -104,6 +105,7 @@ export function CommandPalette() {
       { id: "monitor", label: "Monitoreo web", icon: <Globe size={16} />, run: () => nav("/monitor") },
       { id: "inbox", label: "Bandeja", icon: <Mail size={16} />, run: () => nav("/inbox") },
       { id: "connectors", label: "Conectores", icon: <Plug size={16} />, run: () => nav("/connectors") },
+      { id: "setup", label: "Estado de configuración", icon: <ShieldCheck size={16} />, run: () => nav("/setup") },
       {
         id: "new",
         label: "Nueva página",

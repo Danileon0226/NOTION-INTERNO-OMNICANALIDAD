@@ -33,6 +33,7 @@ import {
   Brain,
   History,
   FileBarChart,
+  ShieldCheck,
 } from "lucide-react";
 
 // Navegación agrupada por intención → más fácil de escanear.
@@ -64,6 +65,7 @@ const NAV_GROUPS: { label: string; items: { href: string; label: string; icon: R
       { href: "/reports", label: "Reportes", icon: <FileBarChart size={16} /> },
       { href: "/runs", label: "Actividad agéntica", icon: <History size={16} /> },
       { href: "/connectors", label: "Conectores", icon: <Plug size={16} /> },
+      { href: "/setup", label: "Estado de configuración", icon: <ShieldCheck size={16} /> },
     ],
   },
 ];
