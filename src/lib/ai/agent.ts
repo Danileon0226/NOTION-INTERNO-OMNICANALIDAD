@@ -9,6 +9,7 @@ import { toolDeclarations, runTool } from "@/lib/ai/tools";
 import { useMemory, memoryContext } from "@/lib/ai/memory";
 import { useRuns } from "@/lib/ai/runs";
 import { bankContext, refreshDataBank } from "@/lib/ai/dataBank";
+import { track } from "@/lib/firebase/track";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -134,6 +135,9 @@ export async function runAgent(
 ): Promise<AgentResult> {
   const { apiKey, model, temperature } = useAi.getState();
   if (!apiKey) throw new Error("Falta la API key de Gemini. Configúrala en Conectores → Asistente IA.");
+
+  // Seguimiento de uso del agente por persona (best-effort, solo con Firebase).
+  track("agent", `IA (${source}): ${userText.slice(0, 80)}`);
 
   const started = Date.now();
   const contents: any[] = [

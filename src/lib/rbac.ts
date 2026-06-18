@@ -75,7 +75,7 @@ const ROUTES: Record<Role, string[]> = {
   ],
 };
 
-/** ¿Puede este rol entrar a esta ruta? */
+/** ¿Puede este rol entrar a esta ruta? (sin overrides por usuario) */
 export function canAccess(role: Role, path: string): boolean {
   const allowed = ROUTES[role] ?? [];
   if (allowed.includes("*")) return true;
@@ -86,4 +86,44 @@ export function canAccess(role: Role, path: string): boolean {
 export function allowedRoutes(role: Role): string[] | "*" {
   const allowed = ROUTES[role] ?? [];
   return allowed.includes("*") ? "*" : allowed;
+}
+
+// Módulos cuyo acceso el admin puede activar/desactivar por persona.
+export interface ModuleDef {
+  href: string;
+  label: string;
+}
+
+export const MODULES: ModuleDef[] = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/anticipation", label: "Anticipación" },
+  { href: "/assistant", label: "Asistente IA" },
+  { href: "/zero", label: "ZERO (voz)" },
+  { href: "/memory", label: "Memoria" },
+  { href: "/inbox", label: "Bandeja" },
+  { href: "/calendar", label: "Calendario" },
+  { href: "/drive", label: "Drive" },
+  { href: "/canvas", label: "Canvas / Grafo" },
+  { href: "/monitor", label: "Monitoreo web" },
+  { href: "/autopilot", label: "Piloto automático" },
+  { href: "/reports", label: "Reportes" },
+  { href: "/runs", label: "Actividad agéntica" },
+  { href: "/connectors", label: "Conectores" },
+  { href: "/setup", label: "Estado de configuración" },
+];
+
+/** Primer segmento de la ruta (p. ej. "/inbox/123" → "/inbox"). */
+function segOf(path: string): string {
+  return `/${path.split("/")[1] || ""}`;
+}
+
+/**
+ * Acceso efectivo: el override por usuario (si existe para ese módulo) manda
+ * sobre el permiso por rol. El panel de administración es siempre solo-admin.
+ */
+export function canAccessWith(role: Role, path: string, overrides?: Record<string, boolean>): boolean {
+  const seg = segOf(path);
+  if (seg === "/team") return role === "admin"; // consola de administración
+  if (overrides && seg in overrides) return overrides[seg];
+  return canAccess(role, path);
 }
