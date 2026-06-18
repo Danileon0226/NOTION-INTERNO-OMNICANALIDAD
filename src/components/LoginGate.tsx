@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Lock, ArrowRight, Loader2, BookOpen } from "lucide-react";
-import { checkPassword, useAuth } from "@/lib/auth";
+import { login, useAuth } from "@/lib/auth";
+import { ROLE_LIST } from "@/lib/rbac";
 
 export function LoginGate() {
-  const setAuthed = useAuth((s) => s.setAuthed);
+  const setSession = useAuth((s) => s.setSession);
   const [pass, setPass] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -16,8 +17,9 @@ export function LoginGate() {
     setErr("");
     setBusy(true);
     try {
-      if (await checkPassword(pass)) {
-        setAuthed(true);
+      const session = await login(pass);
+      if (session) {
+        setSession(session);
       } else {
         setErr("Clave incorrecta.");
       }
@@ -59,6 +61,19 @@ export function LoginGate() {
               {busy ? <Loader2 size={15} className="animate-spin" /> : <ArrowRight size={15} />} Entrar
             </button>
           </form>
+
+          {/* Roles disponibles: cada quien entra con su propia clave. */}
+          <div className="mt-5 border-t pt-4">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted/70">Perfiles del equipo</p>
+            <div className="space-y-1.5">
+              {ROLE_LIST.map((r) => (
+                <div key={r.id} className="flex items-start gap-2 text-xs">
+                  <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${r.badge}`}>{r.label}</span>
+                  <span className="text-muted">{r.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted">
