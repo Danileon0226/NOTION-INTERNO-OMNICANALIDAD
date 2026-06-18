@@ -44,7 +44,7 @@ export default function RunsPage() {
 
 function RunRow({ run, open, onToggle }: { run: AgentRun; open: boolean; onToggle: () => void }) {
   return (
-    <div className="rounded-xl border bg-card">
+    <div className="rounded-xl border glass-card">
       <button onClick={onToggle} className="flex w-full items-start gap-2.5 p-3 text-left">
         {run.ok ? (
           <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" />

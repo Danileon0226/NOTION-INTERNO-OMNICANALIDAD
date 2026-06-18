@@ -80,7 +80,7 @@ export function PageClient({ id }: { id: string }) {
             {page.icon}
           </button>
           {showPicker && (
-            <div className="absolute z-10 mt-1 grid grid-cols-6 gap-1 rounded-lg border bg-card p-2 shadow-lg">
+            <div className="absolute z-10 mt-1 grid grid-cols-6 gap-1 rounded-lg border glass-card p-2 shadow-lg">
               {EMOJIS.map((e) => (
                 <button
                   key={e}
@@ -156,7 +156,7 @@ export function PageClient({ id }: { id: string }) {
                   applyTemplate(page.id, t.blocks, { title: t.name, icon: t.icon });
                   setShowTemplates(false);
                 }}
-                className="rounded-lg border bg-card p-3 text-left hover:border-accent"
+                className="rounded-lg border glass-card p-3 text-left hover:border-accent"
               >
                 <div className="text-xl">{t.icon}</div>
                 <div className="mt-1 text-sm font-medium text-ink">{t.name}</div>

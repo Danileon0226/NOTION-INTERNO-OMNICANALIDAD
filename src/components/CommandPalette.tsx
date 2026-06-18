@@ -189,7 +189,7 @@ export function CommandPalette() {
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/40 px-4 pt-[12vh]" onClick={close}>
       <div
-        className="zero-pop w-full max-w-xl overflow-hidden rounded-xl border bg-card shadow-2xl"
+        className="zero-pop w-full max-w-xl overflow-hidden rounded-xl border glass-card shadow-2xl"
         style={{ transformOrigin: "top center" }}
         onClick={(e) => e.stopPropagation()}
       >

@@ -15,7 +15,7 @@ export function NotificationsPanel() {
   return (
     <div className="fixed inset-0 z-[60] flex justify-end bg-black/40" onClick={() => setOpen(false)}>
       <div
-        className="zero-pop flex h-full w-full max-w-sm flex-col border-l bg-card shadow-2xl"
+        className="zero-pop flex h-full w-full max-w-sm flex-col border-l glass-card shadow-2xl"
         style={{ transformOrigin: "right" }}
         onClick={(e) => e.stopPropagation()}
       >

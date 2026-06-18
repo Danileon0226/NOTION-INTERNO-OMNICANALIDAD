@@ -111,7 +111,7 @@ export function AssistantPanel() {
                     <button
                       key={s}
                       onClick={() => send(s)}
-                      className="block w-full rounded-lg border bg-card px-3 py-2 text-left text-sm text-ink/90 transition hover:border-accent hover:bg-bg-subtle"
+                      className="block w-full rounded-lg border glass-card px-3 py-2 text-left text-sm text-ink/90 transition hover:border-accent hover:bg-bg-subtle"
                     >
                       {s}
                     </button>
@@ -157,7 +157,7 @@ export function AssistantPanel() {
               }}
               rows={1}
               placeholder="Escribe tu pregunta…"
-              className="max-h-28 flex-1 resize-none rounded-lg border bg-card px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-accent"
+              className="max-h-28 flex-1 resize-none rounded-lg border glass-card px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-accent"
             />
             <button
               type="submit"
@@ -180,7 +180,7 @@ function Bubble({ role, text }: { role: "user" | "model"; text: string }) {
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
         className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm ${
-          isUser ? "bg-ink text-white" : "border bg-card text-ink"
+          isUser ? "bg-ink text-white" : "border glass-card text-ink"
         }`}
       >
         {text}

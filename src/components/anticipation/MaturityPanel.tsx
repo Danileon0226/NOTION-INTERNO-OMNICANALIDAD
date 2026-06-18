@@ -31,7 +31,7 @@ export function MaturityPanel() {
   });
 
   return (
-    <div className="rounded-xl border bg-card p-4">
+    <div className="rounded-xl border glass-card p-4">
       <div className="mb-3 flex items-center gap-2">
         <TrendingUp size={16} className="text-accent" />
         <span className="text-sm font-semibold text-ink">Madurez de ZERO</span>

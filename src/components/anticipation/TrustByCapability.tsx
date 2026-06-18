@@ -26,7 +26,7 @@ export function TrustByCapability() {
   const decisions = useAnticipation((s) => s.decisions);
 
   return (
-    <div className="rounded-xl border bg-card p-4">
+    <div className="rounded-xl border glass-card p-4">
       <div className="mb-1 flex items-center gap-2">
         <SlidersHorizontal size={16} className="text-accent" />
         <span className="text-sm font-semibold text-ink">Confianza por capacidad</span>
@@ -63,7 +63,7 @@ export function TrustByCapability() {
                       key={o.id}
                       onClick={() => setModeForType(c.type, o.id === "global" ? null : (o.id as TrustMode))}
                       className={`px-2 py-1 ${
-                        active ? "bg-accent text-white" : "bg-card text-muted hover:bg-bg-subtle"
+                        active ? "bg-accent text-white" : "glass-card text-muted hover:bg-bg-subtle"
                       }`}
                     >
                       {o.label}

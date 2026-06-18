@@ -161,7 +161,7 @@ export default function AutopilotPage() {
           const st = state[r.id];
           const on = auto.has(r.id);
           return (
-            <div key={r.id} className="flex flex-col rounded-xl border bg-card p-4">
+            <div key={r.id} className="flex flex-col rounded-xl border glass-card p-4">
               <div className="flex items-start gap-2">
                 <span className="text-2xl">{r.icon}</span>
                 <div className="min-w-0 flex-1">
@@ -249,7 +249,7 @@ function ScheduledBriefingCard() {
           <select
             value={s.hour}
             onChange={(e) => s.setHour(Number(e.target.value))}
-            className="rounded-md border bg-card px-2 py-1 text-ink"
+            className="rounded-md border glass-card px-2 py-1 text-ink"
           >
             {Array.from({ length: 24 }, (_, h) => (
               <option key={h} value={h}>

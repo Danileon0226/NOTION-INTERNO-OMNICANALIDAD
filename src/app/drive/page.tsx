@@ -90,7 +90,7 @@ export default function DrivePage() {
         {connected && (
           <button
             onClick={() => load(trail[trail.length - 1].id)}
-            className="flex items-center gap-1.5 rounded-md border bg-card px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
+            className="flex items-center gap-1.5 rounded-md border glass-card px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Actualizar
           </button>
@@ -145,7 +145,7 @@ export default function DrivePage() {
                     <button
                       key={f.id}
                       onClick={() => openFolder(f)}
-                      className="flex items-center gap-2 rounded-lg border bg-card p-3 text-left hover:bg-bg-subtle"
+                      className="flex items-center gap-2 rounded-lg border glass-card p-3 text-left hover:bg-bg-subtle"
                     >
                       <Folder size={18} className="shrink-0 text-accent" />
                       <span className="truncate text-sm text-ink">{f.name}</span>
@@ -155,7 +155,7 @@ export default function DrivePage() {
               )}
 
               {docs.length > 0 && (
-                <div className="divide-y rounded-lg border bg-card">
+                <div className="divide-y rounded-lg border glass-card">
                   {docs.map((f) => (
                     <div key={f.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-bg-subtle">
                       <FileText size={16} className="shrink-0 text-muted" />

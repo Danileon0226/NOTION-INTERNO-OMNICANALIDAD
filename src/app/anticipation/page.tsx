@@ -58,7 +58,7 @@ export default function AnticipationPage() {
       </div>
 
       {/* Gobernanza */}
-      <div className="mb-5 rounded-xl border bg-card p-4">
+      <div className="mb-5 rounded-xl border glass-card p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldCheck size={16} className="text-accent" />
@@ -98,7 +98,7 @@ export default function AnticipationPage() {
       </div>
 
       {/* Autonomía TOTAL */}
-      <div className="mb-5 rounded-xl border bg-card p-4">
+      <div className="mb-5 rounded-xl border glass-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Bot size={16} className="text-accent" />
@@ -213,7 +213,7 @@ export default function AnticipationPage() {
           </div>
           <div className="space-y-2">
             {aut.log.slice(0, 10).map((a) => (
-              <div key={a.id} className="rounded-lg border bg-card p-3">
+              <div key={a.id} className="rounded-lg border glass-card p-3">
                 <div className="flex items-center gap-2">
                   {a.ok ? (
                     <CheckCircle2 size={14} className="shrink-0 text-emerald-600" />
@@ -245,11 +245,11 @@ export default function AnticipationPage() {
           )}
         </div>
         {audit.length === 0 ? (
-          <p className="rounded-lg border border-dashed bg-card px-3 py-6 text-center text-sm text-muted">
+          <p className="rounded-lg border border-dashed glass-card px-3 py-6 text-center text-sm text-muted">
             Aún no se han emitido anticipaciones.
           </p>
         ) : (
-          <div className="divide-y rounded-lg border bg-card text-sm">
+          <div className="divide-y rounded-lg border glass-card text-sm">
             {audit.slice(0, 20).map((e) => (
               <div key={e.explainId} className="flex items-center gap-2 px-3 py-2">
                 <span className="rounded bg-bg-subtle px-1.5 py-0.5 text-[10px] uppercase text-muted">{e.mode}</span>
@@ -302,7 +302,7 @@ function Slider({
 
 function Metric({ label, value, accent }: { label: string; value: string | number; accent?: boolean }) {
   return (
-    <div className={`rounded-lg border bg-card p-4 ${accent ? "ring-1 ring-accent/30" : ""}`}>
+    <div className={`rounded-lg border glass-card p-4 ${accent ? "ring-1 ring-accent/30" : ""}`}>
       <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
       <div className={`mt-1 text-2xl font-bold tabular-nums ${accent ? "text-accent" : "text-ink"}`}>{value}</div>
     </div>

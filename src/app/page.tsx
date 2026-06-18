@@ -50,7 +50,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen overflow-hidden">
       {/* Nav */}
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-bg/80 backdrop-blur">
+      <header className="sticky top-0 z-30 glass-bar border-b border-border/60">
         <nav className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-8">
           <span className="zero-monogram h-9 w-9 text-lg">Z</span>
           <span className="font-semibold tracking-[0.18em] text-ink">ZERO AGENCY</span>
@@ -99,7 +99,7 @@ export default function Landing() {
           {/* Conectores */}
           <div className="zero-rise mt-12 flex flex-wrap items-center justify-center gap-2" style={{ animationDelay: "240ms" }}>
             {CONNECTORS.map((c) => (
-              <span key={c.label} className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs text-muted">
+              <span key={c.label} className="inline-flex items-center gap-1.5 rounded-full border glass-card px-3 py-1.5 text-xs text-muted">
                 <span className="text-accent">{c.icon}</span> {c.label}
               </span>
             ))}

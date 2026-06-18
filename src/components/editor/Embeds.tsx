@@ -40,7 +40,7 @@ function Frame({
 }) {
   const m = META[type];
   return (
-    <div className="my-1 rounded-lg border bg-card">
+    <div className="my-1 rounded-lg border glass-card">
       <div className="flex items-center gap-1.5 border-b px-3 py-1.5 text-xs font-medium text-muted">
         {m.icon} {m.label}
         {onRefresh && (

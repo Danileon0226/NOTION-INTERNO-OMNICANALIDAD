@@ -132,7 +132,7 @@ export default function DashboardPage() {
         </div>
         <button
           onClick={live ? load : connect}
-          className="flex items-center gap-1.5 rounded-md border bg-card px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
+          className="flex items-center gap-1.5 rounded-md border glass-card px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
         >
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           {live ? "Sincronizar" : "Conectar Google"}
@@ -206,7 +206,7 @@ export default function DashboardPage() {
           </div>
 
           <SectionTitle icon={<Inbox size={16} />} title="Correos recientes" className="mt-7" />
-          <div className="divide-y rounded-lg border bg-card">
+          <div className="divide-y rounded-lg border glass-card">
             {(data?.emails ?? []).slice(0, 8).map((e) => (
               <EmailRow key={e.id} email={e} />
             ))}
@@ -217,7 +217,7 @@ export default function DashboardPage() {
         <section className="space-y-6">
           <div>
             <SectionTitle title="Por categoría" />
-            <div className="space-y-2 rounded-lg border bg-card p-4">
+            <div className="space-y-2 rounded-lg border glass-card p-4">
               {(data?.categories ?? []).map((c) => (
                 <CategoryBar
                   key={c.category}
@@ -263,7 +263,7 @@ function QuickLink({
   return (
     <Link
       href={href}
-      className="hover-lift flex items-center gap-3 rounded-xl border bg-card p-3"
+      className="hover-lift flex items-center gap-3 rounded-xl border glass-card p-3"
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
         {icon}
@@ -282,7 +282,7 @@ function MetricCard({ metric }: { metric: DashboardMetric }) {
   const trendColor =
     metric.trend === "up" ? "text-emerald-600" : metric.trend === "down" ? "text-red-500" : "text-muted";
   return (
-    <div className="hover-lift rounded-lg border bg-card p-4">
+    <div className="hover-lift rounded-lg border glass-card p-4">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-wide text-muted">{metric.label}</span>
         {metric.trend && <TrendIcon size={14} className={trendColor} />}
@@ -313,7 +313,7 @@ function SectionTitle({
 function ActionRow({ email }: { email: EmailItem }) {
   const danger = email.priority === "alta";
   return (
-    <div className="flex items-start gap-2.5 rounded-lg border bg-card p-3">
+    <div className="flex items-start gap-2.5 rounded-lg border glass-card p-3">
       {danger ? (
         <AlertTriangle size={16} className="mt-0.5 shrink-0 text-red-500" />
       ) : (
@@ -377,7 +377,7 @@ function CategoryBar({
 
 function ConnectorMini({ name, connected, detail }: { name: string; connected: boolean; detail: string }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-md border bg-card px-3 py-2">
+    <div className="flex items-center gap-2.5 rounded-md border glass-card px-3 py-2">
       <span className={`h-2 w-2 rounded-full ${connected ? "bg-emerald-500" : "bg-gray-300"}`} />
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm text-ink">{name}</div>

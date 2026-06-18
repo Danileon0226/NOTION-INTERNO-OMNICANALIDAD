@@ -442,7 +442,7 @@ export function GraphView() {
             <span className="text-xs text-muted">{vault.notes.length} notas</span>
             <button
               onClick={() => scan(vault.handle)}
-              className="ml-1 inline-flex items-center gap-1 rounded-md border bg-card px-2 py-1 text-xs text-ink hover:bg-bg-subtle"
+              className="ml-1 inline-flex items-center gap-1 rounded-md border glass-card px-2 py-1 text-xs text-ink hover:bg-bg-subtle"
             >
               {status === "scanning" ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
               Re-escanear

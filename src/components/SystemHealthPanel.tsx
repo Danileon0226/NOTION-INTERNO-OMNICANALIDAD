@@ -109,7 +109,7 @@ function Tile({
   const dot =
     tone === "ok" ? "bg-emerald-500" : tone === "warn" ? "bg-amber-500" : tone === "down" ? "bg-red-500" : "bg-gray-300";
   return (
-    <Link href={href} className="hover-lift rounded-xl border bg-card p-3">
+    <Link href={href} className="hover-lift rounded-xl border glass-card p-3">
       <div className="flex items-center gap-1.5 text-muted">
         <span className="text-accent">{icon}</span>
         <span className="text-[11px] font-medium uppercase tracking-wide">{label}</span>
