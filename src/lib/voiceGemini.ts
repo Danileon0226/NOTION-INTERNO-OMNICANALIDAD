@@ -97,50 +97,114 @@ let currentAudio: HTMLAudioElement | null = null;
 let currentCtx: AudioContext | null = null;
 let currentAnalyser: AnalyserNode | null = null;
 
+let queueToken = 0; // invalida la cola al detener
+
 export interface SpeakNeuralOpts {
   voiceName?: string;
+  style?: string; // dirección de estilo (p. ej. "tono grave, calmado y profesional")
   onStart?: () => void;
   onEnd?: () => void;
   onError?: (e: Error) => void;
 }
 
-/** Sintetiza y reproduce. Devuelve un AnalyserNode para visualizar la onda. */
-export async function speakGemini(text: string, opts: SpeakNeuralOpts = {}): Promise<void> {
+/** Trocea el texto en frases agrupadas (~máx 220 chars) para pipeline de voz. */
+function chunkText(text: string, max = 220): string[] {
+  const sentences = text.match(/[^.!?\n]+[.!?]?/g) ?? [text];
+  const chunks: string[] = [];
+  let cur = "";
+  for (const s of sentences) {
+    if ((cur + s).length > max && cur) {
+      chunks.push(cur.trim());
+      cur = s;
+    } else {
+      cur += s;
+    }
+  }
+  if (cur.trim()) chunks.push(cur.trim());
+  return chunks.filter(Boolean);
+}
+
+/** Reproduce un blob URL conectándolo al analizador; resuelve al terminar. */
+function playUrl(url: string, onFirst?: () => void): Promise<void> {
+  return new Promise((resolve) => {
+    const audio = new Audio(url);
+    currentAudio = audio;
+    try {
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      currentCtx = new Ctx();
+      const src = currentCtx.createMediaElementSource(audio);
+      currentAnalyser = currentCtx.createAnalyser();
+      currentAnalyser.fftSize = 256;
+      src.connect(currentAnalyser);
+      currentAnalyser.connect(currentCtx.destination);
+    } catch {
+      /* visualizador opcional */
+    }
+    let started = false;
+    audio.onplay = () => {
+      if (!started) {
+        started = true;
+        onFirst?.();
+      }
+    };
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+      resolve();
+    };
+    audio.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve();
+    };
+    audio.play().catch(() => resolve());
+  });
+}
+
+/**
+ * Voz neural pipelined: sintetiza frase a frase y reproduce la primera en cuanto
+ * está lista mientras prefetchea la siguiente → empieza a hablar casi al instante.
+ * Aplica una dirección de estilo para máxima naturalidad.
+ */
+export async function speakGeminiQueued(text: string, opts: SpeakNeuralOpts = {}): Promise<void> {
   stopGemini();
-  let url: string;
-  try {
-    url = await geminiTTS(text, opts.voiceName);
-  } catch (e) {
-    opts.onError?.(e as Error);
+  const token = ++queueToken;
+  const voice = opts.voiceName || "Charon";
+  const stylePrefix = opts.style ? `${opts.style}: ` : "";
+  const chunks = chunkText(text);
+  if (!chunks.length) {
+    opts.onEnd?.();
     return;
   }
-  const audio = new Audio(url);
-  currentAudio = audio;
+
+  const synth = (c: string) => geminiTTS(stylePrefix + c, voice);
+  let next = synth(chunks[0]);
+  let firstPlayed = false;
   try {
-    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    currentCtx = new Ctx();
-    const src = currentCtx.createMediaElementSource(audio);
-    currentAnalyser = currentCtx.createAnalyser();
-    currentAnalyser.fftSize = 256;
-    src.connect(currentAnalyser);
-    currentAnalyser.connect(currentCtx.destination);
-  } catch {
-    /* visualizador opcional */
-  }
-  audio.onplay = () => opts.onStart?.();
-  audio.onended = () => {
-    URL.revokeObjectURL(url);
-    opts.onEnd?.();
-  };
-  audio.onerror = () => {
-    opts.onError?.(new Error("No se pudo reproducir el audio."));
-    opts.onEnd?.();
-  };
-  try {
-    await audio.play();
-  } catch (e) {
-    opts.onError?.(e as Error);
-    opts.onEnd?.();
+    for (let i = 0; i < chunks.length; i++) {
+      let url: string;
+      try {
+        url = await next;
+      } catch (e) {
+        // El primer fallo cae a la voz del sistema con el resto del texto.
+        if (!firstPlayed) opts.onError?.(e as Error);
+        return;
+      }
+      if (token !== queueToken) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+      // Prefetchea la siguiente mientras reproduce la actual.
+      next = i + 1 < chunks.length ? synth(chunks[i + 1]) : Promise.reject(new Error("end"));
+      next.catch(() => {}); // evita unhandled rejection del centinela
+      await playUrl(url, () => {
+        if (!firstPlayed) {
+          firstPlayed = true;
+          opts.onStart?.();
+        }
+      });
+      if (token !== queueToken) return;
+    }
+  } finally {
+    if (token === queueToken) opts.onEnd?.();
   }
 }
 
@@ -149,6 +213,7 @@ export function getAnalyser(): AnalyserNode | null {
 }
 
 export function stopGemini(): void {
+  queueToken++; // invalida cualquier cola en curso
   if (currentAudio) {
     currentAudio.pause();
     currentAudio = null;

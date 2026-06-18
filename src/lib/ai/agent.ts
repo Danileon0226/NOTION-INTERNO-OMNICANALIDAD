@@ -4,7 +4,7 @@
 // qué conector usar, ejecuta la herramienta client-side y responde.
 
 import { useAi } from "@/lib/ai/store";
-import { geminiError } from "@/lib/ai/client";
+import { geminiError, speedConfig } from "@/lib/ai/client";
 import { toolDeclarations, runTool } from "@/lib/ai/tools";
 import { useMemory, memoryContext } from "@/lib/ai/memory";
 import { useRuns } from "@/lib/ai/runs";
@@ -67,11 +67,70 @@ export interface AgentResult {
   steps: AgentStep[];
 }
 
+/** Lee una respuesta SSE de streamGenerateContent y acumula partes/tokens. */
+async function streamTurn(
+  url: string,
+  apiKey: string,
+  body: unknown,
+  onToken?: (delta: string) => void
+): Promise<{ parts: any[]; text: string }> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok || !res.body) {
+    const data = await res.json().catch(() => ({}));
+    throw geminiError(data?.error?.message || `Gemini ${res.status}`);
+  }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  let text = "";
+  const fnCalls: any[] = [];
+  const consume = (line: string) => {
+    if (!line.startsWith("data:")) return;
+    const js = line.slice(5).trim();
+    if (!js || js === "[DONE]") return;
+    let obj: any;
+    try {
+      obj = JSON.parse(js);
+    } catch {
+      return;
+    }
+    const cps: any[] = obj?.candidates?.[0]?.content?.parts ?? [];
+    for (const p of cps) {
+      if (typeof p.text === "string" && p.text) {
+        text += p.text;
+        onToken?.(p.text);
+      } else if (p.functionCall) {
+        fnCalls.push(p);
+      }
+    }
+  };
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let idx: number;
+    while ((idx = buf.indexOf("\n")) >= 0) {
+      consume(buf.slice(0, idx).trim());
+      buf = buf.slice(idx + 1);
+    }
+  }
+  if (buf.trim()) consume(buf.trim());
+  const parts: any[] = [];
+  if (text) parts.push({ text });
+  parts.push(...fnCalls);
+  return { parts, text };
+}
+
 export async function runAgent(
   userText: string,
   history: ChatMsg[] = [],
   onStep?: (s: AgentStep) => void,
-  source = "agente"
+  source = "agente",
+  onToken?: (delta: string) => void
 ): Promise<AgentResult> {
   const { apiKey, model, temperature } = useAi.getState();
   if (!apiKey) throw new Error("Falta la API key de Gemini. Configúrala en Conectores → Asistente IA.");
@@ -86,40 +145,31 @@ export async function runAgent(
 
   // Mantén el banco caliente en segundo plano (no bloquea esta respuesta).
   void refreshDataBank();
-  // Inyecta banco de datos (estado actual) + memoria persistente como contexto.
   const bank = bankContext();
   const mem = memoryContext(useMemory.getState().items);
   const system = [SYSTEM, bank, mem].filter(Boolean).join("\n\n");
+  const url = `${ENDPOINT}/${model}:streamGenerateContent?alt=sse`;
+  const genCfg = { temperature, ...speedConfig(model) };
 
-  // Registra la ejecución para trazabilidad agéntica (éxito o error).
   const record = (text: string, ok: boolean) =>
     useRuns.getState().push({ source, prompt: userText, steps, text, ok, ms: Date.now() - started });
 
   try {
     for (let i = 0; i < 6; i++) {
-      const res = await fetch(`${ENDPOINT}/${model}:generateContent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
-        body: JSON.stringify({
-          contents,
-          tools,
-          generationConfig: { temperature },
-          systemInstruction: { parts: [{ text: system }] },
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw geminiError(data?.error?.message || `Gemini ${res.status}`);
-
-      const parts: any[] = data?.candidates?.[0]?.content?.parts ?? [];
+      const { parts, text } = await streamTurn(
+        url,
+        apiKey,
+        { contents, tools, generationConfig: genCfg, systemInstruction: { parts: [{ text: system }] } },
+        onToken
+      );
       const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall);
 
       if (!calls.length) {
-        const text = parts.map((p) => p.text ?? "").join("").trim() || "(sin respuesta)";
-        record(text, true);
-        return { text, steps };
+        const out = text.trim() || "(sin respuesta)";
+        record(out, true);
+        return { text: out, steps };
       }
 
-      // Turno del modelo (con las llamadas) + respuestas de las herramientas.
       contents.push({ role: "model", parts });
       const responseParts: any[] = [];
       for (const call of calls) {

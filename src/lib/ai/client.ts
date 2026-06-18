@@ -11,6 +11,17 @@ export interface AskAiOptions {
 
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 
+/**
+ * Desactiva la fase de "thinking" en modelos 2.5/3.x (thinkingBudget: 0) para
+ * acelerar drásticamente la respuesta. Devuelve {} para modelos que no lo soportan.
+ */
+export function speedConfig(model: string): Record<string, unknown> {
+  if (/2\.5|gemini-3|flash-latest|pro-latest/i.test(model)) {
+    return { thinkingConfig: { thinkingBudget: 0 } };
+  }
+  return {};
+}
+
 /** Convierte errores crípticos de Google en guía accionable. */
 export function geminiError(raw: string): Error {
   if (/are blocked|blocked|API_KEY_HTTP_REFERRER|PERMISSION_DENIED|restricted/i.test(raw)) {
@@ -33,7 +44,7 @@ export async function askAi(prompt: string, opts: AskAiOptions = {}): Promise<st
     headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature },
+      generationConfig: { temperature, ...speedConfig(m) },
       ...(opts.system ? { systemInstruction: { parts: [{ text: opts.system }] } } : {}),
     }),
   });
@@ -112,7 +123,7 @@ export async function chatAi(messages: ChatMessage[], opts: ChatAiOptions = {}):
     headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
     body: JSON.stringify({
       contents: messages.map((msg) => ({ role: msg.role, parts: [{ text: msg.text }] })),
-      generationConfig: { temperature },
+      generationConfig: { temperature, ...speedConfig(m) },
       ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
     }),
   });
