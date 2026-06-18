@@ -14,6 +14,7 @@ import {
   History,
   FileBarChart,
   ShieldCheck,
+  BookOpen,
   Plug,
   Mail,
   Calendar,
@@ -106,6 +107,7 @@ export function CommandPalette() {
       { id: "inbox", label: "Bandeja", icon: <Mail size={16} />, run: () => nav("/inbox") },
       { id: "connectors", label: "Conectores", icon: <Plug size={16} />, run: () => nav("/connectors") },
       { id: "setup", label: "Estado de configuración", icon: <ShieldCheck size={16} />, run: () => nav("/setup") },
+      { id: "docs", label: "Documentación", icon: <BookOpen size={16} />, run: () => nav("/docs") },
       {
         id: "new",
         label: "Nueva página",

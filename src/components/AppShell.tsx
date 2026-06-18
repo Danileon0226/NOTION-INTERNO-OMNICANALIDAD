@@ -30,6 +30,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     applyTheme(mode);
   }, [mode]);
 
+  // Rutas de marketing: a pantalla completa, sin el shell de la app.
+  const isMarketing = pathname === "/" || pathname.startsWith("/docs");
+  if (isMarketing) {
+    return (
+      <div key={pathname} className="zero-page-enter min-h-screen bg-bg">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen w-screen overflow-hidden">
       {/* Sidebar fija en escritorio */}

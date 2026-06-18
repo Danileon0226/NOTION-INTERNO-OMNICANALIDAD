@@ -9,12 +9,11 @@ import { useWorkspace } from "@/lib/store";
 import { useTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
 import { NotificationsBell } from "@/components/NotificationsBell";
-import { AGENCY_EMAIL } from "@/lib/data/emails";
 import type { WorkspacePage } from "@/lib/types";
 import {
   LayoutDashboard,
   Plug,
-  FileText,
+  BookOpen,
   Plus,
   ChevronRight,
   ChevronDown,
@@ -181,10 +180,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <div className="flex items-center justify-between gap-2 border-t px-3 py-2 text-[11px] text-muted">
-        <span className="flex min-w-0 items-center gap-1">
-          <FileText size={12} className="shrink-0" />
-          <span className="truncate">{AGENCY_EMAIL || "Zero Agency OS"}</span>
-        </span>
+        <Link href="/docs" className="flex min-w-0 items-center gap-1 hover:text-ink">
+          <BookOpen size={12} className="shrink-0" />
+          <span className="truncate">Documentación</span>
+        </Link>
         <span className="flex shrink-0 items-center gap-1">
           <kbd className="hidden rounded border px-1 py-0.5 text-[9px] sm:inline">⌘K</kbd>
           <button
