@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Brain, Plus, Pin, PinOff, Trash2, Search } from "lucide-react";
 import { useMemory, searchMemory } from "@/lib/ai/memory";
+import { ModuleHeader } from "@/components/ModuleHeader";
 
 export default function MemoryPage() {
   const { items, add, remove, togglePin, clear } = useMemory();
@@ -25,22 +26,18 @@ export default function MemoryPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-8">
-      <header className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-ink">
-            <Brain size={22} className="text-accent" /> Memoria de ZERO
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            Lo que el gestor de conciencia recuerda entre sesiones. Se inyecta como contexto en cada
-            respuesta. ZERO también puede guardar y recuperar hechos por su cuenta.
-          </p>
-        </div>
-        {items.length > 0 && (
-          <button onClick={clear} className="self-start rounded-md border px-3 py-1.5 text-sm text-muted hover:bg-bg-subtle hover:text-red-500">
-            Vaciar memoria
-          </button>
-        )}
-      </header>
+      <ModuleHeader
+        icon={<Brain size={20} />}
+        title="Memoria de ZERO"
+        subtitle="Lo que el gestor de conciencia recuerda entre sesiones; contexto en cada respuesta."
+        right={
+          items.length > 0 ? (
+            <button onClick={clear} className="rounded-md border px-3 py-1.5 text-sm text-muted hover:bg-bg-subtle hover:text-red-500">
+              Vaciar memoria
+            </button>
+          ) : undefined
+        }
+      />
 
       {/* Añadir */}
       <form onSubmit={submit} className="mb-4 rounded-xl border glass-card p-3">

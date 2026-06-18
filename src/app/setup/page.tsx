@@ -15,6 +15,7 @@ import {
   ANALYTICS_SCOPE,
 } from "@/lib/connectors/googleInsights";
 import { useSetup, enableUrl, classifyGoogleError } from "@/lib/setup";
+import { ModuleHeader } from "@/components/ModuleHeader";
 
 type Status = "idle" | "running" | "ok" | "warn" | "fail";
 interface Result {
@@ -149,15 +150,11 @@ export default function SetupPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-8">
-      <header className="mb-5">
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-ink">
-          <ShieldCheck size={22} className="text-accent" /> Estado de configuración
-        </h1>
-        <p className="mt-1 text-sm text-muted">
-          Prueba en vivo cada API de Google y la IA. Te dice qué falta y te da el enlace exacto para
-          habilitarlo en tu proyecto.
-        </p>
-      </header>
+      <ModuleHeader
+        icon={<ShieldCheck size={20} />}
+        title="Estado de configuración"
+        subtitle="Prueba en vivo cada API de Google y la IA, y te da el enlace para habilitar lo que falte."
+      />
 
       <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
         <label className="block text-xs text-muted">

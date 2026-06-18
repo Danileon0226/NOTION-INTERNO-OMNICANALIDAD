@@ -7,6 +7,7 @@ import { useReports, generateReport, PERIODS, type Period, type Report } from "@
 import { exportReportPdf } from "@/lib/reportPdf";
 import { downloadText } from "@/lib/export";
 import { useAi } from "@/lib/ai/store";
+import { ModuleHeader } from "@/components/ModuleHeader";
 
 export default function ReportsPage() {
   const { reports, remove, clear } = useReports();
@@ -30,22 +31,18 @@ export default function ReportsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-8">
-      <header className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-ink">
-            <FileBarChart size={22} className="text-accent" /> Reportes
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            Estado general de la agencia, diario, semanal y mensual. ZERO los genera con todas las
-            señales y los autogenera cuando toca. Exporta a PDF con la marca.
-          </p>
-        </div>
-        {reports.length > 0 && (
-          <button onClick={clear} className="self-start rounded-md border px-3 py-1.5 text-sm text-muted hover:bg-bg-subtle hover:text-red-500">
-            Vaciar
-          </button>
-        )}
-      </header>
+      <ModuleHeader
+        icon={<FileBarChart size={20} />}
+        title="Reportes"
+        subtitle="Estado general diario, semanal y mensual. ZERO los genera y exporta a PDF con la marca."
+        right={
+          reports.length > 0 ? (
+            <button onClick={clear} className="rounded-md border px-3 py-1.5 text-sm text-muted hover:bg-bg-subtle hover:text-red-500">
+              Vaciar
+            </button>
+          ) : undefined
+        }
+      />
 
       {!apiKey && (
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">

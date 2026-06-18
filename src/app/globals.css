@@ -60,9 +60,9 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(42% 42% at 12% 6%, color-mix(in srgb, var(--brand-soft) 30%, transparent), transparent 70%),
-    radial-gradient(46% 46% at 88% 0%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 72%),
-    radial-gradient(54% 50% at 72% 104%, color-mix(in srgb, var(--brand) 22%, transparent), transparent 72%);
+    radial-gradient(42% 42% at 12% 6%, color-mix(in srgb, var(--brand-soft) 20%, transparent), transparent 70%),
+    radial-gradient(46% 46% at 88% 0%, color-mix(in srgb, var(--accent) 17%, transparent), transparent 72%),
+    radial-gradient(54% 50% at 72% 104%, color-mix(in srgb, var(--brand) 15%, transparent), transparent 72%);
 }
 
 * {
@@ -198,18 +198,21 @@ h2 {
 
 /* ── Liquid glass · cristal líquido de marca ──────────────────── */
 :root {
-  --glass-bg: rgba(255, 255, 255, 0.6);
-  --glass-bg-strong: rgba(255, 255, 255, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.6);
-  --glass-hi: rgba(255, 255, 255, 0.75);
-  --glass-shadow: 0 10px 34px -16px rgba(40, 20, 70, 0.4);
+  /* Más opacidad = más contraste y legibilidad sobre la aurora */
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --glass-bg-strong: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(57, 40, 81, 0.14); /* hairline tintado de marca, da definición */
+  --glass-hi: rgba(255, 255, 255, 0.9); /* brillo especular superior */
+  --glass-shadow: 0 12px 36px -18px rgba(40, 20, 70, 0.42);
+  --glass-inset: color-mix(in srgb, var(--brand) 6%, #ffffff);
 }
 [data-theme="dark"] {
-  --glass-bg: rgba(28, 22, 42, 0.52);
-  --glass-bg-strong: rgba(30, 24, 46, 0.66);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-hi: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 14px 40px -18px rgba(0, 0, 0, 0.7);
+  --glass-bg: rgba(26, 20, 40, 0.7);
+  --glass-bg-strong: rgba(30, 24, 46, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-hi: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 16px 44px -20px rgba(0, 0, 0, 0.78);
+  --glass-inset: color-mix(in srgb, var(--brand-soft) 10%, #15111f);
 }
 
 /* Tarjetas/paneles translúcidos con desenfoque y brillo especular */
@@ -235,10 +238,45 @@ h2 {
   border-color: var(--glass-border);
   box-shadow: inset 0 1px 0 var(--glass-hi), 0 24px 60px -24px rgba(30, 15, 55, 0.5);
 }
+/* Componentes pequeños: inset tintado y chip con definición (legibles sobre el cristal) */
+.glass-inset {
+  background: var(--glass-inset);
+  border: 1px solid var(--glass-border);
+}
+.glass-chip {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  backdrop-filter: blur(10px) saturate(160%);
+  border: 1px solid var(--glass-border);
+}
+
+/* Cabecera de módulo elevada */
+.module-head {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--brand) 12%, transparent), transparent 60%),
+    var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(18px) saturate(165%);
+  backdrop-filter: blur(18px) saturate(165%);
+  box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow);
+}
+
+/* kbd legible en cristal */
+kbd {
+  background: var(--glass-inset);
+  border: 1px solid var(--glass-border);
+  border-radius: 5px;
+}
+
 @media (prefers-reduced-transparency: reduce) {
   .glass-card,
   .glass-bar,
-  .glass-pop {
+  .glass-pop,
+  .glass-chip,
+  .module-head {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: var(--card);
