@@ -52,9 +52,10 @@ export const useConnectors = create<ConnectorsState>()(
         set((s) => {
           if (id === "github") return { github: { token: "", account: "" } };
           if (id === "telegram") return { telegram: { botToken: "", chatId: "" } };
-          if (id === "gmail" || id === "google-drive") {
+          if (id === "gmail" || id === "google-drive" || id === "google-calendar") {
             // Quita solo el scope correspondiente; revoca el token si no quedan scopes.
-            const scope = id === "gmail" ? GMAIL_SCOPE : DRIVE_SCOPE;
+            const scope =
+              id === "gmail" ? GMAIL_SCOPE : id === "google-drive" ? DRIVE_SCOPE : CALENDAR_SCOPE;
             const scopes = s.google.scopes.filter((x) => x !== scope);
             return {
               google: scopes.length

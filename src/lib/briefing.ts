@@ -44,11 +44,16 @@ export const useScheduledBriefing = create<BriefingState>()(
       setEnabled: (enabled) => set({ enabled }),
       setHour: (hour) => set({ hour }),
       setChannels: (c) => set(c),
-      markSent: () => set({ lastSent: new Date().toISOString().slice(0, 10) }),
+      markSent: () => set({ lastSent: localDay() }),
     }),
     { name: "zero-agency-briefing" }
   )
 );
+
+/** Fecha local YYYY-MM-DD (coherente con getHours(), evita desfase UTC). */
+function localDay(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 let running = false;
 
@@ -56,7 +61,7 @@ let running = false;
 export async function runScheduledBriefing(force = false): Promise<{ text: string; sent: string[] }> {
   if (running) return { text: "", sent: [] };
   const s = useScheduledBriefing.getState();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDay();
   if (!force) {
     if (!s.enabled) return { text: "", sent: [] };
     if (s.lastSent === today) return { text: "", sent: [] };

@@ -22,6 +22,7 @@ import zeroMark from "@/brand/zero-mark.png";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const mode = useTheme((s) => s.mode);
   const toggleTheme = useTheme((s) => s.toggle);
@@ -32,6 +33,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     applyTheme(mode);
   }, [mode]);
+
+  // Evita flash/mismatch del login antes de rehidratar el estado persistido.
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Rutas de marketing: a pantalla completa, sin el shell de la app.
   const isMarketing = pathname === "/" || pathname.startsWith("/docs");
@@ -44,8 +50,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   // Puerta de acceso por clave (si está configurada por variable de entorno).
-  if (authRequired && !authed) {
-    return <LoginGate />;
+  if (authRequired) {
+    if (!mounted) {
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <span className="zero-monogram h-12 w-12 animate-pulse text-xl">Z</span>
+        </div>
+      );
+    }
+    if (!authed) return <LoginGate />;
   }
 
   return (

@@ -76,9 +76,12 @@ function isoWeek(d: Date): string {
 }
 
 export function periodKey(period: Period, d = new Date()): string {
-  if (period === "daily") return d.toISOString().slice(0, 10);
+  // Claves en hora LOCAL (coherentes con getHours()/getDay()/getDate() del gate).
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  if (period === "daily") return `${y}-${m}-${String(d.getDate()).padStart(2, "0")}`;
   if (period === "weekly") return isoWeek(d);
-  return d.toISOString().slice(0, 7); // YYYY-MM
+  return `${y}-${m}`; // YYYY-MM
 }
 
 function titleFor(period: Period, d = new Date()): string {

@@ -130,13 +130,17 @@ function playUrl(url: string, onFirst?: () => void): Promise<void> {
     const audio = new Audio(url);
     currentAudio = audio;
     try {
-      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      currentCtx = new Ctx();
+      // Reutiliza un único AudioContext/Analyser por sesión (evita fuga de
+      // contextos y mantiene estable el visualizador entre frases).
+      if (!currentCtx) {
+        const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        currentCtx = new Ctx();
+        currentAnalyser = currentCtx.createAnalyser();
+        currentAnalyser.fftSize = 256;
+        currentAnalyser.connect(currentCtx.destination);
+      }
       const src = currentCtx.createMediaElementSource(audio);
-      currentAnalyser = currentCtx.createAnalyser();
-      currentAnalyser.fftSize = 256;
-      src.connect(currentAnalyser);
-      currentAnalyser.connect(currentCtx.destination);
+      src.connect(currentAnalyser!);
     } catch {
       /* visualizador opcional */
     }
@@ -201,7 +205,11 @@ export async function speakGeminiQueued(text: string, opts: SpeakNeuralOpts = {}
           opts.onStart?.();
         }
       });
-      if (token !== queueToken) return;
+      if (token !== queueToken) {
+        // Cancelado: libera el audio prefetcheado que ya no se reproducirá.
+        next.then((u) => URL.revokeObjectURL(u)).catch(() => {});
+        return;
+      }
     }
   } finally {
     if (token === queueToken) opts.onEnd?.();
