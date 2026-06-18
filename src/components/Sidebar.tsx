@@ -8,6 +8,7 @@ import zeroMark from "@/brand/zero-mark.png";
 import { useWorkspace } from "@/lib/store";
 import { useTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
+import { authRequired, useAuth } from "@/lib/auth";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import type { WorkspacePage } from "@/lib/types";
 import {
@@ -33,6 +34,7 @@ import {
   History,
   FileBarChart,
   ShieldCheck,
+  LogOut,
 } from "lucide-react";
 
 // Navegación agrupada por intención → más fácil de escanear.
@@ -80,6 +82,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const mode = useTheme((s) => s.mode);
   const toggleTheme = useTheme((s) => s.toggle);
   const openPalette = useCommandPalette((s) => s.setOpen);
+  const logout = useAuth((s) => s.logout);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const roots = pages.filter((p) => p.parentId === null);
@@ -196,6 +199,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           >
             {mode === "dark" ? <Sun size={14} /> : <Moon size={14} />}
           </button>
+          {authRequired && (
+            <button onClick={logout} title="Salir" className="rounded p-1 text-muted hover:bg-bg-subtle hover:text-red-500">
+              <LogOut size={14} />
+            </button>
+          )}
         </span>
       </div>
     </aside>

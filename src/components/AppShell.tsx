@@ -14,8 +14,10 @@ import { MonitorDaemon } from "@/components/monitor/MonitorDaemon";
 import { BriefingDaemon } from "@/components/BriefingDaemon";
 import { ReportsDaemon } from "@/components/ReportsDaemon";
 import { DataBankDaemon } from "@/components/DataBankDaemon";
+import { LoginGate } from "@/components/LoginGate";
 import { useTheme, applyTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
+import { authRequired, useAuth } from "@/lib/auth";
 import zeroMark from "@/brand/zero-mark.png";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -24,6 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const mode = useTheme((s) => s.mode);
   const toggleTheme = useTheme((s) => s.toggle);
   const openPalette = useCommandPalette((s) => s.setOpen);
+  const authed = useAuth((s) => s.authed);
 
   // Aplica el tema persistido al cargar y cuando cambia.
   useEffect(() => {
@@ -38,6 +41,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </div>
     );
+  }
+
+  // Puerta de acceso por clave (si está configurada por variable de entorno).
+  if (authRequired && !authed) {
+    return <LoginGate />;
   }
 
   return (

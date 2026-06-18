@@ -6,12 +6,17 @@ import { ArrowLeft, BookOpen } from "lucide-react";
 const TOC = [
   { id: "intro", label: "Qué es ZERO OS" },
   { id: "inicio", label: "Primeros pasos" },
+  { id: "tutorial", label: "Tutorial · 5 minutos" },
+  { id: "modulos", label: "Tour por módulos" },
   { id: "conciencia", label: "El gestor de conciencia" },
   { id: "banco", label: "Banco de datos" },
   { id: "integraciones", label: "Integraciones" },
   { id: "reportes", label: "Reportes" },
+  { id: "acceso", label: "Acceso (login)" },
+  { id: "entorno", label: "Variables de entorno" },
   { id: "seguridad", label: "Seguridad y privacidad" },
   { id: "despliegue", label: "Despliegue" },
+  { id: "faq", label: "Preguntas frecuentes" },
 ];
 
 export default function Docs() {
@@ -69,6 +74,31 @@ export default function Docs() {
             <Callout>Mantén el Client ID, la API key y las APIs habilitadas en un <strong>mismo proyecto</strong> de Google Cloud.</Callout>
           </Section>
 
+          <Section id="tutorial" title="Tutorial · tus primeros 5 minutos">
+            <ol>
+              <li><strong>Entra al OS</strong> y abre <Code>Conectores</Code>. Pega tu API key de Gemini → pulsa “Probar IA”.</li>
+              <li>Conecta Google (un clic = Gmail + Drive + Calendar). Conecta GitHub/Telegram si los usas.</li>
+              <li>Ve a <Code>Estado de configuración</Code> y pulsa <strong>Probar todo</strong>: deja todo en verde.</li>
+              <li>Abre el <strong>Dashboard</strong>: verás tu bandeja en vivo, la torre de control y las <strong>anticipaciones</strong> de ZERO.</li>
+              <li>Pulsa <strong>⌘K</strong> (o el buscador) y escribe una orden: <em>“resume mis correos urgentes”</em> o <em>“¿qué tengo hoy?”</em>. ZERO responde al instante (banco de datos en caché).</li>
+              <li>Genera tu primer <strong>Briefing del día</strong> en el Dashboard, o un <strong>Reporte</strong> en <Code>/reports</Code> y expórtalo a PDF de marca.</li>
+              <li>Habla con <strong>ZERO (voz)</strong>: elige el motor <em>Neural (Gemini)</em> y pulsa el orbe.</li>
+            </ol>
+            <Callout>Consejo: dile a ZERO <em>“recuerda que…”</em> para que guarde datos de la agencia y los use siempre como contexto.</Callout>
+          </Section>
+
+          <Section id="modulos" title="Tour por módulos">
+            <ul>
+              <li><strong>Dashboard</strong>: estado general, accesos rápidos, bandeja en vivo, briefing y anticipaciones.</li>
+              <li><strong>Anticipación</strong>: madurez, escalera de confianza, autonomía y auditoría.</li>
+              <li><strong>Asistente IA / ZERO (voz)</strong>: copiloto en texto y por voz (con streaming).</li>
+              <li><strong>Memoria</strong>: lo que ZERO recuerda entre sesiones.</li>
+              <li><strong>Bandeja · Calendario · Drive · Canvas/Grafo · Monitoreo</strong>: tus datos reales.</li>
+              <li><strong>Piloto automático · Reportes · Actividad agéntica</strong>: automatización, informes y trazabilidad.</li>
+              <li><strong>Conectores · Estado de configuración</strong>: integraciones y diagnóstico de APIs.</li>
+            </ul>
+          </Section>
+
           <Section id="conciencia" title="El gestor de conciencia">
             <p>El núcleo de ZERO es un bucle gobernado:</p>
             <ul>
@@ -106,6 +136,33 @@ export default function Docs() {
             </p>
           </Section>
 
+          <Section id="acceso" title="Acceso (login por clave)">
+            <p>
+              Puedes proteger el OS con una clave configurada por variable de entorno. Si está
+              definida, la app pide la clave antes de entrar (la landing y esta documentación quedan
+              públicas). El acceso se recuerda en tu navegador; puedes cerrar sesión desde el menú.
+            </p>
+            <ul>
+              <li><Code>NEXT_PUBLIC_APP_PASSWORD</Code>: clave en claro (sencillo).</li>
+              <li><Code>NEXT_PUBLIC_APP_PASSWORD_SHA256</Code>: hash SHA-256 de la clave (recomendado; la clave no queda en el bundle).</li>
+            </ul>
+            <Callout>
+              Es una <strong>puerta de acceso</strong>, no seguridad fuerte (la app es client-side). Para el hash:
+              <Code>echo -n &quot;tu-clave&quot; | shasum -a 256</Code>.
+            </Callout>
+          </Section>
+
+          <Section id="entorno" title="Variables de entorno">
+            <ul>
+              <li><Code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</Code>: Client ID de OAuth para conectar Google de un clic.</li>
+              <li><Code>NEXT_PUBLIC_AGENCY_EMAIL</Code>: correo de la agencia mostrado en la UI.</li>
+              <li><Code>NEXT_PUBLIC_APP_PASSWORD</Code> / <Code>NEXT_PUBLIC_APP_PASSWORD_SHA256</Code>: clave de acceso.</li>
+              <li><Code>NEXT_PUBLIC_BASE_PATH</Code>: subruta para GitHub Pages (p. ej. <Code>/NOTION-INTERNO-OMNICANALIDAD</Code>).</li>
+              <li><Code>NEXT_OUTPUT_EXPORT=true</Code>: activa la exportación estática (Pages).</li>
+            </ul>
+            <p>En Vercel se configuran en <em>Settings → Environment Variables</em>; en local, en <Code>.env.local</Code>.</p>
+          </Section>
+
           <Section id="seguridad" title="Seguridad y privacidad">
             <ul>
               <li>Credenciales y datos viven en tu navegador (localStorage); nada se versiona ni se envía a terceros salvo a las APIs oficiales.</li>
@@ -120,6 +177,17 @@ export default function Docs() {
               <Code>NEXT_OUTPUT_EXPORT=true npm run build</Code> para GitHub Pages (export estático).
               Mobile-first, PWA instalable y modo oscuro incluidos.
             </p>
+          </Section>
+
+          <Section id="faq" title="Preguntas frecuentes">
+            <ul>
+              <li><strong>“invalid_client” al conectar Google</strong>: el Client ID no existe o es de otro proyecto. Cópialo exacto desde Credenciales y pégalo en Conectores → Google (mismo proyecto que el consent y las APIs).</li>
+              <li><strong>“API blocked / are blocked”</strong>: tu API key de Gemini está restringida. Crea una sin restricciones en aistudio.google.com/apikey.</li>
+              <li><strong>“access_denied”</strong>: añade tu Gmail como <em>usuario de prueba</em> en la pantalla de consentimiento, o publica la app.</li>
+              <li><strong>“origin_mismatch”</strong>: añade tu dominio exacto (sin barra final) a “Orígenes de JavaScript autorizados”.</li>
+              <li><strong>La voz no suena</strong>: usa el motor Neural (Gemini) con la API key activa; si no, ZERO usa la voz del sistema.</li>
+              <li><strong>Perdí mis datos al cambiar de dominio</strong>: el estado vive en localStorage por origen. Usa <em>Conectores → Datos y respaldo</em> para exportar/importar.</li>
+            </ul>
           </Section>
 
           <div className="border-t pt-8 text-sm text-muted">
