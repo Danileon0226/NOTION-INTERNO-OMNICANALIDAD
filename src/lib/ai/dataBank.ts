@@ -51,7 +51,11 @@ export const useDataBank = create<DataBankState>()(
       refreshing: false,
       set: (p) => set(p),
     }),
-    { name: "zero-agency-databank" }
+    {
+      name: "zero-agency-databank",
+      // No persiste estado transitorio (evita que 'refreshing' quede pegado).
+      partialize: (s) => ({ gmail: s.gmail, calendar: s.calendar, github: s.github, drive: s.drive, lastRefresh: s.lastRefresh }),
+    }
   )
 );
 

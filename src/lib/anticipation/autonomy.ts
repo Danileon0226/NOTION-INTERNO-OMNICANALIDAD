@@ -95,7 +95,7 @@ export async function runAutonomyCycle(): Promise<number> {
     for (const a of candidates) {
       if (acted >= aut.maxPerCycle) break;
       if (!useAutonomy.getState().canAct(a.key)) continue;
-      useAutonomy.getState().markActed(a.key);
+      acted += 1; // cuenta el intento (no satura la API en un mismo ciclo)
       useActivity.getState().push({
         source: "ai",
         kind: "info",
@@ -104,6 +104,8 @@ export async function runAutonomyCycle(): Promise<number> {
       });
       try {
         const r = await runAgent(a.suggestPrompt!, [], undefined, "autonomía");
+        // Solo en éxito: enfría la acción y registra feedback positivo.
+        useAutonomy.getState().markActed(a.key);
         ant.recordFeedback(a.key, a.type, "accepted");
         useAutonomy.getState().pushLog({
           id: a.explainId || Math.random().toString(36).slice(2),
@@ -114,8 +116,9 @@ export async function runAutonomyCycle(): Promise<number> {
           ok: true,
           result: r.text.slice(0, 600),
         });
-        void fireWebhooks("autonomy", { title: a.title, type: a.type, result: r.text.slice(0, 400) });
+        void fireWebhooks("autonomy", { title: a.title, type: a.type, result: r.text.slice(0, 400) }).catch(() => {});
       } catch (e) {
+        // Fallo: NO se enfría, para poder reintentar en el próximo ciclo.
         useAutonomy.getState().pushLog({
           id: Math.random().toString(36).slice(2),
           ts: Date.now(),
@@ -126,7 +129,6 @@ export async function runAutonomyCycle(): Promise<number> {
           result: (e as Error).message,
         });
       }
-      acted += 1;
     }
     useAutonomy.getState().setLastRun(Date.now());
   } finally {

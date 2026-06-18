@@ -1242,7 +1242,7 @@ function CalendarCard() {
           <Btn
             variant="danger"
             onClick={() => {
-              disconnect("gmail"); // limpia scope google; el usuario re-autoriza si hace falta
+              disconnect("google-calendar"); // quita solo el scope de Calendar
               setEvents(null);
             }}
           >
