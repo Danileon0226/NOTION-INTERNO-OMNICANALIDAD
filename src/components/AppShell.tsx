@@ -12,6 +12,7 @@ import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { AutonomyDaemon } from "@/components/anticipation/AutonomyDaemon";
 import { MonitorDaemon } from "@/components/monitor/MonitorDaemon";
 import { BriefingDaemon } from "@/components/BriefingDaemon";
+import { ReportsDaemon } from "@/components/ReportsDaemon";
 import { useTheme, applyTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
 import zeroMark from "@/brand/zero-mark.png";
@@ -99,6 +100,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Demonio del briefing programado */}
       <BriefingDaemon />
+
+      {/* Demonio de reportes diarios/semanales/mensuales */}
+      <ReportsDaemon />
 
       {/* Copiloto "Zero" — flotante en cualquier pantalla */}
       <AssistantPanel />
