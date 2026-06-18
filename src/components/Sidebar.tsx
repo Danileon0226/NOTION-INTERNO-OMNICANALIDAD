@@ -120,63 +120,66 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </button>
       </div>
 
-      <nav className="space-y-3 px-2 pb-1">
-        {NAV_GROUPS.map((g) => (
-          <div key={g.label}>
-            <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted/70">{g.label}</p>
-            {g.items.map((it) => (
-              <NavLink
-                key={it.href}
-                href={it.href}
-                active={pathname === it.href}
-                icon={it.icon}
-                onClick={onNavigate}
-              >
-                {it.label}
-              </NavLink>
-            ))}
-          </div>
-        ))}
-      </nav>
+      {/* Zona desplazable: navegación + workspace (clave para móvil) */}
+      <div className="flex-1 overflow-y-auto overscroll-contain">
+        <nav className="space-y-3 px-2 pb-1">
+          {NAV_GROUPS.map((g) => (
+            <div key={g.label}>
+              <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted/70">{g.label}</p>
+              {g.items.map((it) => (
+                <NavLink
+                  key={it.href}
+                  href={it.href}
+                  active={pathname === it.href}
+                  icon={it.icon}
+                  onClick={onNavigate}
+                >
+                  {it.label}
+                </NavLink>
+              ))}
+            </div>
+          ))}
+        </nav>
 
-      <div className="mt-4 flex items-center justify-between px-4 py-1">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Workspace</span>
-        <button
-          onClick={() => {
-            createPage(null);
-            router.push("/pages");
-            onNavigate?.();
-          }}
-          className="rounded p-0.5 text-muted hover:bg-bg-subtle hover:text-ink"
-          title="Nueva página"
-        >
-          <Plus size={15} />
-        </button>
-      </div>
+        <div className="mt-4 flex items-center justify-between px-4 py-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Workspace</span>
+          <button
+            onClick={() => {
+              createPage(null);
+              router.push("/pages");
+              onNavigate?.();
+            }}
+            className="rounded p-0.5 text-muted hover:bg-bg-subtle hover:text-ink"
+            title="Nueva página"
+          >
+            <Plus size={15} />
+          </button>
+        </div>
 
-      <div className="flex-1 overflow-y-auto px-2 pb-4">
-        {roots.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-muted">Sin páginas todavía.</p>
-        ) : (
-          roots.map((p) => (
-            <Tree
-              key={p.id}
-              page={p}
-              pages={pages}
-              depth={0}
-              expanded={expanded}
-              activeId={activePageId}
-              isPages={pathname === "/pages"}
-              onOpen={openPage}
-              onToggle={toggle}
-              onAddChild={(pid) => {
-                const child = createSubpage(pid, null);
-                setExpanded((s) => new Set(s).add(pid));
-                openPage(child);
-              }}
-            />
-          ))
-        )}
+        <div className="px-2 pb-4">
+          {roots.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-muted">Sin páginas todavía.</p>
+          ) : (
+            roots.map((p) => (
+              <Tree
+                key={p.id}
+                page={p}
+                pages={pages}
+                depth={0}
+                expanded={expanded}
+                activeId={activePageId}
+                isPages={pathname === "/pages"}
+                onOpen={openPage}
+                onToggle={toggle}
+                onAddChild={(pid) => {
+                  const child = createSubpage(pid, null);
+                  setExpanded((s) => new Set(s).add(pid));
+                  openPage(child);
+                }}
+              />
+            ))
+          )}
+        </div>
       </div>
 
       <div className="flex items-center justify-between gap-2 border-t px-3 py-2 text-[11px] text-muted">
