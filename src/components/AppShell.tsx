@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { Menu, Search, Moon, Sun } from "lucide-react";
+import Link from "next/link";
+import { Menu, Search, Moon, Sun, ShieldAlert, Clock, LogOut } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -15,12 +16,12 @@ import { BriefingDaemon } from "@/components/BriefingDaemon";
 import { ReportsDaemon } from "@/components/ReportsDaemon";
 import { DataBankDaemon } from "@/components/DataBankDaemon";
 import { LoginGate } from "@/components/LoginGate";
+import { AuthListener } from "@/components/AuthListener";
 import { useTheme, applyTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
-import { authRequired, useAuth } from "@/lib/auth";
-import { canAccess, roleMeta } from "@/lib/rbac";
-import Link from "next/link";
-import { ShieldAlert } from "lucide-react";
+import { canAccessWith, roleMeta } from "@/lib/rbac";
+import { authMode, useAccount, signOutAccount } from "@/lib/account";
+import { track } from "@/lib/firebase/track";
 import zeroMark from "@/brand/zero-mark.png";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -30,8 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const mode = useTheme((s) => s.mode);
   const toggleTheme = useTheme((s) => s.toggle);
   const openPalette = useCommandPalette((s) => s.setOpen);
-  const authed = useAuth((s) => s.authed);
-  const role = useAuth((s) => s.role);
+  const account = useAccount();
 
   // Aplica el tema persistido al cargar y cuando cambia.
   useEffect(() => {
@@ -43,6 +43,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
+  // Seguimiento de navegación por persona (best-effort; solo con Firebase).
+  useEffect(() => {
+    if (account.authed && account.enabled) track("view", `Vista: ${pathname}`, pathname);
+  }, [pathname, account.authed, account.enabled]);
+
   // Rutas de marketing: a pantalla completa, sin el shell de la app.
   const isMarketing = pathname === "/" || pathname.startsWith("/docs");
   if (isMarketing) {
@@ -53,118 +58,150 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Puerta de acceso por clave (si está configurada por variable de entorno).
-  if (authRequired) {
-    if (!mounted) {
-      return (
-        <div className="flex min-h-screen items-center justify-center">
-          <span className="zero-monogram h-12 w-12 animate-pulse text-xl">Z</span>
-        </div>
-      );
-    }
-    if (!authed) return <LoginGate />;
-    // Guardia por rol: bloquea el acceso directo por URL a módulos no permitidos.
-    if (!canAccess(role, pathname)) {
-      return (
-        <div className="brand-halo flex min-h-screen items-center justify-center px-4">
-          <div className="surface surface-glow max-w-sm p-8 text-center">
-            <ShieldAlert size={32} className="mx-auto mb-3 text-accent" />
-            <h1 className="text-base font-semibold text-ink">Acceso restringido</h1>
-            <p className="mt-1.5 text-sm text-muted">
-              Tu perfil <span className="font-medium text-ink">{roleMeta(role).label}</span> no tiene acceso a este módulo.
-            </p>
-            <Link
-              href="/dashboard"
-              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-            >
-              Ir al dashboard
-            </Link>
-          </div>
-        </div>
-      );
-    }
-  }
+  // ── Puerta de acceso (Firebase, clave o abierto) ──
+  const gate = (() => {
+    if (authMode === "open") return null;
+    if (!mounted || account.status === "loading") return <Splash />;
+    if (account.status === "anon") return <LoginGate />;
+    if (!account.enabled) return <PendingScreen name={account.name} email={account.email} />;
+    if (!canAccessWith(account.role, pathname, account.modules)) return <Restricted role={account.role} />;
+    return null;
+  })();
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden">
-      {/* Sidebar fija en escritorio */}
-      <div className="hidden lg:block">
-        <Sidebar />
-      </div>
+    <>
+      <AuthListener />
+      {gate ?? (
+        <div className="flex h-screen w-screen overflow-hidden">
+          {/* Sidebar fija en escritorio */}
+          <div className="hidden lg:block">
+            <Sidebar />
+          </div>
 
-      {/* Drawer en móvil/tablet */}
-      {open && (
-        <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setOpen(false)} />
-      )}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] lg:hidden ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <Sidebar onNavigate={() => setOpen(false)} />
-      </div>
-
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Barra superior móvil */}
-        <div className="glass-bar sticky top-0 z-20 flex items-center gap-2 border-b px-3 py-2 lg:hidden">
-          <button
-            onClick={() => setOpen(true)}
-            className="rounded-md p-1.5 text-ink hover:bg-bg-subtle"
-            aria-label="Abrir menú"
+          {/* Drawer en móvil/tablet */}
+          {open && (
+            <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setOpen(false)} />
+          )}
+          <div
+            className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] lg:hidden ${
+              open ? "translate-x-0" : "-translate-x-full"
+            }`}
           >
-            <Menu size={20} />
-          </button>
-          <Image src={zeroMark} alt="ZERO AGENCY" width={24} height={24} className="h-6 w-6 shrink-0 rounded-md" />
-          <span className="text-sm font-semibold tracking-wide text-ink">ZERO AGENCY</span>
-          <div className="ml-auto flex items-center gap-1">
-            <NotificationsBell />
-            <button
-              onClick={() => openPalette(true)}
-              className="rounded-md p-1.5 text-muted hover:bg-bg-subtle hover:text-ink"
-              aria-label="Buscar o comando"
-            >
-              <Search size={18} />
-            </button>
-            <button
-              onClick={toggleTheme}
-              className="rounded-md p-1.5 text-muted hover:bg-bg-subtle hover:text-ink"
-              aria-label="Cambiar tema"
-            >
-              {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
+            <Sidebar onNavigate={() => setOpen(false)} />
           </div>
+
+          <div className="flex flex-1 flex-col overflow-hidden">
+            {/* Barra superior móvil */}
+            <div className="glass-bar sticky top-0 z-20 flex items-center gap-2 border-b px-3 py-2 lg:hidden">
+              <button
+                onClick={() => setOpen(true)}
+                className="rounded-md p-1.5 text-ink hover:bg-bg-subtle"
+                aria-label="Abrir menú"
+              >
+                <Menu size={20} />
+              </button>
+              <Image src={zeroMark} alt="ZERO AGENCY" width={24} height={24} className="h-6 w-6 shrink-0 rounded-md" />
+              <span className="text-sm font-semibold tracking-wide text-ink">ZERO AGENCY</span>
+              <div className="ml-auto flex items-center gap-1">
+                <NotificationsBell />
+                <button
+                  onClick={() => openPalette(true)}
+                  className="rounded-md p-1.5 text-muted hover:bg-bg-subtle hover:text-ink"
+                  aria-label="Buscar o comando"
+                >
+                  <Search size={18} />
+                </button>
+                <button
+                  onClick={toggleTheme}
+                  className="rounded-md p-1.5 text-muted hover:bg-bg-subtle hover:text-ink"
+                  aria-label="Cambiar tema"
+                >
+                  {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <main className="flex-1 overflow-y-auto bg-transparent">
+              <div key={pathname} className="zero-page-enter h-full">
+                {children}
+              </div>
+            </main>
+          </div>
+
+          {/* Paleta de comandos global (⌘K / Ctrl+K) */}
+          <CommandPalette />
+
+          {/* Centro de notificaciones */}
+          <NotificationsPanel />
+
+          {/* Demonio de autonomía: ZERO actúa solo (con guardrails) */}
+          <AutonomyDaemon />
+
+          {/* Demonio de monitoreo del sitio web de la agencia */}
+          <MonitorDaemon />
+
+          {/* Demonio del briefing programado */}
+          <BriefingDaemon />
+
+          {/* Demonio de reportes diarios/semanales/mensuales */}
+          <ReportsDaemon />
+
+          {/* Banco de datos caliente para acceso instantáneo del agente */}
+          <DataBankDaemon />
+
+          {/* Copiloto "Zero" — flotante en cualquier pantalla */}
+          <AssistantPanel />
         </div>
+      )}
+    </>
+  );
+}
 
-        <main className="flex-1 overflow-y-auto bg-transparent">
-          <div key={pathname} className="zero-page-enter h-full">
-            {children}
-          </div>
-        </main>
+function Splash() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <span className="zero-monogram h-12 w-12 animate-pulse text-xl">Z</span>
+    </div>
+  );
+}
+
+function PendingScreen({ name, email }: { name?: string; email?: string }) {
+  return (
+    <div className="brand-halo flex min-h-screen items-center justify-center px-4">
+      <div className="surface surface-glow max-w-sm p-8 text-center">
+        <Clock size={32} className="mx-auto mb-3 text-amber-500" />
+        <h1 className="text-base font-semibold text-ink">Cuenta pendiente de aprobación</h1>
+        <p className="mt-1.5 text-sm text-muted">
+          {name ? `Hola, ${name}. ` : ""}Tu acceso está pendiente. El administrador debe aprobar tu cuenta
+          {email ? <> (<span className="text-ink">{email}</span>)</> : null} para que puedas entrar.
+        </p>
+        <button
+          onClick={() => signOutAccount()}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium text-ink hover:bg-bg-subtle"
+        >
+          <LogOut size={15} /> Cerrar sesión
+        </button>
       </div>
+    </div>
+  );
+}
 
-      {/* Paleta de comandos global (⌘K / Ctrl+K) */}
-      <CommandPalette />
-
-      {/* Centro de notificaciones */}
-      <NotificationsPanel />
-
-      {/* Demonio de autonomía: ZERO actúa solo (con guardrails) */}
-      <AutonomyDaemon />
-
-      {/* Demonio de monitoreo del sitio web de la agencia */}
-      <MonitorDaemon />
-
-      {/* Demonio del briefing programado */}
-      <BriefingDaemon />
-
-      {/* Demonio de reportes diarios/semanales/mensuales */}
-      <ReportsDaemon />
-
-      {/* Banco de datos caliente para acceso instantáneo del agente */}
-      <DataBankDaemon />
-
-      {/* Copiloto "Zero" — flotante en cualquier pantalla */}
-      <AssistantPanel />
+function Restricted({ role }: { role: Parameters<typeof roleMeta>[0] }) {
+  return (
+    <div className="brand-halo flex min-h-screen items-center justify-center px-4">
+      <div className="surface surface-glow max-w-sm p-8 text-center">
+        <ShieldAlert size={32} className="mx-auto mb-3 text-accent" />
+        <h1 className="text-base font-semibold text-ink">Acceso restringido</h1>
+        <p className="mt-1.5 text-sm text-muted">
+          Tu perfil <span className="font-medium text-ink">{roleMeta(role).label}</span> no tiene acceso a este módulo.
+        </p>
+        <Link
+          href="/dashboard"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+        >
+          Ir al dashboard
+        </Link>
+      </div>
     </div>
   );
 }

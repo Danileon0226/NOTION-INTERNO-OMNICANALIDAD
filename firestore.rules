@@ -1,0 +1,67 @@
+rules_version = '2';
+
+// Reglas de seguridad de ZERO Agency OS (multi-tenant por rol con Firebase).
+// Cópialas en Firebase Console → Firestore Database → Reglas → Publicar.
+//
+// IMPORTANTE: edita adminEmails() con los correos que deben ser administradores.
+// Deben coincidir con la variable NEXT_PUBLIC_ADMIN_EMAILS de la app.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function adminEmails() {
+      // ⬇️ EDITA con tus correos de administrador (en minúsculas).
+      return ['principal.zeroagency@gmail.com'];
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function isAdminEmail() {
+      return isSignedIn() && myEmail() in adminEmails();
+    }
+
+    function isAdmin() {
+      return isAdminEmail() ||
+        (isSignedIn()
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    match /users/{uid} {
+      // Lee tu propio perfil; el admin lee todos.
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+
+      // Crear el propio perfil al iniciar sesión:
+      // - correos admin entran como admin habilitado;
+      // - el resto entra como rol normal DESHABILITADO (pendiente de aprobación).
+      allow create: if isSignedIn() && request.auth.uid == uid && (
+        (isAdminEmail() && request.resource.data.role == 'admin' && request.resource.data.enabled == true) ||
+        (!isAdminEmail() && request.resource.data.role in ['comercial', 'dev'] && request.resource.data.enabled == false)
+      );
+
+      // El admin puede cambiar todo. El propio usuario puede actualizar su perfil
+      // EXCEPTO rol, enabled y modules (esos solo los cambia el admin).
+      allow update: if isAdmin() || (
+        isSignedIn() && request.auth.uid == uid &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.enabled == resource.data.enabled &&
+        request.resource.data.modules == resource.data.modules
+      );
+
+      allow delete: if isAdmin();
+
+      // Registro de actividad: cada quien escribe el suyo; lo leen el dueño y el admin.
+      match /activity/{aid} {
+        allow create: if isSignedIn() && request.auth.uid == uid;
+        allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+        allow update, delete: if false;
+      }
+    }
+  }
+}

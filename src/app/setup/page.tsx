@@ -16,7 +16,9 @@ import {
 } from "@/lib/connectors/googleInsights";
 import { useSetup, enableUrl, classifyGoogleError } from "@/lib/setup";
 import { ModuleHeader } from "@/components/ModuleHeader";
-import { authRequired, useAuth } from "@/lib/auth";
+import { authMode, useAccount } from "@/lib/account";
+import { ADMIN_EMAILS } from "@/lib/firebase/app";
+import { ENABLED_PROVIDERS } from "@/lib/firebase/auth";
 import { ROLE_LIST, roleMeta } from "@/lib/rbac";
 import { Users } from "lucide-react";
 
@@ -40,8 +42,9 @@ export default function SetupPage() {
   const conn = useConnectors();
   const insights = useGoogleInsights();
   const { projectId, setProjectId } = useSetup();
-  const role = useAuth((s) => s.role);
-  const userName = useAuth((s) => s.name);
+  const account = useAccount();
+  const role = account.role;
+  const userName = account.name;
   const [results, setResults] = useState<Record<string, Result>>({});
   const [running, setRunning] = useState(false);
 
@@ -166,13 +169,35 @@ export default function SetupPage() {
         <div className="mb-2 flex items-center gap-2">
           <Users size={16} className="text-accent" />
           <span className="text-sm font-semibold text-ink">Acceso por roles</span>
-          {authRequired ? (
+          {authMode === "open" ? (
+            <span className="ml-auto text-xs text-amber-500">Login no configurado (modo admin abierto)</span>
+          ) : (
             <span className="ml-auto text-xs text-muted">
               Sesión: <span className="font-medium text-ink">{userName || "—"}</span> ·{" "}
               <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${roleMeta(role).badge}`}>{roleMeta(role).label}</span>
             </span>
+          )}
+        </div>
+
+        {/* Modo de autenticación activo */}
+        <div className="mb-2.5 rounded-lg border glass-inset p-2.5 text-[11px]">
+          {authMode === "firebase" ? (
+            <span className="text-muted">
+              Backend: <span className="font-medium text-emerald-600">Firebase activo</span> · proveedores:{" "}
+              <span className="text-ink">{ENABLED_PROVIDERS.map((p) => p.label).join(", ")}</span> · admins:{" "}
+              <span className="text-ink">{ADMIN_EMAILS.length ? ADMIN_EMAILS.join(", ") : "⚠️ define NEXT_PUBLIC_ADMIN_EMAILS"}</span>.{" "}
+              <Link href="/team" className="text-accent underline">Gestionar equipo →</Link>
+            </span>
+          ) : authMode === "password" ? (
+            <span className="text-muted">
+              Backend: clave por rol (sin Firebase). Para perfiles, seguimiento y permisos por persona, configura{" "}
+              <code className="rounded bg-bg-subtle px-1 py-0.5 text-[10px]">NEXT_PUBLIC_FIREBASE_*</code>.
+            </span>
           ) : (
-            <span className="ml-auto text-xs text-amber-500">Login no configurado (modo admin abierto)</span>
+            <span className="text-muted">
+              Sin login. Activa Firebase (<code className="rounded bg-bg-subtle px-1 py-0.5 text-[10px]">NEXT_PUBLIC_FIREBASE_*</code>) para
+              login social, perfiles y control de permisos por persona.
+            </span>
           )}
         </div>
         <div className="grid gap-1.5 sm:grid-cols-3">

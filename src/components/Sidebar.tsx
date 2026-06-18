@@ -8,8 +8,8 @@ import zeroMark from "@/brand/zero-mark.png";
 import { useWorkspace } from "@/lib/store";
 import { useTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
-import { authRequired, useAuth } from "@/lib/auth";
-import { canAccess, roleMeta } from "@/lib/rbac";
+import { canAccessWith, roleMeta } from "@/lib/rbac";
+import { authMode, useAccount, signOutAccount } from "@/lib/account";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import type { WorkspacePage } from "@/lib/types";
 import {
@@ -36,6 +36,8 @@ import {
   FileBarChart,
   ShieldCheck,
   LogOut,
+  Users,
+  UserCircle,
 } from "lucide-react";
 
 // Navegación agrupada por intención → más fácil de escanear.
@@ -83,18 +85,27 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const mode = useTheme((s) => s.mode);
   const toggleTheme = useTheme((s) => s.toggle);
   const openPalette = useCommandPalette((s) => s.setOpen);
-  const logout = useAuth((s) => s.logout);
-  const role = useAuth((s) => s.role);
-  const userName = useAuth((s) => s.name);
+  const account = useAccount();
+  const role = account.role;
+  const userName = account.name;
+  const photoURL = account.photoURL;
+  const showIdentity = authMode !== "open";
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const roots = pages.filter((p) => p.parentId === null);
 
-  // Navegación filtrada por rol: cada perfil ve solo sus módulos.
+  // Navegación filtrada por rol + overrides por usuario: cada perfil ve solo sus módulos.
   const navGroups = NAV_GROUPS.map((g) => ({
     ...g,
-    items: g.items.filter((it) => canAccess(role, it.href)),
+    items: g.items.filter((it) => canAccessWith(role, it.href, account.modules)),
   })).filter((g) => g.items.length > 0);
+
+  // Grupo de administración/cuenta (perfil propio y, para admin, la consola de equipo).
+  const adminItems: { href: string; label: string; icon: React.ReactNode }[] = [];
+  if (authMode === "firebase") adminItems.push({ href: "/profile", label: "Mi perfil", icon: <UserCircle size={16} /> });
+  if (role === "admin") adminItems.push({ href: "/team", label: "Equipo", icon: <Users size={16} /> });
+  if (adminItems.length) navGroups.push({ label: "Cuenta", items: adminItems });
+
   const rm = roleMeta(role);
 
   function openPage(id: string) {
@@ -196,14 +207,19 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       {/* Identidad y rol de la sesión */}
-      {authRequired && (
-        <div className="flex items-center gap-2 border-t px-3 py-2">
-          <span className="zero-monogram h-7 w-7 text-[11px]">{(userName || "Z").charAt(0).toUpperCase()}</span>
+      {showIdentity && (
+        <Link href={authMode === "firebase" ? "/profile" : "#"} className="flex items-center gap-2 border-t px-3 py-2 hover:bg-bg-subtle">
+          {photoURL ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photoURL} alt={userName} className="h-7 w-7 shrink-0 rounded-full object-cover" />
+          ) : (
+            <span className="zero-monogram h-7 w-7 text-[11px]">{(userName || "Z").charAt(0).toUpperCase()}</span>
+          )}
           <div className="min-w-0 flex-1 leading-tight">
             <div className="truncate text-xs font-medium text-ink">{userName || "Sesión"}</div>
             <span className={`mt-0.5 inline-block rounded px-1.5 py-0.5 text-[9px] font-medium ${rm.badge}`}>{rm.label}</span>
           </div>
-        </div>
+        </Link>
       )}
 
       <div className="flex items-center justify-between gap-2 border-t px-3 py-2 text-[11px] text-muted">
@@ -220,8 +236,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           >
             {mode === "dark" ? <Sun size={14} /> : <Moon size={14} />}
           </button>
-          {authRequired && (
-            <button onClick={logout} title="Salir" className="rounded p-1 text-muted hover:bg-bg-subtle hover:text-red-500">
+          {showIdentity && (
+            <button onClick={() => signOutAccount()} title="Salir" className="rounded p-1 text-muted hover:bg-bg-subtle hover:text-red-500">
               <LogOut size={14} />
             </button>
           )}

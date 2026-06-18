@@ -13,6 +13,7 @@ const TOC = [
   { id: "integraciones", label: "Integraciones" },
   { id: "reportes", label: "Reportes" },
   { id: "acceso", label: "Acceso y roles" },
+  { id: "firebase", label: "Equipo con Firebase" },
   { id: "entorno", label: "Variables de entorno" },
   { id: "seguridad", label: "Seguridad y privacidad" },
   { id: "despliegue", label: "Despliegue" },
@@ -165,11 +166,46 @@ export default function Docs() {
             </Callout>
           </Section>
 
+          <Section id="firebase" title="Equipo con Firebase (login social + perfiles + permisos)">
+            <p>
+              Para que cada persona tenga su <strong>perfil completo</strong>, inicie sesión con <strong>Google, GitHub o
+              Facebook</strong>, y para que tú (admin) puedas <strong>aprobar accesos, asignar roles, activar/desactivar
+              módulos por persona y ver su actividad</strong>, conecta un proyecto de <strong>Firebase</strong> (gratis). Sigue
+              funcionando como sitio estático: los SDK hablan directo con Firebase.
+            </p>
+            <p><strong>Pasos (una sola vez):</strong></p>
+            <ol>
+              <li>Crea un proyecto en <Code>console.firebase.google.com</Code> y registra una <em>app web</em>; copia la configuración (apiKey, authDomain, projectId, appId…).</li>
+              <li>En <strong>Authentication → Sign-in method</strong>, habilita <strong>Google</strong>, <strong>GitHub</strong> y <strong>Facebook</strong> (para GitHub/Facebook necesitas crear una app OAuth en cada plataforma y pegar su Client ID/Secret).</li>
+              <li>En <strong>Authentication → Settings → Authorized domains</strong>, añade tu dominio (p. ej. <Code>danileon0226.github.io</Code> y/o tu dominio de Vercel).</li>
+              <li>Crea <strong>Firestore Database</strong> (modo producción) y pega las reglas del archivo <Code>firestore.rules</Code> del repositorio (edita <Code>adminEmails()</Code> con tu correo).</li>
+              <li>Define las variables de entorno de Firebase y tu(s) correo(s) admin (ver abajo). Despliega.</li>
+            </ol>
+            <p><strong>Variables:</strong></p>
+            <ul>
+              <li><Code>NEXT_PUBLIC_FIREBASE_API_KEY</Code>, <Code>NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN</Code>, <Code>NEXT_PUBLIC_FIREBASE_PROJECT_ID</Code>, <Code>NEXT_PUBLIC_FIREBASE_APP_ID</Code> (y opcional <Code>STORAGE_BUCKET</Code>, <Code>MESSAGING_SENDER_ID</Code>).</li>
+              <li><Code>NEXT_PUBLIC_ADMIN_EMAILS</Code>: correos admin separados por coma (deben coincidir con <Code>adminEmails()</Code> de las reglas).</li>
+              <li><Code>NEXT_PUBLIC_AUTH_PROVIDERS</Code> (opcional): <Code>google,github,facebook</Code> para elegir qué botones mostrar.</li>
+            </ul>
+            <Callout>
+              <strong>Cómo funciona el control:</strong> al entrar por primera vez, una persona queda <em>pendiente</em> (sin acceso)
+              hasta que tú la apruebes en <Code>/team</Code>. Allí asignas su rol, activas o bloqueas módulos concretos y revisas su
+              actividad. Los cambios se aplican <strong>al instante</strong> en su sesión. La seguridad la imponen las reglas de
+              Firestore (un usuario no puede cambiarse su propio rol ni permisos).
+            </Callout>
+            <p className="text-sm text-muted">
+              Sin Firebase, la app sigue funcionando con el login por clave/rol (sección anterior), pero sin perfiles centralizados
+              ni seguimiento entre personas.
+            </p>
+          </Section>
+
           <Section id="entorno" title="Variables de entorno">
             <ul>
               <li><Code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</Code>: Client ID de OAuth para conectar Google de un clic.</li>
               <li><Code>NEXT_PUBLIC_AGENCY_EMAIL</Code>: correo de la agencia mostrado en la UI.</li>
-              <li><Code>NEXT_PUBLIC_APP_USERS</Code>: equipo multi-rol (JSON con name/role/pass o sha256 por persona).</li>
+              <li><Code>NEXT_PUBLIC_FIREBASE_*</Code> + <Code>NEXT_PUBLIC_ADMIN_EMAILS</Code>: backend de equipo (login social, perfiles, permisos y seguimiento). Ver sección anterior.</li>
+              <li><Code>NEXT_PUBLIC_AUTH_PROVIDERS</Code>: proveedores de login social a mostrar (<Code>google,github,facebook</Code>).</li>
+              <li><Code>NEXT_PUBLIC_APP_USERS</Code>: equipo multi-rol por clave (JSON con name/role/pass o sha256), si no usas Firebase.</li>
               <li><Code>NEXT_PUBLIC_APP_PASSWORD</Code> / <Code>NEXT_PUBLIC_APP_PASSWORD_SHA256</Code>: clave de acceso única (un admin).</li>
               <li><Code>NEXT_PUBLIC_BASE_PATH</Code>: subruta para GitHub Pages (p. ej. <Code>/NOTION-INTERNO-OMNICANALIDAD</Code>).</li>
               <li><Code>NEXT_OUTPUT_EXPORT=true</Code>: activa la exportación estática (Pages).</li>
