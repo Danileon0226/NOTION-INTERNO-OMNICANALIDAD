@@ -14,7 +14,10 @@ import {
   synthesisSupported,
   listVoices,
 } from "@/lib/voice";
-import { speakGemini, stopGemini, getAnalyser, GEMINI_VOICES } from "@/lib/voiceGemini";
+import { speakGeminiQueued, stopGemini, getAnalyser, GEMINI_VOICES } from "@/lib/voiceGemini";
+
+// Dirección de estilo para máxima naturalidad (timbre JARVIS).
+const JARVIS_STYLE = "Habla con tono grave, calmado, profesional y seguro, a ritmo pausado";
 
 type Status = "idle" | "listening" | "thinking" | "synth" | "speaking";
 
@@ -63,8 +66,9 @@ export default function ZeroVoicePage() {
     };
     if (voiceEngine === "gemini" && apiKey) {
       setStatus("synth");
-      speakGemini(text, {
+      speakGeminiQueued(text, {
         voiceName: geminiVoice,
+        style: JARVIS_STYLE,
         onStart: () => setStatus("speaking"),
         onEnd,
         onError: systemSpeak, // si el TTS neural falla, usa la voz del sistema

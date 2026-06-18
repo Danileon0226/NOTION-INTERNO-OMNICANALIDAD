@@ -38,12 +38,29 @@ export function AssistantPanel() {
     setLoading(true);
     setError(null);
 
+    // Mensaje del modelo en streaming: aparece y se va completando en vivo.
+    let streamed = "";
+    setMessages((m) => [...m, { role: "model", text: "" }]);
+    const onToken = (delta: string) => {
+      streamed += delta;
+      setMessages((m) => {
+        const next = [...m];
+        next[next.length - 1] = { role: "model", text: streamed };
+        return next;
+      });
+    };
     try {
       // Gemini orquesta los conectores y ejecuta operaciones (function calling).
-      const res = await runAgent(question, prior, undefined, "copiloto");
-      setMessages((m) => [...m, { role: "model", text: res.text }]);
+      const res = await runAgent(question, prior, undefined, "copiloto", onToken);
+      setMessages((m) => {
+        const next = [...m];
+        next[next.length - 1] = { role: "model", text: res.text };
+        return next;
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al consultar el asistente.");
+      // Quita la burbuja vacía si no llegó a streamear nada.
+      if (!streamed) setMessages((m) => (m[m.length - 1]?.text === "" ? m.slice(0, -1) : m));
     } finally {
       setLoading(false);
     }
