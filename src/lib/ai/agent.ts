@@ -8,6 +8,7 @@ import { geminiError } from "@/lib/ai/client";
 import { toolDeclarations, runTool } from "@/lib/ai/tools";
 import { useMemory, memoryContext } from "@/lib/ai/memory";
 import { useRuns } from "@/lib/ai/runs";
+import { bankContext, refreshDataBank } from "@/lib/ai/dataBank";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -44,6 +45,9 @@ Capacidades (encadena varias herramientas para completar la tarea):
   slack_alert (avisar al canal de Slack), webhook_broadcast (disparar a sistemas externos).
 
 Reglas:
+- Si la sección "BANCO DE DATOS" ya contiene la respuesta (estado de correo, calendario, GitHub,
+  Drive o sitio), respóndela directamente SIN llamar herramientas: es información ya cargada y veloz.
+  Solo usa herramientas si necesitas datos no presentes en el banco o ejecutar una acción.
 - Usa herramientas siempre que necesites datos reales o ejecutar una acción; nunca inventes datos.
 - Para "crea una web/landing", llama create_webpage con un HTML autónomo y bien diseñado.
 - Para "analiza/ reporte", usa analyze_agency y luego create_note con el informe.
@@ -80,9 +84,12 @@ export async function runAgent(
   const tools = [{ functionDeclarations: toolDeclarations }];
   const steps: AgentStep[] = [];
 
-  // Inyecta la memoria persistente como contexto del gestor de conciencia.
+  // Mantén el banco caliente en segundo plano (no bloquea esta respuesta).
+  void refreshDataBank();
+  // Inyecta banco de datos (estado actual) + memoria persistente como contexto.
+  const bank = bankContext();
   const mem = memoryContext(useMemory.getState().items);
-  const system = mem ? `${SYSTEM}\n\n${mem}` : SYSTEM;
+  const system = [SYSTEM, bank, mem].filter(Boolean).join("\n\n");
 
   // Registra la ejecución para trazabilidad agéntica (éxito o error).
   const record = (text: string, ok: boolean) =>
