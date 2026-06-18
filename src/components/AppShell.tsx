@@ -18,6 +18,9 @@ import { LoginGate } from "@/components/LoginGate";
 import { useTheme, applyTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
 import { authRequired, useAuth } from "@/lib/auth";
+import { canAccess, roleMeta } from "@/lib/rbac";
+import Link from "next/link";
+import { ShieldAlert } from "lucide-react";
 import zeroMark from "@/brand/zero-mark.png";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -28,6 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const toggleTheme = useTheme((s) => s.toggle);
   const openPalette = useCommandPalette((s) => s.setOpen);
   const authed = useAuth((s) => s.authed);
+  const role = useAuth((s) => s.role);
 
   // Aplica el tema persistido al cargar y cuando cambia.
   useEffect(() => {
@@ -59,6 +63,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       );
     }
     if (!authed) return <LoginGate />;
+    // Guardia por rol: bloquea el acceso directo por URL a módulos no permitidos.
+    if (!canAccess(role, pathname)) {
+      return (
+        <div className="brand-halo flex min-h-screen items-center justify-center px-4">
+          <div className="surface surface-glow max-w-sm p-8 text-center">
+            <ShieldAlert size={32} className="mx-auto mb-3 text-accent" />
+            <h1 className="text-base font-semibold text-ink">Acceso restringido</h1>
+            <p className="mt-1.5 text-sm text-muted">
+              Tu perfil <span className="font-medium text-ink">{roleMeta(role).label}</span> no tiene acceso a este módulo.
+            </p>
+            <Link
+              href="/dashboard"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Ir al dashboard
+            </Link>
+          </div>
+        </div>
+      );
+    }
   }
 
   return (

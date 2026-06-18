@@ -9,6 +9,7 @@ import { useWorkspace } from "@/lib/store";
 import { useTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
 import { authRequired, useAuth } from "@/lib/auth";
+import { canAccess, roleMeta } from "@/lib/rbac";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import type { WorkspacePage } from "@/lib/types";
 import {
@@ -83,9 +84,18 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const toggleTheme = useTheme((s) => s.toggle);
   const openPalette = useCommandPalette((s) => s.setOpen);
   const logout = useAuth((s) => s.logout);
+  const role = useAuth((s) => s.role);
+  const userName = useAuth((s) => s.name);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const roots = pages.filter((p) => p.parentId === null);
+
+  // Navegación filtrada por rol: cada perfil ve solo sus módulos.
+  const navGroups = NAV_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((it) => canAccess(role, it.href)),
+  })).filter((g) => g.items.length > 0);
+  const rm = roleMeta(role);
 
   function openPage(id: string) {
     setActivePage(id);
@@ -126,7 +136,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       {/* Zona desplazable: navegación + workspace (clave para móvil) */}
       <div className="flex-1 overflow-y-auto overscroll-contain">
         <nav className="space-y-3 px-2 pb-1">
-          {NAV_GROUPS.map((g) => (
+          {navGroups.map((g) => (
             <div key={g.label}>
               <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted/70">{g.label}</p>
               {g.items.map((it) => (
@@ -184,6 +194,17 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           )}
         </div>
       </div>
+
+      {/* Identidad y rol de la sesión */}
+      {authRequired && (
+        <div className="flex items-center gap-2 border-t px-3 py-2">
+          <span className="zero-monogram h-7 w-7 text-[11px]">{(userName || "Z").charAt(0).toUpperCase()}</span>
+          <div className="min-w-0 flex-1 leading-tight">
+            <div className="truncate text-xs font-medium text-ink">{userName || "Sesión"}</div>
+            <span className={`mt-0.5 inline-block rounded px-1.5 py-0.5 text-[9px] font-medium ${rm.badge}`}>{rm.label}</span>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between gap-2 border-t px-3 py-2 text-[11px] text-muted">
         <Link href="/docs" className="flex min-w-0 items-center gap-1 hover:text-ink">

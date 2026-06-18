@@ -12,7 +12,7 @@ const TOC = [
   { id: "banco", label: "Banco de datos" },
   { id: "integraciones", label: "Integraciones" },
   { id: "reportes", label: "Reportes" },
-  { id: "acceso", label: "Acceso (login)" },
+  { id: "acceso", label: "Acceso y roles" },
   { id: "entorno", label: "Variables de entorno" },
   { id: "seguridad", label: "Seguridad y privacidad" },
   { id: "despliegue", label: "Despliegue" },
@@ -136,19 +136,32 @@ export default function Docs() {
             </p>
           </Section>
 
-          <Section id="acceso" title="Acceso (login por clave)">
+          <Section id="acceso" title="Acceso y roles (multi-tenant)">
             <p>
-              Puedes proteger el OS con una clave configurada por variable de entorno. Si está
-              definida, la app pide la clave antes de entrar (la landing y esta documentación quedan
-              públicas). El acceso se recuerda en tu navegador; puedes cerrar sesión desde el menú.
+              El OS es <strong>multi-tenant por rol</strong>: cada persona entra con su propia clave y ve
+              solo los módulos de su perfil. La landing y esta documentación quedan públicas; el acceso se
+              recuerda en tu navegador y puedes cerrar sesión desde la barra lateral.
             </p>
+            <p>Hay tres perfiles:</p>
             <ul>
-              <li><Code>NEXT_PUBLIC_APP_PASSWORD</Code>: clave en claro (sencillo).</li>
-              <li><Code>NEXT_PUBLIC_APP_PASSWORD_SHA256</Code>: hash SHA-256 de la clave (recomendado; la clave no queda en el bundle).</li>
+              <li><strong>Administrador</strong> (tú): acceso total — configuración, conectores, autonomía (Piloto automático), estado de APIs y todos los módulos.</li>
+              <li><strong>Chief Comercial</strong>: dashboard, anticipación, asistente y voz, memoria, bandeja, calendario, Drive, monitoreo, reportes, actividad y conectores. <em>Sin</em> Piloto automático ni estado de configuración.</li>
+              <li><strong>Desarrollador</strong>: dashboard, anticipación, asistente y voz, memoria, canvas/grafo, Drive, monitoreo, reportes, actividad y conectores. <em>Sin</em> bandeja/calendario, Piloto automático ni estado de configuración.</li>
             </ul>
+            <p><strong>Configurar el equipo</strong> — con la variable <Code>NEXT_PUBLIC_APP_USERS</Code> (JSON, una entrada por persona):</p>
+            <pre className="overflow-x-auto rounded-lg border bg-bg-subtle p-3 text-[12px] leading-relaxed text-ink/80">{`[
+  {"name":"Daniel","role":"admin","sha256":"<hash>"},
+  {"name":"Comercial","role":"comercial","pass":"clave-comercial"},
+  {"name":"Dev","role":"dev","sha256":"<hash>"}
+]`}</pre>
+            <p>Cada entrada usa <Code>pass</Code> (clave en claro) o <Code>sha256</Code> (hash, recomendado). Roles válidos: <Code>admin</Code>, <Code>comercial</Code>, <Code>dev</Code>.</p>
+            <p>
+              Alternativa simple (un solo administrador): <Code>NEXT_PUBLIC_APP_PASSWORD</Code> (clave en claro) o
+              <Code>NEXT_PUBLIC_APP_PASSWORD_SHA256</Code> (hash). Si no defines ninguna, el OS entra abierto en modo administrador.
+            </p>
             <Callout>
-              Es una <strong>puerta de acceso</strong>, no seguridad fuerte (la app es client-side). Para el hash:
-              <Code>echo -n &quot;tu-clave&quot; | shasum -a 256</Code>.
+              Es una <strong>puerta de acceso por rol</strong>, no seguridad fuerte: la app es client-side y los datos viven en
+              cada navegador. Para el hash de una clave: <Code>echo -n &quot;tu-clave&quot; | shasum -a 256</Code>.
             </Callout>
           </Section>
 
@@ -156,7 +169,8 @@ export default function Docs() {
             <ul>
               <li><Code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</Code>: Client ID de OAuth para conectar Google de un clic.</li>
               <li><Code>NEXT_PUBLIC_AGENCY_EMAIL</Code>: correo de la agencia mostrado en la UI.</li>
-              <li><Code>NEXT_PUBLIC_APP_PASSWORD</Code> / <Code>NEXT_PUBLIC_APP_PASSWORD_SHA256</Code>: clave de acceso.</li>
+              <li><Code>NEXT_PUBLIC_APP_USERS</Code>: equipo multi-rol (JSON con name/role/pass o sha256 por persona).</li>
+              <li><Code>NEXT_PUBLIC_APP_PASSWORD</Code> / <Code>NEXT_PUBLIC_APP_PASSWORD_SHA256</Code>: clave de acceso única (un admin).</li>
               <li><Code>NEXT_PUBLIC_BASE_PATH</Code>: subruta para GitHub Pages (p. ej. <Code>/NOTION-INTERNO-OMNICANALIDAD</Code>).</li>
               <li><Code>NEXT_OUTPUT_EXPORT=true</Code>: activa la exportación estática (Pages).</li>
             </ul>

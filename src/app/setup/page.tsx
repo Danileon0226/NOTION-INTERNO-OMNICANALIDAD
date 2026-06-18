@@ -16,6 +16,9 @@ import {
 } from "@/lib/connectors/googleInsights";
 import { useSetup, enableUrl, classifyGoogleError } from "@/lib/setup";
 import { ModuleHeader } from "@/components/ModuleHeader";
+import { authRequired, useAuth } from "@/lib/auth";
+import { ROLE_LIST, roleMeta } from "@/lib/rbac";
+import { Users } from "lucide-react";
 
 type Status = "idle" | "running" | "ok" | "warn" | "fail";
 interface Result {
@@ -37,6 +40,8 @@ export default function SetupPage() {
   const conn = useConnectors();
   const insights = useGoogleInsights();
   const { projectId, setProjectId } = useSetup();
+  const role = useAuth((s) => s.role);
+  const userName = useAuth((s) => s.name);
   const [results, setResults] = useState<Record<string, Result>>({});
   const [running, setRunning] = useState(false);
 
@@ -155,6 +160,36 @@ export default function SetupPage() {
         title="Estado de configuración"
         subtitle="Prueba en vivo cada API de Google y la IA, y te da el enlace para habilitar lo que falte."
       />
+
+      {/* Acceso por roles (multi-tenant por perfil) */}
+      <div className="mb-4 rounded-xl border glass-card p-4">
+        <div className="mb-2 flex items-center gap-2">
+          <Users size={16} className="text-accent" />
+          <span className="text-sm font-semibold text-ink">Acceso por roles</span>
+          {authRequired ? (
+            <span className="ml-auto text-xs text-muted">
+              Sesión: <span className="font-medium text-ink">{userName || "—"}</span> ·{" "}
+              <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${roleMeta(role).badge}`}>{roleMeta(role).label}</span>
+            </span>
+          ) : (
+            <span className="ml-auto text-xs text-amber-500">Login no configurado (modo admin abierto)</span>
+          )}
+        </div>
+        <div className="grid gap-1.5 sm:grid-cols-3">
+          {ROLE_LIST.map((r) => (
+            <div key={r.id} className="rounded-lg border glass-inset p-2.5">
+              <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${r.badge}`}>{r.label}</span>
+              <p className="mt-1 text-[11px] text-muted">{r.desc}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2.5 text-[11px] text-muted">
+          Configura el equipo con la variable <code className="rounded bg-bg-subtle px-1 py-0.5 text-[10px]">NEXT_PUBLIC_APP_USERS</code> (JSON
+          con <code className="text-[10px]">name</code>, <code className="text-[10px]">role</code> y <code className="text-[10px]">pass</code> o{" "}
+          <code className="text-[10px]">sha256</code> por persona). Ver{" "}
+          <Link href="/docs" className="text-accent underline">Documentación</Link>.
+        </p>
+      </div>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
         <label className="block text-xs text-muted">
