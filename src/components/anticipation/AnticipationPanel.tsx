@@ -67,7 +67,7 @@ export function AnticipationPanel({ limit }: { limit?: number }) {
 
   if (!enabled) {
     return (
-      <div className="rounded-xl border border-dashed bg-card p-4 text-sm text-muted">
+      <div className="rounded-xl border border-dashed glass-card p-4 text-sm text-muted">
         <EyeOff size={15} className="mr-1 inline" /> Anticipación desactivada.{" "}
         <Link href="/anticipation" className="text-accent underline">
           Actívala
@@ -98,17 +98,17 @@ export function AnticipationPanel({ limit }: { limit?: number }) {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 rounded-xl border bg-card px-3 py-4 text-sm text-muted">
+        <div className="flex items-center gap-2 rounded-xl border glass-card px-3 py-4 text-sm text-muted">
           <Loader2 size={14} className="animate-spin" /> Anticipando…
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-xl border border-dashed bg-card px-3 py-6 text-center text-sm text-muted">
+        <div className="rounded-xl border border-dashed glass-card px-3 py-6 text-center text-sm text-muted">
           Sin anticipaciones por ahora. Todo bajo control. ✨
         </div>
       ) : (
         <div className="space-y-2">
           {items.map((a) => (
-            <div key={a.key} className="rounded-xl border bg-card p-3">
+            <div key={a.key} className="rounded-xl border glass-card p-3">
               <div className="flex items-start gap-2.5">
                 <span
                   className="mt-1.5 h-2 w-2 shrink-0 rounded-full"

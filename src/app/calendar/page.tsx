@@ -68,7 +68,7 @@ export default function CalendarPage() {
         {connected && (
           <button
             onClick={load}
-            className="flex items-center gap-1.5 rounded-md border bg-card px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
+            className="flex items-center gap-1.5 rounded-md border glass-card px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Actualizar
           </button>
@@ -123,7 +123,7 @@ function EventRow({ ev }: { ev: CalendarEvent }) {
     ? new Date(start).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
     : "Todo el día";
   return (
-    <div className="flex items-start gap-3 rounded-lg border bg-card p-3">
+    <div className="flex items-start gap-3 rounded-lg border glass-card p-3">
       <div className="flex shrink-0 items-center gap-1 text-xs font-medium text-accent">
         <Clock size={13} /> {time}
       </div>

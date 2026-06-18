@@ -172,14 +172,14 @@ export default function CanvasPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setRunning((r) => !r)}
-            className="flex items-center gap-1.5 rounded-md border bg-card px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
+            className="flex items-center gap-1.5 rounded-md border glass-card px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
           >
             {running ? <Pause size={14} /> : <Play size={14} />}
             {running ? "Pausar" : "Reanudar"}
           </button>
           <button
             onClick={() => seed()}
-            className="flex items-center gap-1.5 rounded-md border bg-card px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
+            className="flex items-center gap-1.5 rounded-md border glass-card px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
           >
             <RefreshCw size={14} /> Re-sincronizar
           </button>
@@ -197,7 +197,7 @@ export default function CanvasPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Grafo */}
         <section className="lg:col-span-2">
-          <div className="mb-2 inline-flex rounded-md border bg-card p-0.5 text-sm">
+          <div className="mb-2 inline-flex rounded-md border glass-card p-0.5 text-sm">
             <button
               onClick={() => setView("grafo")}
               className={`rounded px-3 py-1 ${view === "grafo" ? "bg-bg-subtle font-medium text-ink" : "text-muted"}`}
@@ -233,7 +233,7 @@ export default function CanvasPage() {
               <Trash2 size={12} /> Limpiar
             </button>
           </div>
-          <div className="max-h-[28rem] space-y-1.5 overflow-y-auto rounded-lg border bg-card p-2">
+          <div className="max-h-[28rem] space-y-1.5 overflow-y-auto rounded-lg border glass-card p-2">
             {events.length === 0 && (
               <p className="px-2 py-6 text-center text-sm text-muted">Esperando actividad…</p>
             )}
@@ -270,7 +270,7 @@ export default function CanvasPage() {
 
 function Kpi({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return (
-    <div className={`rounded-lg border bg-card p-4 ${accent ? "ring-1 ring-accent/30" : ""}`}>
+    <div className={`rounded-lg border glass-card p-4 ${accent ? "ring-1 ring-accent/30" : ""}`}>
       <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
       <div className={`mt-1 text-3xl font-bold tabular-nums ${accent ? "text-accent" : "text-ink"}`}>
         {value.toLocaleString("es-CO")}
@@ -291,7 +291,7 @@ function Graph({
   running: boolean;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-2">
+    <div className="rounded-xl border glass-card p-2">
       <svg viewBox="0 0 400 300" className="w-full" style={{ maxHeight: 340 }}>
         {/* edges */}
         {SRCS.map((s) => (
@@ -368,7 +368,7 @@ function Tile({
 }) {
   const color = sourceMeta[src].color;
   return (
-    <div className="rounded-lg border bg-card p-3">
+    <div className="rounded-lg border glass-card p-3">
       <div className="flex items-center gap-1.5">
         <span className="h-2 w-2 rounded-full" style={{ background: color }} />
         <span className="text-xs font-medium text-ink">{sourceMeta[src].label}</span>

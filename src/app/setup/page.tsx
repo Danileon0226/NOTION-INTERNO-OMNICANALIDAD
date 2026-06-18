@@ -166,7 +166,7 @@ export default function SetupPage() {
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}
             placeholder="zero-agency-499717"
-            className="mt-1 w-full rounded-md border bg-card px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+            className="mt-1 w-full rounded-md border glass-card px-3 py-2 text-sm text-ink outline-none focus:border-accent"
           />
         </label>
         <button
@@ -189,7 +189,7 @@ export default function SetupPage() {
         {checks.map((c) => {
           const r = results[c.id] ?? { status: "idle" as Status, detail: "Sin probar." };
           return (
-            <div key={c.id} className="flex items-start gap-3 rounded-xl border bg-card p-3">
+            <div key={c.id} className="flex items-start gap-3 rounded-xl border glass-card p-3">
               <StatusIcon status={r.status} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">

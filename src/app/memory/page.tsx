@@ -43,7 +43,7 @@ export default function MemoryPage() {
       </header>
 
       {/* Añadir */}
-      <form onSubmit={submit} className="mb-4 rounded-xl border bg-card p-3">
+      <form onSubmit={submit} className="mb-4 rounded-xl border glass-card p-3">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -56,7 +56,7 @@ export default function MemoryPage() {
             value={tag}
             onChange={(e) => setTag(e.target.value)}
             placeholder="etiqueta (opcional)"
-            className="w-40 rounded-md border bg-card px-2 py-1 text-xs text-ink outline-none focus:border-accent"
+            className="w-40 rounded-md border glass-card px-2 py-1 text-xs text-ink outline-none focus:border-accent"
           />
           <button
             type="submit"
@@ -70,7 +70,7 @@ export default function MemoryPage() {
 
       {/* Buscar */}
       {items.length > 3 && (
-        <div className="mb-3 flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1.5">
+        <div className="mb-3 flex items-center gap-1.5 rounded-md border glass-card px-2.5 py-1.5">
           <Search size={14} className="text-muted" />
           <input
             value={q}
@@ -88,7 +88,7 @@ export default function MemoryPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map((m) => (
-            <div key={m.id} className="hover-lift flex items-start gap-2.5 rounded-xl border bg-card p-3">
+            <div key={m.id} className="hover-lift flex items-start gap-2.5 rounded-xl border glass-card p-3">
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-ink">{m.text}</p>
                 <p className="mt-0.5 flex items-center gap-2 text-[11px] text-muted">

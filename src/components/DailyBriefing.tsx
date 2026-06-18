@@ -86,7 +86,7 @@ export function DailyBriefing() {
 
       {text && (
         <div className="mt-3">
-          <div className="max-h-72 overflow-y-auto rounded-lg bg-card px-3 py-2.5 text-sm text-ink">
+          <div className="max-h-72 overflow-y-auto rounded-lg glass-card px-3 py-2.5 text-sm text-ink">
             <p className="whitespace-pre-wrap">{text}</p>
           </div>
           <div className="mt-2 flex items-center gap-2">

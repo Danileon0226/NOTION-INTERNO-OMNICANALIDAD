@@ -98,7 +98,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   }
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-r bg-sidebar">
+    <aside className="glass-bar flex h-full w-64 shrink-0 flex-col border-r">
       <div className="flex items-center gap-2.5 px-4 py-3.5">
         <Image src={zeroMark} alt="ZERO AGENCY" width={32} height={32} className="h-8 w-8 shrink-0 rounded-lg" priority />
         <div className="leading-tight">
@@ -112,7 +112,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="px-3 pb-2">
         <button
           onClick={() => openPalette(true)}
-          className="flex w-full items-center gap-2 rounded-lg border bg-card px-2.5 py-1.5 text-sm text-muted hover:border-accent/40 hover:text-ink"
+          className="flex w-full items-center gap-2 rounded-lg border glass-card px-2.5 py-1.5 text-sm text-muted hover:border-accent/40 hover:text-ink"
         >
           <Search size={14} />
           <span className="flex-1 text-left">Buscar o preguntar…</span>

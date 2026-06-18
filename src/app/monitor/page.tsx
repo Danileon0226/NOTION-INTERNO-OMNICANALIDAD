@@ -74,14 +74,14 @@ export default function MonitorPage() {
         </div>
         <button
           onClick={checkNow}
-          className="flex items-center gap-1.5 rounded-md border bg-card px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
+          className="flex items-center gap-1.5 rounded-md border glass-card px-3 py-1.5 text-sm text-ink hover:bg-bg-subtle"
         >
           {checking ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Chequear ahora
         </button>
       </header>
 
       {/* Ajustes */}
-      <div className="mb-5 flex flex-wrap items-center gap-4 rounded-xl border bg-card p-4">
+      <div className="mb-5 flex flex-wrap items-center gap-4 rounded-xl border glass-card p-4">
         <label className="flex items-center gap-2 text-sm text-muted">
           <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="accent-accent" />
           Monitoreo {enabled ? "activo" : "pausado"}
@@ -91,7 +91,7 @@ export default function MonitorPage() {
           <select
             value={intervalMin}
             onChange={(e) => setInterval(Number(e.target.value))}
-            className="rounded-md border bg-card px-2 py-1 text-ink"
+            className="rounded-md border glass-card px-2 py-1 text-ink"
           >
             {[1, 5, 10, 15, 30].map((n) => (
               <option key={n} value={n}>
@@ -117,7 +117,7 @@ export default function MonitorPage() {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://otro-sitio.com"
-          className="flex-1 rounded-md border bg-card px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+          className="flex-1 rounded-md border glass-card px-3 py-2 text-sm text-ink outline-none focus:border-accent"
         />
         <button type="submit" className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-2 text-sm font-medium text-white hover:opacity-90">
           <Plus size={14} /> Añadir
@@ -131,7 +131,7 @@ export default function MonitorPage() {
       ) : (
         <div className="space-y-3">
           {sites.map((site) => (
-            <div key={site.id} className="hover-lift rounded-xl border bg-card p-4">
+            <div key={site.id} className="hover-lift rounded-xl border glass-card p-4">
               <div className="flex items-center gap-2">
                 <StatusDot status={statusOf(site)} />
                 <a href={site.url} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate text-sm font-semibold text-ink hover:text-accent">

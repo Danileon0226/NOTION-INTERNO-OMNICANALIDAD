@@ -61,7 +61,7 @@ export default function ReportsPage() {
             key={p.id}
             onClick={() => gen(p.id)}
             disabled={busy !== null || !apiKey}
-            className="hover-lift flex items-center gap-3 rounded-xl border bg-card p-4 text-left disabled:opacity-50"
+            className="hover-lift flex items-center gap-3 rounded-xl border glass-card p-4 text-left disabled:opacity-50"
           >
             <span className="text-2xl">{p.icon}</span>
             <span className="min-w-0 flex-1">
@@ -109,7 +109,7 @@ function ReportRow({
 }) {
   const icon = PERIODS.find((p) => p.id === report.period)?.icon ?? "📄";
   return (
-    <div className="rounded-xl border bg-card">
+    <div className="rounded-xl border glass-card">
       <div className="flex items-center gap-2.5 p-3">
         <span className="text-xl">{icon}</span>
         <button onClick={onToggle} className="min-w-0 flex-1 text-left">

@@ -34,7 +34,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isMarketing = pathname === "/" || pathname.startsWith("/docs");
   if (isMarketing) {
     return (
-      <div key={pathname} className="zero-page-enter min-h-screen bg-bg">
+      <div key={pathname} className="zero-page-enter min-h-screen bg-transparent">
         {children}
       </div>
     );
@@ -61,7 +61,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Barra superior móvil */}
-        <div className="flex items-center gap-2 border-b bg-sidebar px-3 py-2 lg:hidden">
+        <div className="glass-bar sticky top-0 z-20 flex items-center gap-2 border-b px-3 py-2 lg:hidden">
           <button
             onClick={() => setOpen(true)}
             className="rounded-md p-1.5 text-ink hover:bg-bg-subtle"
@@ -90,7 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-bg">
+        <main className="flex-1 overflow-y-auto bg-transparent">
           <div key={pathname} className="zero-page-enter h-full">
             {children}
           </div>
