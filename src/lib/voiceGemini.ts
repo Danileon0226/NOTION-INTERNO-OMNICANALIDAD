@@ -5,9 +5,11 @@
 
 import { useAi } from "@/lib/ai/store";
 import { geminiError } from "@/lib/ai/client";
+import { playBlobUrl, stopSharedAudio, getSharedAnalyser } from "@/lib/audioPlayer";
 
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
-const TTS_MODEL = "gemini-2.5-flash-preview-tts";
+// Modelos TTS en orden de preferencia (el primero disponible para tu key gana).
+const TTS_MODELS = ["gemini-2.5-flash-preview-tts", "gemini-2.5-pro-preview-tts"];
 
 // Voces prebuilt curadas (con su carácter). Por defecto una grave tipo JARVIS.
 export const GEMINI_VOICES: { id: string; label: string }[] = [
@@ -70,33 +72,40 @@ function pcmToWav(pcm: Uint8Array, sampleRate: number): Blob {
 export async function geminiTTS(text: string, voiceName = "Charon"): Promise<string> {
   const { apiKey } = useAi.getState();
   if (!apiKey) throw new Error("Falta la API key de Gemini.");
-  const res = await fetch(`${ENDPOINT}/${TTS_MODEL}:generateContent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text }] }],
-      generationConfig: {
-        responseModalities: ["AUDIO"],
-        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } },
-      },
-    }),
+  const body = JSON.stringify({
+    contents: [{ parts: [{ text }] }],
+    generationConfig: {
+      responseModalities: ["AUDIO"],
+      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } },
+    },
   });
-  const data = await res.json();
-  if (!res.ok) throw geminiError(data?.error?.message || `Gemini TTS ${res.status}`);
-  const parts: { inlineData?: { data?: string; mimeType?: string } }[] =
-    data?.candidates?.[0]?.content?.parts ?? [];
-  const audio = parts.find((p) => p.inlineData?.data)?.inlineData;
-  if (!audio?.data) throw new Error("La respuesta no incluyó audio (¿modelo TTS no disponible para tu key?).");
-  const rate = Number((audio.mimeType?.match(/rate=(\d+)/) || [])[1]) || 24000;
-  const wav = pcmToWav(base64ToBytes(audio.data), rate);
-  return URL.createObjectURL(wav);
+  let lastErr = "Gemini TTS no disponible";
+  for (const model of TTS_MODELS) {
+    const res = await fetch(`${ENDPOINT}/${model}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
+      body,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      lastErr = data?.error?.message || `Gemini TTS ${res.status}`;
+      continue;
+    }
+    const parts: { inlineData?: { data?: string; mimeType?: string } }[] =
+      data?.candidates?.[0]?.content?.parts ?? [];
+    const audio = parts.find((p) => p.inlineData?.data)?.inlineData;
+    if (!audio?.data) {
+      lastErr = "La respuesta no incluyó audio.";
+      continue;
+    }
+    const rate = Number((audio.mimeType?.match(/rate=(\d+)/) || [])[1]) || 24000;
+    const wav = pcmToWav(base64ToBytes(audio.data), rate);
+    return URL.createObjectURL(wav);
+  }
+  throw geminiError(lastErr);
 }
 
 // Reproductor con control de parada y analizador para el visualizador.
-let currentAudio: HTMLAudioElement | null = null;
-let currentCtx: AudioContext | null = null;
-let currentAnalyser: AnalyserNode | null = null;
-
 let queueToken = 0; // invalida la cola al detener
 
 export interface SpeakNeuralOpts {
@@ -126,41 +135,7 @@ function chunkText(text: string, max = 220): string[] {
 
 /** Reproduce un blob URL conectándolo al analizador; resuelve al terminar. */
 function playUrl(url: string, onFirst?: () => void): Promise<void> {
-  return new Promise((resolve) => {
-    const audio = new Audio(url);
-    currentAudio = audio;
-    try {
-      // Reutiliza un único AudioContext/Analyser por sesión (evita fuga de
-      // contextos y mantiene estable el visualizador entre frases).
-      if (!currentCtx) {
-        const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        currentCtx = new Ctx();
-        currentAnalyser = currentCtx.createAnalyser();
-        currentAnalyser.fftSize = 256;
-        currentAnalyser.connect(currentCtx.destination);
-      }
-      const src = currentCtx.createMediaElementSource(audio);
-      src.connect(currentAnalyser!);
-    } catch {
-      /* visualizador opcional */
-    }
-    let started = false;
-    audio.onplay = () => {
-      if (!started) {
-        started = true;
-        onFirst?.();
-      }
-    };
-    audio.onended = () => {
-      URL.revokeObjectURL(url);
-      resolve();
-    };
-    audio.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve();
-    };
-    audio.play().catch(() => resolve());
-  });
+  return playBlobUrl(url, onFirst);
 }
 
 /**
@@ -182,29 +157,39 @@ export async function speakGeminiQueued(text: string, opts: SpeakNeuralOpts = {}
   const synth = (c: string) => geminiTTS(stylePrefix + c, voice);
   let next = synth(chunks[0]);
   let firstPlayed = false;
+  let delegated = false;
   try {
     for (let i = 0; i < chunks.length; i++) {
       let url: string;
       try {
         url = await next;
       } catch (e) {
-        // El primer fallo cae a la voz del sistema con el resto del texto.
-        if (!firstPlayed) opts.onError?.(e as Error);
+        if (!firstPlayed) {
+          delegated = true;
+          opts.onError?.(e as Error);
+        }
         return;
       }
       if (token !== queueToken) {
         URL.revokeObjectURL(url);
         return;
       }
-      // Prefetchea la siguiente mientras reproduce la actual.
       next = i + 1 < chunks.length ? synth(chunks[i + 1]) : Promise.reject(new Error("end"));
-      next.catch(() => {}); // evita unhandled rejection del centinela
-      await playUrl(url, () => {
+      next.catch(() => {});
+      try {
+        await playUrl(url, () => {
+          if (!firstPlayed) {
+            firstPlayed = true;
+            opts.onStart?.();
+          }
+        });
+      } catch (e) {
         if (!firstPlayed) {
-          firstPlayed = true;
-          opts.onStart?.();
+          delegated = true;
+          opts.onError?.(e as Error);
         }
-      });
+        return;
+      }
       if (token !== queueToken) {
         // Cancelado: libera el audio prefetcheado que ya no se reproducirá.
         next.then((u) => URL.revokeObjectURL(u)).catch(() => {});
@@ -212,23 +197,15 @@ export async function speakGeminiQueued(text: string, opts: SpeakNeuralOpts = {}
       }
     }
   } finally {
-    if (token === queueToken) opts.onEnd?.();
+    if (token === queueToken && !delegated) opts.onEnd?.();
   }
 }
 
 export function getAnalyser(): AnalyserNode | null {
-  return currentAnalyser;
+  return getSharedAnalyser();
 }
 
 export function stopGemini(): void {
-  queueToken++; // invalida cualquier cola en curso
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio = null;
-  }
-  if (currentCtx) {
-    currentCtx.close().catch(() => {});
-    currentCtx = null;
-  }
-  currentAnalyser = null;
+  queueToken++;
+  stopSharedAudio();
 }

@@ -9,15 +9,15 @@ import { useAi } from "@/lib/ai/store";
 import {
   createRecognition,
   recognitionSupported,
-  speak,
-  stopSpeaking,
   synthesisSupported,
   listVoices,
+  ensureMicPermission,
+  recognitionErrorMessage,
 } from "@/lib/voice";
-import { speakGeminiQueued, stopGemini, getAnalyser, GEMINI_VOICES } from "@/lib/voiceGemini";
-
-// Dirección de estilo para máxima naturalidad (timbre JARVIS).
-const JARVIS_STYLE = "Habla con tono grave, calmado, profesional y seguro, a ritmo pausado";
+import { speakOut, stopVoice, getVoiceAnalyser } from "@/lib/voiceManager";
+import { unlockAudioOutput, closeSharedAudioContext } from "@/lib/audioPlayer";
+import { GEMINI_VOICES } from "@/lib/voiceGemini";
+import { MisoVoicePanel } from "@/components/miso/MisoVoicePanel";
 
 type Status = "idle" | "listening" | "thinking" | "synth" | "speaking";
 
@@ -39,14 +39,18 @@ export default function ZeroVoicePage() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [showVoice, setShowVoice] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [micError, setMicError] = useState<string | null>(null);
+  const [startingMic, setStartingMic] = useState(false);
 
-  const aiRef = useRef(ai);
-  aiRef.current = ai;
   const recRef = useRef<any>(null);
   const historyRef = useRef<ChatMsg[]>([]);
   const busyRef = useRef(false);
   const handsFreeRef = useRef(handsFree);
+  const statusRef = useRef<Status>("idle");
+  const processRef = useRef<(text: string) => void>(() => {});
+  const startListeningRef = useRef<() => void>(() => {});
   handsFreeRef.current = handsFree;
+  statusRef.current = status;
 
   useEffect(() => {
     setSupported(recognitionSupported());
@@ -57,43 +61,49 @@ export default function ZeroVoicePage() {
     return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
   }, []);
 
-  // Locución según el motor elegido (neural Gemini o sistema), con respaldo.
-  const speakOut = useCallback((text: string, onEnd: () => void) => {
-    const { voiceEngine, geminiVoice, voiceURI, voiceRate, voicePitch, apiKey } = aiRef.current;
-    const systemSpeak = () => {
-      setStatus("speaking");
-      speak(text, { voiceURI, rate: voiceRate, pitch: voicePitch, onEnd });
-    };
-    if (voiceEngine === "gemini" && apiKey) {
-      setStatus("synth");
-      speakGeminiQueued(text, {
-        voiceName: geminiVoice,
-        style: JARVIS_STYLE,
-        onStart: () => setStatus("speaking"),
-        onEnd,
-        onError: systemSpeak, // si el TTS neural falla, usa la voz del sistema
-      });
-    } else {
-      systemSpeak();
-    }
+  const speakOutCb = useCallback((text: string, onEnd: () => void) => {
+    speakOut(text, {
+      onSynth: () => setStatus("synth"),
+      onStart: () => setStatus("speaking"),
+      onEnd,
+    });
   }, []);
 
-  const stopVoice = useCallback(() => {
-    stopSpeaking();
-    stopGemini();
+  const stopVoiceCb = useCallback(() => {
+    stopVoice();
   }, []);
 
   const startListening = useCallback(() => {
     if (busyRef.current) return;
+    if (!recognitionSupported()) {
+      setSupported(false);
+      setMicError("El reconocimiento de voz requiere Chrome o Edge.");
+      return;
+    }
+
     let rec = recRef.current;
     if (!rec) {
       rec = createRecognition("es-ES");
       if (!rec) {
         setSupported(false);
+        setMicError("No se pudo iniciar el reconocimiento de voz.");
         return;
       }
       recRef.current = rec;
     }
+
+    rec.onstart = () => {
+      setMicError(null);
+      setStatus("listening");
+    };
+    rec.onerror = (e: any) => {
+      const msg = recognitionErrorMessage(String(e?.error || ""));
+      setMicError(msg);
+      if (e?.error === "not-allowed" || e?.error === "service-not-allowed" || e?.error === "audio-capture") {
+        setStatus("idle");
+        busyRef.current = false;
+      }
+    };
     rec.onresult = (e: any) => {
       let finalText = "";
       let interimText = "";
@@ -105,26 +115,29 @@ export default function ZeroVoicePage() {
       setInterim(interimText);
       if (finalText.trim()) {
         setInterim("");
-        process(finalText.trim());
+        processRef.current(finalText.trim());
       }
     };
     rec.onend = () => {
-      if (handsFreeRef.current && !busyRef.current && status !== "thinking") {
+      const s = statusRef.current;
+      if (handsFreeRef.current && !busyRef.current && s !== "thinking" && s !== "synth" && s !== "speaking") {
         try {
           rec.start();
         } catch {
-          /* ya iniciado */
+          setStatus("idle");
         }
       }
     };
+
     try {
       rec.start();
-      setStatus("listening");
     } catch {
-      /* ya iniciado */
+      setMicError("No se pudo activar el micrófono. Pulsa el orbe de nuevo.");
+      setStatus("idle");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
+  }, []);
+
+  startListeningRef.current = startListening;
 
   const stopAll = useCallback(() => {
     setHandsFree(false);
@@ -134,11 +147,13 @@ export default function ZeroVoicePage() {
     } catch {
       /* noop */
     }
-    stopVoice();
+    recRef.current = null;
+    stopVoiceCb();
     busyRef.current = false;
     setStatus("idle");
     setInterim("");
-  }, [stopVoice]);
+    setStartingMic(false);
+  }, [stopVoiceCb]);
 
   const process = useCallback(
     async (text: string) => {
@@ -160,15 +175,11 @@ export default function ZeroVoicePage() {
           { role: "model", text: res.text } as ChatMsg,
         ].slice(-12);
         setTurns((t) => [...t, { role: "model", text: res.text, steps: res.steps }]);
-        speakOut(res.text, () => {
+        await unlockAudioOutput();
+        speakOutCb(res.text, () => {
           busyRef.current = false;
           if (handsFreeRef.current) {
-            setStatus("listening");
-            try {
-              recRef.current?.start();
-            } catch {
-              /* noop */
-            }
+            startListeningRef.current();
           } else {
             setStatus("idle");
           }
@@ -176,30 +187,43 @@ export default function ZeroVoicePage() {
       } catch (e) {
         const msg = `Error: ${(e as Error).message}`;
         setTurns((t) => [...t, { role: "model", text: msg }]);
-        speakOut(msg, () => {
+        speakOutCb(msg, () => {
           busyRef.current = false;
           setStatus("idle");
         });
       }
     },
-    [speakOut]
+    [speakOutCb]
   );
 
-  function toggle() {
-    if (status === "idle") {
-      setHandsFree(true);
-      handsFreeRef.current = true;
-      startListening();
-    } else {
+  processRef.current = process;
+
+  async function toggle() {
+    void unlockAudioOutput();
+    if (status !== "idle") {
       stopAll();
+      return;
     }
+    setStartingMic(true);
+    setMicError(null);
+    busyRef.current = false;
+    const perm = await ensureMicPermission();
+    setStartingMic(false);
+    if (!perm.ok) {
+      setMicError(perm.message || "Permiso de micrófono denegado.");
+      return;
+    }
+    setHandsFree(true);
+    handsFreeRef.current = true;
+    startListening();
   }
 
   async function testVoice() {
+    await unlockAudioOutput();
     setTesting(true);
-    stopVoice();
+    stopVoiceCb();
     const line = "Sistemas en línea. Soy ZERO, su gestor de conciencia. ¿En qué puedo asistirle?";
-    speakOut(line, () => setTesting(false));
+    speakOutCb(line, () => setTesting(false));
   }
 
   useEffect(() => {
@@ -209,9 +233,10 @@ export default function ZeroVoicePage() {
       } catch {
         /* noop */
       }
-      stopVoice();
+      stopVoiceCb();
+      closeSharedAudioContext();
     };
-  }, [stopVoice]);
+  }, [stopVoiceCb]);
 
   const label =
     status === "listening"
@@ -245,21 +270,24 @@ export default function ZeroVoicePage() {
 
       {/* Orbe + visualizador */}
       <div className="relative z-10 my-6 flex h-60 w-60 items-center justify-center">
-        <span className={`absolute inset-0 rounded-full bg-violet-500/15 ${status === "listening" ? "animate-ping" : ""}`} />
-        <span className="absolute inset-0 rounded-full border border-violet-400/20" />
+        <span className={`pointer-events-none absolute inset-0 rounded-full bg-violet-500/15 ${status === "listening" ? "animate-ping" : ""}`} />
+        <span className="pointer-events-none absolute inset-0 rounded-full border border-violet-400/20" />
         <span
-          className={`absolute -inset-2 rounded-full opacity-60 blur-xl transition-all duration-500 ${
+          className={`pointer-events-none absolute -inset-2 rounded-full opacity-60 blur-xl transition-all duration-500 ${
             status === "speaking" ? "bg-emerald-500/30" : status === "thinking" || status === "synth" ? "bg-violet-500/40" : "bg-violet-700/20"
           }`}
         />
         {/* Anillo cónico giratorio */}
         <span
-          className={`absolute inset-3 rounded-full ${active ? "animate-spin" : ""}`}
+          className={`pointer-events-none absolute inset-3 rounded-full ${active ? "animate-spin" : ""}`}
           style={{ animationDuration: "8s", background: "conic-gradient(from 0deg, transparent, rgba(167,139,250,0.55), transparent 60%)", WebkitMask: "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0)", mask: "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0)" }}
         />
         <button
-          onClick={toggle}
-          className={`relative flex h-36 w-36 items-center justify-center rounded-full border border-white/15 backdrop-blur-md transition active:scale-95 ${
+          type="button"
+          aria-label={status === "idle" ? "Activar escucha" : "Detener escucha"}
+          disabled={startingMic}
+          onClick={() => void toggle()}
+          className={`relative z-20 flex h-36 w-36 cursor-pointer items-center justify-center rounded-full border border-white/15 backdrop-blur-md transition active:scale-95 disabled:opacity-60 ${
             status === "idle"
               ? "bg-violet-600/80 shadow-[0_0_70px] shadow-violet-900"
               : status === "speaking"
@@ -268,7 +296,7 @@ export default function ZeroVoicePage() {
           }`}
         >
           {status === "idle" ? (
-            <Mic size={44} />
+            startingMic ? <Loader2 size={44} className="animate-spin" /> : <Mic size={44} />
           ) : status === "speaking" ? (
             <Volume2 size={44} />
           ) : status === "thinking" || status === "synth" ? (
@@ -282,6 +310,9 @@ export default function ZeroVoicePage() {
       <Visualizer active={status === "speaking" || status === "listening"} mode={status === "speaking" ? "speak" : "listen"} />
 
       <p className="relative z-10 mt-4 text-sm text-violet-100/80">{label}</p>
+      {micError && (
+        <p className="relative z-10 mt-2 max-w-md text-center text-xs text-amber-300/90">{micError}</p>
+      )}
       {interim && <p className="relative z-10 mt-1 max-w-md text-center text-xs italic text-violet-200/60">“{interim}”</p>}
 
       {steps.length > 0 && status === "thinking" && (
@@ -307,8 +338,16 @@ export default function ZeroVoicePage() {
         <button onClick={() => setShowVoice((v) => !v)} className="inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-1 text-xs hover:bg-white/10">
           <Settings2 size={12} /> Voz
         </button>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] ${voiceEngine === "gemini" ? "bg-violet-500/25 text-violet-100" : "bg-white/10 text-violet-100/70"}`}>
-          {voiceEngine === "gemini" ? "Neural · Gemini" : "Sistema"}
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] ${
+            voiceEngine === "miso"
+              ? "bg-emerald-500/25 text-emerald-100"
+              : voiceEngine === "gemini"
+                ? "bg-violet-500/25 text-violet-100"
+                : "bg-white/10 text-violet-100/70"
+          }`}
+        >
+          {voiceEngine === "miso" ? "Neural · Miso One" : voiceEngine === "gemini" ? "Neural · Gemini" : "Sistema"}
         </span>
       </div>
 
@@ -316,11 +355,17 @@ export default function ZeroVoicePage() {
       {showVoice && (
         <div className="zero-pop relative z-10 mt-4 w-full max-w-md space-y-3 rounded-2xl border border-violet-400/25 bg-white/5 p-4 backdrop-blur-xl">
           <p className="text-xs font-semibold uppercase tracking-wide text-violet-200">Motor de voz</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <EngineCard
+              active={voiceEngine === "miso"}
+              title="Miso One"
+              desc="TTS expresivo, recomendado"
+              onClick={() => setVoice({ voiceEngine: "miso" })}
+            />
             <EngineCard
               active={voiceEngine === "gemini"}
               title="Neural (Gemini)"
-              desc="Realista, recomendado"
+              desc="Vía API key Gemini"
               onClick={() => setVoice({ voiceEngine: "gemini" })}
             />
             <EngineCard
@@ -331,7 +376,9 @@ export default function ZeroVoicePage() {
             />
           </div>
 
-          {voiceEngine === "gemini" ? (
+          {voiceEngine === "miso" ? (
+            <MisoVoicePanel onTestVoice={testVoice} testing={testing} />
+          ) : voiceEngine === "gemini" ? (
             <label className="block text-xs text-violet-100/70">
               Voz neural
               <select
@@ -370,13 +417,15 @@ export default function ZeroVoicePage() {
             </>
           )}
 
-          <button
-            onClick={testVoice}
-            disabled={testing || (voiceEngine === "gemini" && !apiKey)}
-            className="inline-flex items-center gap-1.5 rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
-          >
-            {testing ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />} Probar voz
-          </button>
+          {voiceEngine !== "miso" && (
+            <button
+              onClick={testVoice}
+              disabled={testing || (voiceEngine === "gemini" && !apiKey)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {testing ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />} Probar voz
+            </button>
+          )}
           {voiceEngine === "gemini" && (
             <p className="flex items-start gap-1 text-[11px] text-violet-100/50">
               <Sparkles size={11} className="mt-0.5 shrink-0" /> Voz neural realista vía tu API key de Gemini. Si el modelo TTS no
@@ -436,7 +485,7 @@ function Visualizer({ active, mode }: { active: boolean; mode: "speak" | "listen
     const data = new Uint8Array(128);
     let t = 0;
     const tick = () => {
-      const analyser = getAnalyser();
+      const analyser = getVoiceAnalyser();
       if (active && analyser) {
         analyser.getByteFrequencyData(data);
         for (let i = 0; i < N; i++) {

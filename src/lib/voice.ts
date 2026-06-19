@@ -20,7 +20,45 @@ export function createRecognition(lang = "es-ES"): any | null {
   r.lang = lang;
   r.continuous = true;
   r.interimResults = true;
+  r.maxAlternatives = 1;
   return r;
+}
+
+/** Pide permiso de micrófono (requerido en Chrome/Edge antes de SpeechRecognition). */
+export async function ensureMicPermission(): Promise<{ ok: boolean; message?: string }> {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+    return { ok: false, message: "Tu navegador no expone acceso al micrófono." };
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((t) => t.stop());
+    return { ok: true };
+  } catch (e) {
+    const name = (e as DOMException)?.name || "";
+    if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+      return {
+        ok: false,
+        message: "Permiso de micrófono denegado. Actívalo en el candado de la barra de direcciones.",
+      };
+    }
+    return { ok: false, message: "No se pudo acceder al micrófono." };
+  }
+}
+
+export function recognitionErrorMessage(code: string): string {
+  switch (code) {
+    case "not-allowed":
+    case "service-not-allowed":
+      return "Micrófono bloqueado. Permite el acceso en el navegador y vuelve a pulsar el orbe.";
+    case "no-speech":
+      return "No se detectó voz. Acércate al micrófono e inténtalo de nuevo.";
+    case "audio-capture":
+      return "No hay micrófono disponible o está en uso por otra app.";
+    case "network":
+      return "El reconocimiento de voz necesita conexión a internet (servicio de Google).";
+    default:
+      return `Error de reconocimiento: ${code || "desconocido"}`;
+  }
 }
 
 // Perfil JARVIS por defecto: grave (pitch bajo) y pausado (rate algo lento).
@@ -94,6 +132,8 @@ export function speak(text: string, opts: SpeakOptions = {}): void {
     opts.onEnd?.();
     return;
   }
+  // Fuerza carga de voces (Chrome las trae async).
+  window.speechSynthesis.getVoices();
   const synth = window.speechSynthesis;
   synth.cancel();
   // Trocea en frases para una locución más natural y estable.
