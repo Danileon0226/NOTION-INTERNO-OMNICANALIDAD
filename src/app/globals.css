@@ -1,31 +1,45 @@
 @import "tailwindcss";
 
+/* ════════════════════════════════════════════════════════════════
+   ZERO AGENCY · Brand & Design System v1.0 (exacto al deck)
+   Paleta de marca — valores HEX literales del manual.
+   ════════════════════════════════════════════════════════════════ */
 :root {
-  /* Identidad ZERO AGENCY — violeta (#392851 / #927cb7), tipografía Outfit */
-  --bg: #ffffff;
-  --bg-subtle: #f6f4fb;
-  --sidebar: #f7f5fc;
-  --card: #ffffff; /* superficie de tarjetas/paneles */
-  --border: #e9e5f2;
-  --text: #241d33;
-  --text-muted: #6f6886;
-  --accent: #5b3fa6; /* violeta de marca para acciones */
-  --brand: #392851; /* violeta profundo */
-  --brand-soft: #927cb7; /* lavanda */
+  --violet: #5e20be; /* Violeta Zero — color de marca / acciones */
+  --violet-deep: #4f1f88; /* Violeta Profundo */
+  --violet-bright: #8b49f0; /* fin del degradado principal */
+  --violet-dark: #382850; /* Violeta Oscuro — superficies */
+  --lavender: #9078b0; /* Lavanda */
+  --lavender-bright: #b49be6; /* Lavanda Brillante — acento */
+  --night: #0e002b; /* Negro Zero — fondo */
 }
 
-/* Modo oscuro ZERO — mantiene el violeta de marca sobre fondos profundos */
+:root {
+  /* Identidad ZERO AGENCY — tipografía Outfit, base clara */
+  --bg: #ffffff;
+  --bg-subtle: #f5f2fc;
+  --sidebar: #f6f3fc;
+  --card: #ffffff; /* superficie de tarjetas/paneles */
+  --border: #e7e1f3;
+  --text: #1b1230;
+  --text-muted: #6a6285;
+  --accent: #5e20be; /* Violeta Zero */
+  --brand: #382850; /* Violeta Oscuro */
+  --brand-soft: #9078b0; /* Lavanda */
+}
+
+/* Modo oscuro ZERO — base Negro Zero (#0E002B) con violetas de marca */
 [data-theme="dark"] {
-  --bg: #0c0a14;
-  --bg-subtle: #171326;
-  --sidebar: #110e1d;
-  --card: #15111f;
-  --border: #2a2440;
-  --text: #ece8f6;
-  --text-muted: #9d95b8;
-  --accent: #a78bfa;
-  --brand: #927cb7;
-  --brand-soft: #b9a8db;
+  --bg: #0e002b;
+  --bg-subtle: #190f3a;
+  --sidebar: #130734;
+  --card: #1b1142;
+  --border: #2f2350;
+  --text: #efe9fb;
+  --text-muted: #a99fc8;
+  --accent: #8b49f0; /* Violeta brillante: contrasta sobre el fondo */
+  --brand: #9078b0;
+  --brand-soft: #b49be6;
 }
 
 @theme inline {
@@ -60,21 +74,38 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(42% 42% at 12% 6%, color-mix(in srgb, var(--brand-soft) 20%, transparent), transparent 70%),
-    radial-gradient(46% 46% at 88% 0%, color-mix(in srgb, var(--accent) 17%, transparent), transparent 72%),
-    radial-gradient(54% 50% at 72% 104%, color-mix(in srgb, var(--brand) 15%, transparent), transparent 72%);
+    radial-gradient(45% 45% at 12% 6%, color-mix(in srgb, var(--lavender-bright) 22%, transparent), transparent 70%),
+    radial-gradient(48% 48% at 88% 0%, color-mix(in srgb, var(--violet) 20%, transparent), transparent 72%),
+    radial-gradient(56% 52% at 72% 104%, color-mix(in srgb, var(--violet-deep) 18%, transparent), transparent 72%);
+}
+/* En oscuro, refuerza con el degradado "Fondo" del deck (160° #3A1A66→#140829) */
+[data-theme="dark"] body::before {
+  background:
+    radial-gradient(48% 48% at 12% 6%, color-mix(in srgb, var(--violet) 30%, transparent), transparent 70%),
+    radial-gradient(50% 50% at 88% 0%, color-mix(in srgb, var(--violet-bright) 22%, transparent), transparent 72%),
+    radial-gradient(60% 55% at 72% 104%, color-mix(in srgb, var(--violet-deep) 40%, transparent), transparent 72%),
+    linear-gradient(160deg, #3a1a66 0%, #140829 100%);
 }
 
 * {
   border-color: var(--border);
 }
 
-/* ── Design engineering (principios Emil Kowalski) ──────────────
-   Microinteracciones sutiles, intencionales y rápidas (<300ms),
-   con curvas de easing fuertes (las built-in son demasiado débiles). */
+/* ── Movimiento · curvas y duraciones EXACTAS del deck de marca ──
+   El movimiento informa, nunca distrae. Anima opacidad y transform —
+   nunca layout. Respeta prefers-reduced-motion. */
 :root {
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* UI: entra rápido, responde */
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1); /* movimiento en pantalla */
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1); /* Estándar */
+  --ease-entrada: cubic-bezier(0, 0, 0.2, 1); /* Entrada */
+  --ease-salida: cubic-bezier(0.4, 0, 1, 1); /* Salida */
+  --ease-preciso: cubic-bezier(0.4, 0, 0.6, 1); /* Preciso */
+  /* Duraciones del manual */
+  --dur-micro: 120ms; /* hover, toggles */
+  --dur-standard: 200ms; /* entradas, paneles */
+  --dur-emphasis: 320ms; /* modales, transiciones */
+  /* Alias retro-compatibles */
+  --ease-out: var(--ease-standard);
+  --ease-in-out: var(--ease-preciso);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1); /* drawer estilo iOS */
 }
 
@@ -87,12 +118,12 @@ textarea,
 select,
 [role="button"] {
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.18s var(--ease-out),
-    opacity 0.15s ease,
-    transform 0.16s var(--ease-out);
+    background-color var(--dur-micro) var(--ease-standard),
+    border-color var(--dur-micro) var(--ease-standard),
+    color var(--dur-micro) var(--ease-standard),
+    box-shadow var(--dur-standard) var(--ease-standard),
+    opacity var(--dur-micro) var(--ease-standard),
+    transform var(--dur-micro) var(--ease-standard);
 }
 
 /* Feedback táctil: el botón "cede" al presionar (ease-out, no sluggish) */
@@ -101,11 +132,12 @@ button:not(:disabled):active,
   transform: scale(0.97);
 }
 
-/* Foco visible y accesible en color de marca */
+/* Foco visible y accesible en color de marca, con halo (estado "foco" del deck) */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 8px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 /* Selección con tinte de marca */
@@ -131,7 +163,7 @@ h2 {
   }
 }
 .zero-page-enter {
-  animation: zeroPageEnter 0.26s var(--ease-out);
+  animation: zeroPageEnter var(--dur-standard) var(--ease-entrada);
 }
 
 /* Entrada de popovers/menús: nada aparece "de la nada" → desde scale .96 + opacity */
@@ -146,7 +178,7 @@ h2 {
   }
 }
 .zero-pop {
-  animation: zeroPop 0.15s var(--ease-out);
+  animation: zeroPop var(--dur-micro) var(--ease-entrada);
   transform-origin: top left;
 }
 
@@ -207,12 +239,12 @@ h2 {
   --glass-inset: color-mix(in srgb, var(--brand) 6%, #ffffff);
 }
 [data-theme="dark"] {
-  --glass-bg: rgba(26, 20, 40, 0.7);
-  --glass-bg-strong: rgba(30, 24, 46, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.14);
-  --glass-hi: rgba(255, 255, 255, 0.1);
-  --glass-shadow: 0 16px 44px -20px rgba(0, 0, 0, 0.78);
-  --glass-inset: color-mix(in srgb, var(--brand-soft) 10%, #15111f);
+  --glass-bg: rgba(27, 17, 66, 0.62);
+  --glass-bg-strong: rgba(31, 20, 74, 0.8);
+  --glass-border: rgba(180, 155, 230, 0.16); /* hairline lavanda */
+  --glass-hi: rgba(180, 155, 230, 0.12);
+  --glass-shadow: 0 16px 44px -20px rgba(8, 2, 26, 0.82);
+  --glass-inset: color-mix(in srgb, var(--lavender-bright) 12%, #1b1142);
 }
 
 /* Tarjetas/paneles translúcidos con desenfoque y brillo especular */
@@ -284,12 +316,13 @@ kbd {
 }
 
 /* ── Marca ZERO · utilidades visuales ─────────────────────────── */
-/* Gradiente de marca (violeta profundo → acento → lavanda) */
+/* Degradado principal del deck: 120° · #5E20BE → #8B49F0 (firma cromática) */
 .brand-gradient {
-  background-image: linear-gradient(135deg, var(--brand) 0%, var(--accent) 55%, var(--brand-soft) 100%);
+  background-image: linear-gradient(120deg, var(--violet) 0%, var(--violet-bright) 100%);
 }
+/* Degradado "Acento": 120° · #8B49F0 → #B49BE6 (para texto, legible en ambos temas) */
 .brand-text {
-  background-image: linear-gradient(120deg, var(--brand), var(--accent) 60%, var(--brand-soft));
+  background-image: linear-gradient(120deg, var(--violet) 0%, var(--violet-bright) 55%, var(--lavender-bright) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -306,7 +339,7 @@ kbd {
   -webkit-backdrop-filter: blur(16px) saturate(165%);
   backdrop-filter: blur(16px) saturate(165%);
   border: 1px solid var(--glass-border);
-  border-radius: 14px;
+  border-radius: 18px; /* radio de tarjeta del deck */
   box-shadow: inset 0 1px 0 var(--glass-hi);
 }
 .surface-glow {
@@ -320,8 +353,9 @@ kbd {
   font-weight: 800;
   letter-spacing: 0.04em;
   border-radius: 12px;
-  background-image: linear-gradient(135deg, var(--brand), var(--accent));
+  background-image: linear-gradient(120deg, var(--violet), var(--violet-bright));
   color: #fff;
+  box-shadow: 0 4px 16px -6px color-mix(in srgb, var(--violet) 60%, transparent);
 }
 /* Aparición escalonada para secciones de la landing */
 @keyframes zeroRise {
@@ -335,7 +369,52 @@ kbd {
   }
 }
 .zero-rise {
-  animation: zeroRise 0.5s var(--ease-out) both;
+  animation: zeroRise var(--dur-emphasis) var(--ease-entrada) both;
+}
+
+/* ── Componentes de marca (exactos al deck · "Componentes UI") ── */
+/* Botón primario: degradado violeta 120° + glow (como "Empezar ahora"). */
+.btn-brand {
+  background-image: linear-gradient(120deg, var(--violet), var(--violet-bright));
+  color: #fff;
+  box-shadow:
+    0 6px 22px -8px color-mix(in srgb, var(--violet) 78%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.btn-brand:hover {
+  box-shadow:
+    0 9px 30px -8px color-mix(in srgb, var(--violet-bright) 88%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+/* Elevación "glow" del deck: halo de marca para elementos destacados. */
+.glow-brand {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--violet) 28%, transparent),
+    0 12px 44px -12px color-mix(in srgb, var(--violet-bright) 55%, transparent);
+}
+
+/* Grano + glow: textura sutil de profundidad sobre violeta (kit gráfico). */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+[data-theme="dark"] body::after {
+  opacity: 0.07;
+}
+
+/* Líneas de onda: firma de movimiento para héroes y separadores. */
+.brand-waves {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0 60 C150 20 300 100 450 60 S750 20 900 60 S1050 100 1200 60' fill='none' stroke='%23b49be6' stroke-opacity='0.28' stroke-width='2'/%3E%3Cpath d='M0 84 C150 44 300 124 450 84 S750 44 900 84 S1050 124 1200 84' fill='none' stroke='%238b49f0' stroke-opacity='0.2' stroke-width='2'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: 100% 100%;
 }
 
 /* ── Gamificación · inmersión rápida (GPU: transform/opacity) ─── */
