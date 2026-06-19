@@ -1,0 +1,114 @@
+{
+  "name": "PamaMotors · wf-notify-sileo",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "notify-sileo", "responseMode": "onReceived", "options": {} },
+      "id": "wh",
+      "name": "Webhook notify-sileo",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 360],
+      "webhookId": "pama-notify-sileo"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://firestore.googleapis.com/v1/projects/{{ $env.FIREBASE_PROJECT_ID }}/databases/(default)/documents:runQuery",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleFirebaseCloudFirestoreOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ structuredQuery: { from: [{ collectionId: 'users' }], where: { compositeFilter: { op: 'AND', filters: [ { fieldFilter: { field: { fieldPath: 'role' }, op: 'EQUAL', value: { stringValue: ($json.body.role || 'comercial') } } }, { fieldFilter: { field: { fieldPath: 'enabled' }, op: 'EQUAL', value: { booleanValue: true } } } ] } }, limit: 50 } }) }}",
+        "options": {}
+      },
+      "id": "fs-users",
+      "name": "Firestore · usuarios del rol",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 280],
+      "credentials": { "googleFirebaseCloudFirestoreOAuth2Api": { "id": "REPLACE_ME", "name": "Firestore (PamaMotors)" } }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const users=$input.all();const body=($('Webhook notify-sileo').first().json.body)||{};function fs(o){const f={};for(const k in o){const v=o[k];f[k]=(typeof v==='boolean')?{booleanValue:v}:((typeof v==='number')?{integerValue:String(v)}:{stringValue:String(v==null?'':v)});}return f;}const notif={category:body.category||'team',priority:body.priority||'normal',title:body.title||'',body:body.body||'',href:body.href||'',actor:body.actor||'',ts:Date.now()};const fields=fs(notif);const out=[];for(const it of users){const arr=Array.isArray(it.json)?it.json:[it.json];for(const row of arr){if(!row||!row.document)continue;const parts=String(row.document.name).split('/');const uid=parts[parts.length-1];out.push({json:{uid:uid,fields:fields}});}}return out;"
+      },
+      "id": "fanout",
+      "name": "Fan-out por usuario",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 280]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://firestore.googleapis.com/v1/projects/{{ $env.FIREBASE_PROJECT_ID }}/databases/(default)/documents/users/{{ $json.uid }}/notifications",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleFirebaseCloudFirestoreOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ fields: $json.fields }) }}",
+        "options": {}
+      },
+      "id": "fs-write",
+      "name": "Firestore · escribe notificación",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 280],
+      "credentials": { "googleFirebaseCloudFirestoreOAuth2Api": { "id": "REPLACE_ME", "name": "Firestore (PamaMotors)" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2 },
+          "conditions": [ { "leftValue": "={{ $json.body.priority }}", "rightValue": "high", "operator": { "type": "string", "operation": "equals" } } ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-high",
+      "name": "¿alta prioridad?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 460]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, text: '🔔 SILEO: ' + ($json.body.title || '') + ($json.body.body ? ' — ' + $json.body.body : '') }) }}",
+        "options": {}
+      },
+      "id": "tg",
+      "name": "Telegram · alerta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [700, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WHATSAPP_PHONE_ID }}/messages?access_token={{ $env.META_PAGE_TOKEN }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $env.ALERT_WHATSAPP_TO, type: 'text', text: { body: '🔔 SILEO: ' + ($json.body.title || '') + ($json.body.body ? ' — ' + $json.body.body : '') } }) }}",
+        "options": {}
+      },
+      "id": "wa",
+      "name": "WhatsApp · alerta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [700, 560]
+    }
+  ],
+  "connections": {
+    "Webhook notify-sileo": { "main": [[{ "node": "Firestore · usuarios del rol", "type": "main", "index": 0 }, { "node": "¿alta prioridad?", "type": "main", "index": 0 }]] },
+    "Firestore · usuarios del rol": { "main": [[{ "node": "Fan-out por usuario", "type": "main", "index": 0 }]] },
+    "Fan-out por usuario": { "main": [[{ "node": "Firestore · escribe notificación", "type": "main", "index": 0 }]] },
+    "¿alta prioridad?": { "main": [[{ "node": "Telegram · alerta", "type": "main", "index": 0 }, { "node": "WhatsApp · alerta", "type": "main", "index": 0 }], []] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false
+}

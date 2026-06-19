@@ -14,7 +14,8 @@ escribiéndolos en **Firestore** (`leads/{leadId}`), donde ZERO OS los procesa.
 | `wf-lead-ingest.json` | `POST /webhook/lead` | Lead de **web/landing** (o cualquier canal que postee el payload) → Firestore. |
 | `wf-whatsapp-inbound.json` | `GET+POST /webhook/whatsapp` | Verifica el webhook de **WhatsApp Cloud** y convierte cada mensaje entrante en un lead (`wa-<telefono>`). |
 | `wf-meta-leadads.json` | `GET+POST /webhook/meta-leads` | Verifica el webhook de **Meta Lead Ads (FB/IG)**, trae el lead por Graph API y lo normaliza. |
-| `wf-agent-central.json` | _cron (1 min)_ | **Agente Central**: califica los leads nuevos con Gemini, actualiza estado/score y pide datos por WhatsApp (bucle de feedback). |
+| `wf-agent-central.json` | _cron (1 min)_ | **Agente Central**: califica los leads nuevos con Gemini, actualiza estado/score, pide datos por WhatsApp (bucle de feedback) y **avisa al comercial vía SILEO** cuando un lead queda calificado. |
+| `wf-notify-sileo.json` | `POST /webhook/notify-sileo` | **SILEO**: escribe una notificación interna a todos los usuarios de un rol (campana del OS) y, si es de prioridad alta, la reenvía por **Telegram y WhatsApp**. |
 | `lead-normalize.js` | — | Referencia de la normalización (el mismo código va en los nodos *Code*). |
 | `lead.schema.json` | — | JSON Schema del `LeadPayload`. |
 
@@ -35,6 +36,11 @@ PAMA_WEBHOOK_SECRET=...                               # opcional, HMAC del webho
 GEMINI_API_KEY=AIza...                                # Generative Language API
 GEMINI_MODEL=gemini-2.5-flash                         # opcional (modelo por defecto)
 WHATSAPP_PHONE_ID=1029384756                          # WhatsApp Cloud · Phone Number ID
+N8N_BASE_URL=https://tu-n8n.dominio                   # para llamar a wf-notify-sileo
+# SILEO → Telegram/WhatsApp en alta prioridad (wf-notify-sileo)
+TELEGRAM_BOT_TOKEN=123456:ABC...
+TELEGRAM_CHAT_ID=-1001234567890
+ALERT_WHATSAPP_TO=573001234567                        # número destino de las alertas
 ```
 
 ## Credenciales
@@ -98,9 +104,16 @@ Corre cada minuto y cierra el bucle de conciencia sobre los leads nuevos:
 ```
 Captación → wf-*-ingest → leads/{id} (received)
         → wf-agent-central → Gemini → {qualified | awaiting_customer + WhatsApp}
+            └─ si qualified → wf-notify-sileo → 🔔 SILEO al comercial (+Telegram/WhatsApp si alta)
         → cliente responde (wf-whatsapp-inbound) → received → recalifica…
         → cockpit /leads (asignar / responder / cerrar)
 ```
+
+> **SILEO (notificaciones internas):** `wf-notify-sileo` escribe en
+> `users/{uid}/notifications`, que el OS sincroniza en la campana de cada persona
+> (rol comercial). En el OS, además, los avisos locales de **alta prioridad** pueden
+> reenviarse a Telegram/WhatsApp desde `/notificaciones` (mientras el OS esté abierto);
+> para 24/7 sin navegador, el reenvío server-side lo hace este mismo workflow.
 
 Siguiente evolución (opcional): orquestadores de **Documentación** (cotización PDF) y
 **Distribución** (round-robin + SLA). Ver `docs/OMNICANAL_PAMAMOTORS.md` §7–§8.

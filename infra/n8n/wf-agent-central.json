@@ -58,7 +58,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const resp=$json;let text='';try{text=resp.candidates[0].content.parts.map(function(p){return p.text||'';}).join('');}catch(e){text='';}let d={};try{d=JSON.parse(text);}catch(e){d={};}const prep=$('Preparar leads').item.json;const lead=prep.lead||{};const id=prep.id;const score=Math.max(0,Math.min(100,Number(d.score)||0));const missing=Array.isArray(d.missing)?d.missing:[];const nextStatus=d.nextStatus||(missing.length?'awaiting_customer':'qualified');const reply=d.reply||'';const fields={status:{stringValue:nextStatus},score:{integerValue:String(score)}};if(reply)fields.lastAgentReply={stringValue:reply};const phone=((lead.contact||{}).phone)||'';return {json:{id:id,phone:phone,reply:reply,nextStatus:nextStatus,score:score,firestore:{fields:fields},sendWa:!!(reply&&phone)}};"
+        "jsCode": "const resp=$json;let text='';try{text=resp.candidates[0].content.parts.map(function(p){return p.text||'';}).join('');}catch(e){text='';}let d={};try{d=JSON.parse(text);}catch(e){d={};}const prep=$('Preparar leads').item.json;const lead=prep.lead||{};const id=prep.id;const score=Math.max(0,Math.min(100,Number(d.score)||0));const missing=Array.isArray(d.missing)?d.missing:[];const nextStatus=d.nextStatus||(missing.length?'awaiting_customer':'qualified');const reply=d.reply||'';const fields={status:{stringValue:nextStatus},score:{integerValue:String(score)}};if(reply)fields.lastAgentReply={stringValue:reply};const phone=((lead.contact||{}).phone)||'';const leadTitle=((lead.contact||{}).fullName)||((lead.intent||{}).vehicleOfInterest)||id;return {json:{id:id,phone:phone,leadTitle:leadTitle,reply:reply,nextStatus:nextStatus,score:score,firestore:{fields:fields},sendWa:!!(reply&&phone)}};"
       },
       "id": "decide",
       "name": "Decidir",
@@ -113,6 +113,36 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [1740, 240]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2 },
+          "conditions": [ { "leftValue": "={{ $json.nextStatus }}", "rightValue": "qualified", "operator": { "type": "string", "operation": "equals" } } ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-qualified",
+      "name": "¿calificado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1520, 480]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_BASE_URL }}/webhook/notify-sileo",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ role: 'comercial', category: 'lead', priority: 'high', title: 'Nuevo lead calificado', body: ($json.leadTitle || '') + ' · score ' + $json.score, href: '/leads', actor: 'Agente ZERO' }) }}",
+        "options": {}
+      },
+      "id": "notify-sileo",
+      "name": "SILEO · avisa al comercial",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1740, 480]
     }
   ],
   "connections": {
@@ -121,8 +151,9 @@
     "Preparar leads": { "main": [[{ "node": "Gemini · califica", "type": "main", "index": 0 }]] },
     "Gemini · califica": { "main": [[{ "node": "Decidir", "type": "main", "index": 0 }]] },
     "Decidir": { "main": [[{ "node": "Firestore · actualiza estado", "type": "main", "index": 0 }]] },
-    "Firestore · actualiza estado": { "main": [[{ "node": "¿responder por WhatsApp?", "type": "main", "index": 0 }]] },
-    "¿responder por WhatsApp?": { "main": [[{ "node": "WhatsApp · pide datos", "type": "main", "index": 0 }], []] }
+    "Firestore · actualiza estado": { "main": [[{ "node": "¿responder por WhatsApp?", "type": "main", "index": 0 }, { "node": "¿calificado?", "type": "main", "index": 0 }]] },
+    "¿responder por WhatsApp?": { "main": [[{ "node": "WhatsApp · pide datos", "type": "main", "index": 0 }], []] },
+    "¿calificado?": { "main": [[{ "node": "SILEO · avisa al comercial", "type": "main", "index": 0 }], []] }
   },
   "settings": { "executionOrder": "v1" },
   "active": false

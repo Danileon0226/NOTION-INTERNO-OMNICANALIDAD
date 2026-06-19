@@ -42,6 +42,9 @@ interface SileoState {
   muted: SileoCategory[]; // categorías silenciadas (no entran)
   quiet: boolean; // modo silencio total: sin toasts ni sonido
   toast: SileoNotification | null;
+  // Reenvío de alta prioridad a canales externos.
+  forward: { telegram: boolean; whatsapp: boolean };
+  whatsappAlertTo: string; // número E.164 destino de alertas WhatsApp
 
   setOpen: (b: boolean) => void;
   /** Crea una notificación. `id` para idempotencia; `silent` evita el toast. */
@@ -53,6 +56,8 @@ interface SileoState {
   toggleMute: (c: SileoCategory) => void;
   toggleQuiet: () => void;
   dismissToast: () => void;
+  setForward: (p: Partial<{ telegram: boolean; whatsapp: boolean }>) => void;
+  setWhatsappAlertTo: (s: string) => void;
 }
 
 const CAP = 120;
@@ -65,6 +70,8 @@ export const useSileo = create<SileoState>()(
       muted: [],
       quiet: false,
       toast: null,
+      forward: { telegram: false, whatsapp: false },
+      whatsappAlertTo: "",
 
       setOpen: (open) => set({ open }),
 
@@ -99,10 +106,12 @@ export const useSileo = create<SileoState>()(
         set((s) => ({ muted: s.muted.includes(c) ? s.muted.filter((x) => x !== c) : [...s.muted, c] })),
       toggleQuiet: () => set((s) => ({ quiet: !s.quiet })),
       dismissToast: () => set({ toast: null }),
+      setForward: (p) => set((s) => ({ forward: { ...s.forward, ...p } })),
+      setWhatsappAlertTo: (whatsappAlertTo) => set({ whatsappAlertTo }),
     }),
     {
       name: "zero-agency-sileo",
-      partialize: (s) => ({ items: s.items, muted: s.muted, quiet: s.quiet }),
+      partialize: (s) => ({ items: s.items, muted: s.muted, quiet: s.quiet, forward: s.forward, whatsappAlertTo: s.whatsappAlertTo }),
     }
   )
 );

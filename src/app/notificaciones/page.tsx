@@ -7,6 +7,7 @@ import { ModuleHeader } from "@/components/ModuleHeader";
 import { useSileo, CATEGORY_META, CATEGORIES, type SileoCategory, type SileoPriority } from "@/lib/sileo/store";
 import { authMode, useAccount } from "@/lib/account";
 import { broadcast } from "@/lib/sileo/remote";
+import { useConnectors } from "@/lib/connectors/store";
 
 export default function NotificacionesPage() {
   const account = useAccount();
@@ -139,6 +140,45 @@ export default function NotificacionesPage() {
           })}
         </div>
         <p className="mt-2 text-[11px] text-muted">Las categorías silenciadas no entran a tu centro. {authMode === "open" && "Activa Firebase para recibir avisos del equipo."}</p>
+      </div>
+
+      <ForwardSettings />
+    </div>
+  );
+}
+
+function ForwardSettings() {
+  const forward = useSileo((s) => s.forward);
+  const whatsappAlertTo = useSileo((s) => s.whatsappAlertTo);
+  const setForward = useSileo((s) => s.setForward);
+  const setWhatsappAlertTo = useSileo((s) => s.setWhatsappAlertTo);
+  const telegram = useConnectors((s) => s.telegram);
+  const meta = useConnectors((s) => s.meta);
+
+  const tgReady = !!telegram.botToken && !!telegram.chatId;
+  const waReady = !!meta.accessToken && !!meta.phoneNumberId;
+
+  return (
+    <div className="mt-4 rounded-xl border glass-card p-4">
+      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Reenviar alta prioridad a canales externos</div>
+      <p className="mb-2.5 text-[11px] text-muted">Los avisos de prioridad <strong>alta</strong> también se envían por estos canales (mientras el OS esté abierto).</p>
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm text-ink">
+          <input type="checkbox" checked={forward.telegram} onChange={(e) => setForward({ telegram: e.target.checked })} className="accent-accent" disabled={!tgReady} />
+          Telegram {tgReady ? <span className="text-[11px] text-emerald-600">· listo</span> : <span className="text-[11px] text-amber-500">· conéctalo en Conectores</span>}
+        </label>
+        <label className="flex items-center gap-2 text-sm text-ink">
+          <input type="checkbox" checked={forward.whatsapp} onChange={(e) => setForward({ whatsapp: e.target.checked })} className="accent-accent" disabled={!waReady} />
+          WhatsApp {waReady ? <span className="text-[11px] text-emerald-600">· listo</span> : <span className="text-[11px] text-amber-500">· conecta Meta</span>}
+        </label>
+        {forward.whatsapp && (
+          <input
+            value={whatsappAlertTo}
+            onChange={(e) => setWhatsappAlertTo(e.target.value)}
+            placeholder="Número destino de alertas (E.164, p. ej. 573001234567)"
+            className="w-full rounded-md border glass-card px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+          />
+        )}
       </div>
     </div>
   );
