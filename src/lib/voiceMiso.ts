@@ -7,6 +7,7 @@ import { useAi } from "@/lib/ai/store";
 import { playBlobUrl, stopSharedAudio, getSharedAnalyser } from "@/lib/audioPlayer";
 import {
   checkMisoHealth,
+  diagnoseMisoUrl,
   fetchMisoSpeech,
   listMisoVoicesApi,
   misoSpeechBlob,
@@ -36,7 +37,7 @@ export const MISO_STYLE_PRESETS: { id: string; label: string; prompt: string }[]
   },
 ];
 
-export { checkMisoHealth, listMisoVoicesApi as listMisoVoices };
+export { checkMisoHealth, diagnoseMisoUrl, listMisoVoicesApi as listMisoVoices };
 export type { MisoHealth, MisoVoiceOption };
 
 export const MISO_VOICES: MisoVoiceOption[] = [{ id: "default", label: "default" }];

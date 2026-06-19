@@ -6,6 +6,7 @@ import { useAi } from "@/lib/ai/store";
 import {
   MISO_STYLE_PRESETS,
   checkMisoHealth,
+  diagnoseMisoUrl,
   listMisoVoices,
   probeMiso,
 } from "@/lib/voiceMiso";
@@ -88,6 +89,11 @@ export function MisoVoicePanel({ onTestVoice, testing }: MisoVoicePanelProps) {
       </div>
       {statusMsg && status !== "online" && (
         <p className="text-[11px] text-amber-200/80">{statusMsg}</p>
+      )}
+      {status === "offline" && diagnoseMisoUrl(misoTtsUrl) && (
+        <p className="rounded-md border border-amber-400/20 bg-amber-400/5 px-2 py-1.5 text-[11px] leading-relaxed text-amber-200/90">
+          {diagnoseMisoUrl(misoTtsUrl)}
+        </p>
       )}
 
       <label className="block text-xs text-violet-100/70">
