@@ -60,7 +60,7 @@ export default function Landing() {
             </Link>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3.5 py-1.5 text-sm font-medium text-white hover:opacity-90"
+              className="btn-brand inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium hover:opacity-95"
             >
               Entrar al OS <ArrowRight size={15} />
             </Link>
@@ -84,7 +84,7 @@ export default function Landing() {
           <div className="zero-rise mt-8 flex flex-wrap items-center justify-center gap-3" style={{ animationDelay: "180ms" }}>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-accent/20 hover:opacity-90"
+              className="btn-brand inline-flex items-center gap-1.5 rounded-xl px-5 py-3 text-sm font-semibold hover:opacity-95"
             >
               Entrar al OS <ArrowRight size={16} />
             </Link>

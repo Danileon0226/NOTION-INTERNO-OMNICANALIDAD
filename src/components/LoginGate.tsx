@@ -120,7 +120,7 @@ function PasswordLogin() {
         <button
           type="submit"
           disabled={busy || !pass}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+          className="btn-brand flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold hover:opacity-95 disabled:opacity-50"
         >
           {busy ? <Loader2 size={15} className="animate-spin" /> : <ArrowRight size={15} />} Entrar
         </button>
