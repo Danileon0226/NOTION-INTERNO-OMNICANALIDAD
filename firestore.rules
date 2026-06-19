@@ -70,6 +70,25 @@ service cloud.firestore {
         allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
         allow update, delete: if false;
       }
+
+      // SILEO · notificaciones internas: cualquier persona habilitada puede
+      // dejarle un aviso a otra (asignaciones, menciones, difusión del admin);
+      // solo el dueño (o el admin) las lee, marca y borra.
+      match /notifications/{nid} {
+        allow create: if isSignedIn() && (hasRole('comercial') || hasRole('dev') || isAdmin());
+        allow read, update, delete: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      }
+    }
+
+    // Leads omnicanal: los escribe n8n con un service account (el Admin SDK
+    // omite estas reglas). Desde el cliente, el cockpit (admin y comercial) los
+    // lee y gestiona; no se crean ni borran desde el navegador.
+    match /leads/{leadId} {
+      allow read, update: if isAdmin() || hasRole('comercial');
+      allow create, delete: if isAdmin();
+      match /{document=**} {
+        allow read: if isAdmin() || hasRole('comercial');
+      }
     }
 
     // Leads omnicanal: los escribe n8n con un service account (el Admin SDK

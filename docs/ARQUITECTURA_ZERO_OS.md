@@ -80,6 +80,7 @@ src/
 | `/runs` | Trazabilidad de ejecuciones del agente |
 | `/connectors` | Configuración de integraciones y API key de Gemini |
 | `/setup` | Diagnóstico en vivo de APIs + estado de acceso *(admin)* |
+| `/notificaciones` | SILEO · centro de notificaciones internas (sistema, agente, leads, equipo) |
 | `/profile` | Perfil propio (identidad, rol, módulos) |
 | `/team` | Consola de admin: aprobar, roles, permisos, actividad *(admin)* |
 
