@@ -39,6 +39,7 @@ import {
   LogOut,
   Users,
   UserCircle,
+  UserPlus,
   Workflow,
   Trophy,
 } from "lucide-react";
@@ -59,6 +60,7 @@ const NAV_GROUPS: { label: string; items: { href: string; label: string; icon: R
     label: "Datos",
     items: [
       { href: "/inbox", label: "Bandeja", icon: <Mail size={16} /> },
+      { href: "/leads", label: "Leads", icon: <UserPlus size={16} /> },
       { href: "/calendar", label: "Calendario", icon: <Calendar size={16} /> },
       { href: "/drive", label: "Drive", icon: <FolderOpen size={16} /> },
       { href: "/canvas", label: "Canvas / Grafo", icon: <Activity size={16} /> },
