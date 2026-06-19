@@ -20,6 +20,35 @@ export function misoRootUrl(baseV1: string): string {
   return b.endsWith("/v1") ? b.slice(0, -3) : b;
 }
 
+/**
+ * Pista accionable según la URL de Miso y el origen actual de la página. Detecta
+ * los dos motivos típicos de "Failed to fetch": apuntar a localhost desde un
+ * dispositivo remoto (móvil/deploy) y el bloqueo de contenido mixto (HTTPS→HTTP).
+ */
+export function diagnoseMisoUrl(baseV1: string): string | null {
+  if (typeof window === "undefined") return null;
+  const raw = normalizeMisoBase(baseV1);
+  if (!raw) return null;
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return "La URL no es válida. Debe ser http(s)://host:puerto/v1";
+  }
+  const pageHttps = window.location.protocol === "https:";
+  const pageHost = window.location.hostname;
+  const isLocalUrl = /^(localhost|127\.0\.0\.1|\[::1\]|::1)$/i.test(u.hostname);
+  const pageIsLocal = /^(localhost|127\.0\.0\.1)$/i.test(pageHost);
+
+  if (isLocalUrl && !pageIsLocal) {
+    return `Abriste la app en "${pageHost}", pero la URL apunta a localhost (este dispositivo). En un móvil o en el sitio desplegado no existe ahí el servidor Miso. Usa una URL pública del servidor (con HTTPS) o abre la app en la misma máquina donde corre Miso.`;
+  }
+  if (pageHttps && u.protocol === "http:" && !isLocalUrl) {
+    return `La app va por HTTPS y la URL de Miso es HTTP: el navegador bloquea ese "contenido mixto". Sirve Miso por HTTPS (un túnel como cloudflared/ngrok) y usa esa URL https://…/v1`;
+  }
+  return null;
+}
+
 function parseVoiceList(data: unknown): MisoVoiceOption[] {
   if (!data || typeof data !== "object") return DEFAULT_MISO_VOICES;
   const o = data as Record<string, unknown>;
