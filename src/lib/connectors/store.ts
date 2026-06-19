@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ConnectorId } from "@/lib/types";
+import type { MetaConfig } from "@/lib/connectors/meta";
 
 export type RuntimeStatus = "disconnected" | "connecting" | "connected" | "error";
 
@@ -25,11 +26,15 @@ interface ConnectorsState {
   github: GithubConfig;
   telegram: TelegramConfig;
   google: GoogleConfig;
+  meta: MetaConfig;
   setGithub: (p: Partial<GithubConfig>) => void;
   setTelegram: (p: Partial<TelegramConfig>) => void;
   setGoogle: (p: Partial<GoogleConfig>) => void;
+  setMeta: (p: Partial<MetaConfig>) => void;
   disconnect: (id: ConnectorId) => void;
 }
+
+const emptyMeta: MetaConfig = { accessToken: "", pageId: "", igUserId: "", phoneNumberId: "", wabaId: "" };
 
 // Client ID de Google tomado del entorno (lo configuras una vez en Vercel:
 // NEXT_PUBLIC_GOOGLE_CLIENT_ID). Así el OAuth queda listo sin pegar nada.
@@ -43,15 +48,18 @@ export const useConnectors = create<ConnectorsState>()(
       github: { token: "", account: "" },
       telegram: { botToken: "", chatId: "" },
       google: { ...emptyGoogle },
+      meta: { ...emptyMeta },
 
       setGithub: (p) => set((s) => ({ github: { ...s.github, ...p } })),
       setTelegram: (p) => set((s) => ({ telegram: { ...s.telegram, ...p } })),
       setGoogle: (p) => set((s) => ({ google: { ...s.google, ...p } })),
+      setMeta: (p) => set((s) => ({ meta: { ...s.meta, ...p } })),
 
       disconnect: (id) =>
         set((s) => {
           if (id === "github") return { github: { token: "", account: "" } };
           if (id === "telegram") return { telegram: { botToken: "", chatId: "" } };
+          if (id === "meta") return { meta: { ...emptyMeta } };
           if (id === "gmail" || id === "google-drive" || id === "google-calendar") {
             // Quita solo el scope correspondiente; revoca el token si no quedan scopes.
             const scope =
