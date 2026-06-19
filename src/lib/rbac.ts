@@ -123,9 +123,13 @@ function segOf(path: string): string {
  * Acceso efectivo: el override por usuario (si existe para ese módulo) manda
  * sobre el permiso por rol. El panel de administración es siempre solo-admin.
  */
+// Páginas de cuenta personales: accesibles para cualquier sesión autenticada.
+const ALWAYS_ALLOWED = ["/profile", "/progreso"];
+
 export function canAccessWith(role: Role, path: string, overrides?: Record<string, boolean>): boolean {
   const seg = segOf(path);
   if (seg === "/team") return role === "admin"; // consola de administración
+  if (ALWAYS_ALLOWED.includes(seg)) return true;
   if (overrides && seg in overrides) return overrides[seg];
   return canAccess(role, path);
 }

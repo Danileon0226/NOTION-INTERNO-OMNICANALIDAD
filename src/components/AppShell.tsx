@@ -15,6 +15,9 @@ import { MonitorDaemon } from "@/components/monitor/MonitorDaemon";
 import { BriefingDaemon } from "@/components/BriefingDaemon";
 import { ReportsDaemon } from "@/components/ReportsDaemon";
 import { DataBankDaemon } from "@/components/DataBankDaemon";
+import { ProgressDaemon } from "@/components/gamification/ProgressDaemon";
+import { Celebration } from "@/components/gamification/Celebration";
+import { LevelChip } from "@/components/gamification/LevelHud";
 import { LoginGate } from "@/components/LoginGate";
 import { AuthListener } from "@/components/AuthListener";
 import { useTheme, applyTheme } from "@/lib/theme";
@@ -103,6 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Image src={zeroMark} alt="ZERO AGENCY" width={24} height={24} className="h-6 w-6 shrink-0 rounded-md" />
               <span className="text-sm font-semibold tracking-wide text-ink">ZERO AGENCY</span>
               <div className="ml-auto flex items-center gap-1">
+                <LevelChip />
                 <NotificationsBell />
                 <button
                   onClick={() => openPalette(true)}
@@ -148,6 +152,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Banco de datos caliente para acceso instantáneo del agente */}
           <DataBankDaemon />
+
+          {/* Gamificación: progreso/XP/racha + celebraciones inmersivas */}
+          <ProgressDaemon />
+          <Celebration />
 
           {/* Copiloto "Zero" — flotante en cualquier pantalla */}
           <AssistantPanel />

@@ -11,6 +11,7 @@ import { useCommandPalette } from "@/lib/ui/commandPalette";
 import { canAccessWith, roleMeta } from "@/lib/rbac";
 import { authMode, useAccount, signOutAccount } from "@/lib/account";
 import { NotificationsBell } from "@/components/NotificationsBell";
+import { LevelHud } from "@/components/gamification/LevelHud";
 import type { WorkspacePage } from "@/lib/types";
 import {
   LayoutDashboard,
@@ -39,6 +40,7 @@ import {
   Users,
   UserCircle,
   Workflow,
+  Trophy,
 } from "lucide-react";
 
 // Navegación agrupada por intención → más fácil de escanear.
@@ -102,11 +104,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     items: g.items.filter((it) => canAccessWith(role, it.href, account.modules)),
   })).filter((g) => g.items.length > 0);
 
-  // Grupo de administración/cuenta (perfil propio y, para admin, la consola de equipo).
-  const adminItems: { href: string; label: string; icon: React.ReactNode }[] = [];
-  if (authMode === "firebase") adminItems.push({ href: "/profile", label: "Mi perfil", icon: <UserCircle size={16} /> });
-  if (role === "admin") adminItems.push({ href: "/team", label: "Equipo", icon: <Users size={16} /> });
-  if (adminItems.length) navGroups.push({ label: "Cuenta", items: adminItems });
+  // Grupo de cuenta: progreso (todos), perfil (con login) y, para admin, equipo.
+  const accountItems: { href: string; label: string; icon: React.ReactNode }[] = [
+    { href: "/progreso", label: "Progreso", icon: <Trophy size={16} /> },
+  ];
+  if (authMode === "firebase") accountItems.push({ href: "/profile", label: "Mi perfil", icon: <UserCircle size={16} /> });
+  if (role === "admin") accountItems.push({ href: "/team", label: "Equipo", icon: <Users size={16} /> });
+  navGroups.push({ label: "Cuenta", items: accountItems });
 
   const rm = roleMeta(role);
 
@@ -207,6 +211,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           )}
         </div>
       </div>
+
+      {/* HUD de nivel/XP (gamificación) */}
+      <LevelHud />
 
       {/* Identidad y rol de la sesión */}
       {showIdentity && (
