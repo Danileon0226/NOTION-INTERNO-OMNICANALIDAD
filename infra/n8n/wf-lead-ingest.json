@@ -1,0 +1,70 @@
+{
+  "name": "PamaMotors · wf-lead-ingest",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-lead",
+      "name": "Webhook /lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "pama-lead-ingest"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const b=$json.body||{};const h=$json.headers||{};function uuid(){return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);});}const lead={schemaVersion:'1.0',leadId:b.leadId||uuid(),receivedAt:new Date().toISOString(),status:'received',source:{channel:b.channel||'web',campaign:b.campaign||'',adId:b.adId||'',referrer:h.referer||b.referrer||''},contact:{fullName:b.fullName||b.name||'',phone:(b.phone||'').replace(/[^\\d+]/g,''),email:b.email||'',preferredChannel:b.preferredChannel||'whatsapp',consent:b.consent===true||b.consent==='true'},intent:{rawMessage:b.message||'',vehicleOfInterest:b.vehicleOfInterest||'',newOrUsed:b.newOrUsed||'',budget:b.budget?Number(b.budget):null,financing:!!b.financing,tradeIn:!!b.tradeIn,timeframe:b.timeframe||''},meta:{locale:'es-CO'}};function fsVal(v){if(v===null||v===undefined)return{nullValue:null};if(typeof v==='boolean')return{booleanValue:v};if(typeof v==='number')return Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v};if(Array.isArray(v))return{arrayValue:{values:v.map(fsVal)}};if(typeof v==='object')return{mapValue:{fields:fsFields(v)}};return{stringValue:String(v)};}function fsFields(o){const f={};for(const k in o)f[k]=fsVal(o[k]);return f;}return {json:{leadId:lead.leadId,lead,firestore:{fields:fsFields(lead)}}};"
+      },
+      "id": "code-normalize",
+      "name": "Normalizar → LeadPayload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://firestore.googleapis.com/v1/projects/{{ $env.FIREBASE_PROJECT_ID }}/databases/(default)/documents/leads?documentId={{ $json.leadId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleFirebaseCloudFirestoreOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.firestore) }}",
+        "options": {}
+      },
+      "id": "http-firestore",
+      "name": "Firestore · crea lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300],
+      "credentials": {
+        "googleFirebaseCloudFirestoreOAuth2Api": { "id": "REPLACE_ME", "name": "Firestore (PamaMotors)" }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseCode": 202,
+        "responseBody": "={{ { \"accepted\": true, \"leadId\": $('Normalizar → LeadPayload').item.json.leadId } }}",
+        "options": {}
+      },
+      "id": "respond-202",
+      "name": "202 Accepted",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [960, 300]
+    }
+  ],
+  "connections": {
+    "Webhook /lead": { "main": [[{ "node": "Normalizar → LeadPayload", "type": "main", "index": 0 }]] },
+    "Normalizar → LeadPayload": { "main": [[{ "node": "Firestore · crea lead", "type": "main", "index": 0 }]] },
+    "Firestore · crea lead": { "main": [[{ "node": "202 Accepted", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false
+}

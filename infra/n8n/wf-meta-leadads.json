@@ -1,0 +1,132 @@
+{
+  "name": "PamaMotors · wf-meta-leadads",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "GET", "path": "meta-leads", "responseMode": "responseNode", "options": {} },
+      "id": "wh-verify",
+      "name": "Webhook Meta (verify GET)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 160],
+      "webhookId": "pama-meta-verify"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2 },
+          "conditions": [ { "leftValue": "={{ $json.query['hub.verify_token'] }}", "rightValue": "={{ $env.META_VERIFY_TOKEN }}", "operator": { "type": "string", "operation": "equals" } } ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-verify",
+      "name": "¿token válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 160]
+    },
+    {
+      "parameters": { "respondWith": "text", "responseBody": "={{ $json.query['hub.challenge'] }}", "options": {} },
+      "id": "respond-challenge",
+      "name": "Responder challenge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 80]
+    },
+    {
+      "parameters": { "respondWith": "text", "responseCode": 403, "responseBody": "forbidden", "options": {} },
+      "id": "respond-403",
+      "name": "403",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 260]
+    },
+    {
+      "parameters": { "httpMethod": "POST", "path": "meta-leads", "responseMode": "onReceived", "options": {} },
+      "id": "wh-events",
+      "name": "Webhook Meta (events POST)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 460],
+      "webhookId": "pama-meta-events"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ch=(((($json.body||{}).entry||[])[0]||{}).changes||[])[0];const val=ch?ch.value:{};const leadgenId=val.leadgen_id||'';if(!leadgenId){return {json:{skip:true}};}return {json:{skip:false,leadgenId:leadgenId,adId:val.ad_id||'',formId:val.form_id||''}};"
+      },
+      "id": "code-extract",
+      "name": "Extraer leadgen_id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 460]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2 },
+          "conditions": [ { "leftValue": "={{ $json.skip }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } } ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-skip",
+      "name": "¿hay lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [720, 460]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v21.0/{{ $json.leadgenId }}?fields=field_data,created_time,ad_id,form_id,campaign_name&access_token={{ $env.META_PAGE_TOKEN }}",
+        "options": {}
+      },
+      "id": "http-graph",
+      "name": "Graph · trae el lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 540]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const d=$json;const fd=d.field_data||[];const get=(n)=>{const f=fd.find(x=>x.name===n||((x.name||'').indexOf(n)>=0));return (f&&f.values&&f.values[0])||'';};const phone=(get('phone')||'').replace(/[^\\d+]/g,'');const email=get('email');const name=get('full_name')||get('name')||(get('first_name')+' '+get('last_name')).trim();const lead={schemaVersion:'1.0',leadId:'meta-'+(d.id||Date.now()),receivedAt:new Date().toISOString(),status:'received',source:{channel:'meta_fb',campaign:d.campaign_name||'',adId:d.ad_id||'',referrer:''},contact:{fullName:name,phone:phone,email:email,preferredChannel:phone?'whatsapp':'email',consent:true},intent:{rawMessage:'',vehicleOfInterest:get('vehiculo')||get('vehicle')||'',newOrUsed:'',budget:get('presupuesto')?Number((get('presupuesto')||'').replace(/[^\\d]/g,'')):null,financing:/financ|cr[eé]dito/i.test(JSON.stringify(fd)),tradeIn:false,timeframe:''},meta:{locale:'es-CO'}};function fsVal(v){if(v===null||v===undefined)return{nullValue:null};if(typeof v==='boolean')return{booleanValue:v};if(typeof v==='number')return Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v};if(Array.isArray(v))return{arrayValue:{values:v.map(fsVal)}};if(typeof v==='object')return{mapValue:{fields:fsFields(v)}};return{stringValue:String(v)};}function fsFields(o){const f={};for(const k in o)f[k]=fsVal(o[k]);return f;}return {json:{leadId:lead.leadId,lead,firestore:{fields:fsFields(lead)}}};"
+      },
+      "id": "code-normalize",
+      "name": "Normalizar → LeadPayload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1180, 540]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://firestore.googleapis.com/v1/projects/{{ $env.FIREBASE_PROJECT_ID }}/databases/(default)/documents/leads/{{ $json.leadId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleFirebaseCloudFirestoreOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.firestore) }}",
+        "options": {}
+      },
+      "id": "http-firestore",
+      "name": "Firestore · upsert lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1400, 540],
+      "credentials": { "googleFirebaseCloudFirestoreOAuth2Api": { "id": "REPLACE_ME", "name": "Firestore (PamaMotors)" } }
+    }
+  ],
+  "connections": {
+    "Webhook Meta (verify GET)": { "main": [[{ "node": "¿token válido?", "type": "main", "index": 0 }]] },
+    "¿token válido?": { "main": [[{ "node": "Responder challenge", "type": "main", "index": 0 }], [{ "node": "403", "type": "main", "index": 0 }]] },
+    "Webhook Meta (events POST)": { "main": [[{ "node": "Extraer leadgen_id", "type": "main", "index": 0 }]] },
+    "Extraer leadgen_id": { "main": [[{ "node": "¿hay lead?", "type": "main", "index": 0 }]] },
+    "¿hay lead?": { "main": [[], [{ "node": "Graph · trae el lead", "type": "main", "index": 0 }]] },
+    "Graph · trae el lead": { "main": [[{ "node": "Normalizar → LeadPayload", "type": "main", "index": 0 }]] },
+    "Normalizar → LeadPayload": { "main": [[{ "node": "Firestore · upsert lead", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false
+}
