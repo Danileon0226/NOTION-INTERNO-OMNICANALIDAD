@@ -90,16 +90,5 @@ service cloud.firestore {
         allow read: if isAdmin() || hasRole('comercial');
       }
     }
-
-    // Leads omnicanal: los escribe n8n con un service account (el Admin SDK
-    // omite estas reglas). Desde el cliente, el cockpit (admin y comercial) los
-    // lee y gestiona; no se crean ni borran desde el navegador.
-    match /leads/{leadId} {
-      allow read, update: if isAdmin() || hasRole('comercial');
-      allow create, delete: if isAdmin();
-      match /{document=**} {
-        allow read: if isAdmin() || hasRole('comercial');
-      }
-    }
   }
 }
