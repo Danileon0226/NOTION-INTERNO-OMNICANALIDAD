@@ -14,6 +14,7 @@ escribiéndolos en **Firestore** (`leads/{leadId}`), donde ZERO OS los procesa.
 | `wf-lead-ingest.json` | `POST /webhook/lead` | Lead de **web/landing** (o cualquier canal que postee el payload) → Firestore. |
 | `wf-whatsapp-inbound.json` | `GET+POST /webhook/whatsapp` | Verifica el webhook de **WhatsApp Cloud** y convierte cada mensaje entrante en un lead (`wa-<telefono>`). |
 | `wf-meta-leadads.json` | `GET+POST /webhook/meta-leads` | Verifica el webhook de **Meta Lead Ads (FB/IG)**, trae el lead por Graph API y lo normaliza. |
+| `wf-agent-central.json` | _cron (1 min)_ | **Agente Central**: califica los leads nuevos con Gemini, actualiza estado/score y pide datos por WhatsApp (bucle de feedback). |
 | `lead-normalize.js` | — | Referencia de la normalización (el mismo código va en los nodos *Code*). |
 | `lead.schema.json` | — | JSON Schema del `LeadPayload`. |
 
@@ -30,6 +31,10 @@ FIREBASE_PROJECT_ID=tu-proyecto-firebase
 META_VERIFY_TOKEN=una-cadena-secreta-que-tu-eliges   # para verificar los webhooks de Meta
 META_PAGE_TOKEN=EAAG...                               # token de página (Lead Ads → traer el lead)
 PAMA_WEBHOOK_SECRET=...                               # opcional, HMAC del webhook web
+# Agente Central (wf-agent-central)
+GEMINI_API_KEY=AIza...                                # Generative Language API
+GEMINI_MODEL=gemini-2.5-flash                         # opcional (modelo por defecto)
+WHATSAPP_PHONE_ID=1029384756                          # WhatsApp Cloud · Phone Number ID
 ```
 
 ## Credenciales
@@ -70,8 +75,32 @@ WhatsApp y Lead Ads usan **upsert** (`PATCH`) con clave estable (`wa-<telefono>`
 - Verifica siempre el `verify_token` (ya incluido) y, para el webhook web, valida el
   HMAC con `PAMA_WEBHOOK_SECRET` antes de aceptar (gancho señalado en `lead-normalize.js`).
 
-## Siguiente paso (procesamiento)
+## Procesamiento · Agente Central (`wf-agent-central`)
 
-Tras la ingesta, los workflows del **Agente Central** y los **Orquestadores**
-(Requerimientos → Documentación → Distribución) consumen `leads/{leadId}` y avanzan
-la máquina de estados. Ver `docs/OMNICANAL_PAMAMOTORS.md` §5–§9.
+Corre cada minuto y cierra el bucle de conciencia sobre los leads nuevos:
+
+1. **Firestore runQuery** → trae hasta 5 leads con `status == received` (los mensajes
+   entrantes de WhatsApp también re-ponen el lead en `received`, así que el mismo ciclo
+   sirve de **bucle de feedback**).
+2. **Gemini** califica cada lead (score 0–100) y decide los datos faltantes para cotizar.
+3. **Firestore PATCH** actualiza `status`, `score` y `lastAgentReply` (con `updateMask`,
+   sin tocar el resto del documento).
+4. Si faltan datos → **WhatsApp** envía una pregunta cordial y el lead pasa a
+   `awaiting_customer`; cuando el cliente responde, el ciclo lo recalifica.
+   Si está completo → `qualified` (listo para que un asesor lo tome desde el cockpit).
+
+> El **cockpit** es la vista **Leads** dentro de ZERO OS (`/leads`): el equipo comercial
+> ve los leads en vivo, los asigna, cambia el estado y responde por WhatsApp. Lee la
+> misma colección `leads` (reglas en `firestore.rules`).
+
+### Cómo encaja el ciclo
+
+```
+Captación → wf-*-ingest → leads/{id} (received)
+        → wf-agent-central → Gemini → {qualified | awaiting_customer + WhatsApp}
+        → cliente responde (wf-whatsapp-inbound) → received → recalifica…
+        → cockpit /leads (asignar / responder / cerrar)
+```
+
+Siguiente evolución (opcional): orquestadores de **Documentación** (cotización PDF) y
+**Distribución** (round-robin + SLA). Ver `docs/OMNICANAL_PAMAMOTORS.md` §7–§8.

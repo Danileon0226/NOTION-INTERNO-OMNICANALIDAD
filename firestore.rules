@@ -33,6 +33,14 @@ service cloud.firestore {
           && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
 
+    // ¿La sesión tiene un rol concreto y está habilitada?
+    function hasRole(r) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == r
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enabled == true;
+    }
+
     match /users/{uid} {
       // Lee tu propio perfil; el admin lee todos.
       allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
@@ -61,6 +69,17 @@ service cloud.firestore {
         allow create: if isSignedIn() && request.auth.uid == uid;
         allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
         allow update, delete: if false;
+      }
+    }
+
+    // Leads omnicanal: los escribe n8n con un service account (el Admin SDK
+    // omite estas reglas). Desde el cliente, el cockpit (admin y comercial) los
+    // lee y gestiona; no se crean ni borran desde el navegador.
+    match /leads/{leadId} {
+      allow read, update: if isAdmin() || hasRole('comercial');
+      allow create, delete: if isAdmin();
+      match /{document=**} {
+        allow read: if isAdmin() || hasRole('comercial');
       }
     }
   }

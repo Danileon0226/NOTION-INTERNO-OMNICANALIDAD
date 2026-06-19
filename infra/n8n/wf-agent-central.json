@@ -1,0 +1,129 @@
+{
+  "name": "PamaMotors · wf-agent-central",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "minutes", "minutesInterval": 1 }] } },
+      "id": "schedule",
+      "name": "Cada minuto",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 320]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://firestore.googleapis.com/v1/projects/{{ $env.FIREBASE_PROJECT_ID }}/databases/(default)/documents:runQuery",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleFirebaseCloudFirestoreOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ structuredQuery: { from: [{ collectionId: 'leads' }], where: { fieldFilter: { field: { fieldPath: 'status' }, op: 'EQUAL', value: { stringValue: 'received' } } }, limit: 5 } }) }}",
+        "options": {}
+      },
+      "id": "fs-query",
+      "name": "Firestore · leads nuevos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [420, 320],
+      "credentials": { "googleFirebaseCloudFirestoreOAuth2Api": { "id": "REPLACE_ME", "name": "Firestore (PamaMotors)" } }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items=$input.all();function val(v){if(v==null)return null;if(Object.prototype.hasOwnProperty.call(v,'stringValue'))return v.stringValue;if(Object.prototype.hasOwnProperty.call(v,'integerValue'))return Number(v.integerValue);if(Object.prototype.hasOwnProperty.call(v,'doubleValue'))return v.doubleValue;if(Object.prototype.hasOwnProperty.call(v,'booleanValue'))return v.booleanValue;if(Object.prototype.hasOwnProperty.call(v,'mapValue'))return plain((v.mapValue||{}).fields);if(Object.prototype.hasOwnProperty.call(v,'arrayValue'))return ((v.arrayValue||{}).values||[]).map(val);if(Object.prototype.hasOwnProperty.call(v,'timestampValue'))return v.timestampValue;return null;}function plain(f){const o={};for(const k in (f||{}))o[k]=val(f[k]);return o;}const out=[];for(const it of items){const arr=Array.isArray(it.json)?it.json:[it.json];for(const row of arr){if(!row||!row.document)continue;const id=String(row.document.name).split('/').pop();const lead=plain(row.document.fields);lead.id=id;const sys='Eres el Orquestador de calificacion de leads de PamaMotors (concesionario). Devuelve unicamente JSON valido.';const prompt='Califica este lead de 0 a 100 segun interes, presupuesto, plazo y completitud de datos. Lead: '+JSON.stringify({contact:lead.contact,intent:lead.intent,source:lead.source})+'. Indica los campos faltantes para poder cotizar, entre: vehicleOfInterest, newOrUsed, financing, budget. Si faltan, redacta UNA sola pregunta breve y cordial en espanol para pedirlos por WhatsApp. Responde en JSON con las claves: score (number 0-100), missing (array de strings), reply (string, vacio si no falta nada), nextStatus (qualified si no falta nada; awaiting_customer si falta algo).';const geminiBody={contents:[{role:'user',parts:[{text:prompt}]}],systemInstruction:{parts:[{text:sys}]},generationConfig:{temperature:0.3,responseMimeType:'application/json'}};out.push({json:{id:id,lead:lead,geminiBody:geminiBody}});}}return out;"
+      },
+      "id": "prep",
+      "name": "Preparar leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 320]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $env.GEMINI_MODEL || 'gemini-2.5-flash' }}:generateContent",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "X-goog-api-key", "value": "={{ $env.GEMINI_API_KEY }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.geminiBody) }}",
+        "options": {}
+      },
+      "id": "gemini",
+      "name": "Gemini · califica",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [860, 320]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const resp=$json;let text='';try{text=resp.candidates[0].content.parts.map(function(p){return p.text||'';}).join('');}catch(e){text='';}let d={};try{d=JSON.parse(text);}catch(e){d={};}const prep=$('Preparar leads').item.json;const lead=prep.lead||{};const id=prep.id;const score=Math.max(0,Math.min(100,Number(d.score)||0));const missing=Array.isArray(d.missing)?d.missing:[];const nextStatus=d.nextStatus||(missing.length?'awaiting_customer':'qualified');const reply=d.reply||'';const fields={status:{stringValue:nextStatus},score:{integerValue:String(score)}};if(reply)fields.lastAgentReply={stringValue:reply};const phone=((lead.contact||{}).phone)||'';return {json:{id:id,phone:phone,reply:reply,nextStatus:nextStatus,score:score,firestore:{fields:fields},sendWa:!!(reply&&phone)}};"
+      },
+      "id": "decide",
+      "name": "Decidir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1080, 320]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://firestore.googleapis.com/v1/projects/{{ $env.FIREBASE_PROJECT_ID }}/databases/(default)/documents/leads/{{ $json.id }}?updateMask.fieldPaths=status&updateMask.fieldPaths=score&updateMask.fieldPaths=lastAgentReply",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleFirebaseCloudFirestoreOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.firestore) }}",
+        "options": {}
+      },
+      "id": "fs-update",
+      "name": "Firestore · actualiza estado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 320],
+      "credentials": { "googleFirebaseCloudFirestoreOAuth2Api": { "id": "REPLACE_ME", "name": "Firestore (PamaMotors)" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2 },
+          "conditions": [ { "leftValue": "={{ $json.sendWa }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } } ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-wa",
+      "name": "¿responder por WhatsApp?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1520, 320]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{ $env.WHATSAPP_PHONE_ID }}/messages?access_token={{ $env.META_PAGE_TOKEN }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.phone, type: 'text', text: { body: $json.reply } }) }}",
+        "options": {}
+      },
+      "id": "wa-send",
+      "name": "WhatsApp · pide datos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1740, 240]
+    }
+  ],
+  "connections": {
+    "Cada minuto": { "main": [[{ "node": "Firestore · leads nuevos", "type": "main", "index": 0 }]] },
+    "Firestore · leads nuevos": { "main": [[{ "node": "Preparar leads", "type": "main", "index": 0 }]] },
+    "Preparar leads": { "main": [[{ "node": "Gemini · califica", "type": "main", "index": 0 }]] },
+    "Gemini · califica": { "main": [[{ "node": "Decidir", "type": "main", "index": 0 }]] },
+    "Decidir": { "main": [[{ "node": "Firestore · actualiza estado", "type": "main", "index": 0 }]] },
+    "Firestore · actualiza estado": { "main": [[{ "node": "¿responder por WhatsApp?", "type": "main", "index": 0 }]] },
+    "¿responder por WhatsApp?": { "main": [[{ "node": "WhatsApp · pide datos", "type": "main", "index": 0 }], []] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false
+}

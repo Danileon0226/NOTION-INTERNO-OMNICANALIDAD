@@ -22,6 +22,18 @@ El "cerebro" autónomo corre en una **VM con n8n** (orquestación server-side 24
 Gemini por REST; **ZERO OS** (la app Next.js que ya tienes) es el **cockpit humano**: bandeja
 de leads, copiloto, CRM, reportes y panel de control de equipo.
 
+> ### ✅ Estado de implementación (en este repo)
+> Ya está construido y listo para **solo configurar las herramientas externas**:
+> - **Cockpit de Leads** en el OS: `/leads` (rol comercial/admin) — lista en vivo, asignar,
+>   cambiar estado, notas y **responder por WhatsApp** desde la app.
+> - **Conector Meta** (WhatsApp/Facebook/Instagram) + Meta en el **banco de datos**.
+> - **Workflows de n8n** en `infra/n8n/`: ingesta web, WhatsApp inbound, Meta Lead Ads y el
+>   **Agente Central** (calificación + bucle de feedback por WhatsApp).
+> - **Reglas Firestore** para `leads` en `firestore.rules`.
+>
+> Falta solo (lado usuario): crear el proyecto Firebase, las apps de Meta y el n8n, y pegar
+> tokens/IDs. Guía paso a paso en `infra/n8n/README.md`.
+
 ---
 
 ## 1. Arquitectura — del diagrama a componentes reales
@@ -359,15 +371,15 @@ ve **sus** leads, el admin ve todo.
 
 ## 13. Roadmap por fases
 
-| Fase | Alcance | Entregable |
-|---|---|---|
-| **F0 — Cimientos** | VM + n8n + Firestore + esquema `LeadPayload` + webhook ingesta | Leads persistidos y visibles en el OS |
-| **F1 — Captación** | Adaptadores Web + WhatsApp + Meta Lead Ads | Single Lead Source operativo |
-| **F2 — Agente** | Agente Central (Gemini) + CRM lookup + scoring | Leads clasificados y enrutados |
-| **F3 — Requerimientos** | Feedback loop (Mode 2) por WhatsApp | Leads autocompletados/calificados |
-| **F4 — Documentación** | Cotización + financiación PDF de marca | Documentos automáticos |
-| **F5 — Distribución** | Asignación + SLA + respuesta omnicanal | Ciclo completo cerrado |
-| **F6 — Analítica** | KPIs + reportes + optimización | Tablero de conversión |
+| Fase | Alcance | Entregable | Estado |
+|---|---|---|---|
+| **F0 — Cimientos** | Esquema `LeadPayload` + webhook ingesta + Firestore + cockpit | Leads persistidos y visibles en `/leads` | ✅ Listo (falta configurar n8n/Firebase) |
+| **F1 — Captación** | Adaptadores Web + WhatsApp + Meta Lead Ads | Single Lead Source operativo | ✅ Workflows en `infra/n8n/` |
+| **F2 — Agente** | Agente Central (Gemini) + scoring | Leads clasificados y enrutados | ✅ `wf-agent-central.json` |
+| **F3 — Requerimientos** | Feedback loop (Mode 2) por WhatsApp | Leads autocompletados/calificados | ✅ Incluido en el Agente Central |
+| **F4 — Documentación** | Cotización + financiación PDF de marca | Documentos automáticos | ⏳ Pendiente |
+| **F5 — Distribución** | Asignación + SLA + respuesta omnicanal | Ciclo cerrado | 🟦 Parcial (asignar/responder ya en `/leads`; falta round-robin/SLA) |
+| **F6 — Analítica** | KPIs + reportes + optimización | Tablero de conversión | ⏳ Pendiente |
 
 ---
 

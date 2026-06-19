@@ -70,6 +70,7 @@ src/
 | `/anticipation` | Anticipaciones, escalera de confianza, madurez, auditoría |
 | `/assistant` · `/zero` | Copiloto Gemini en texto y por voz (streaming) |
 | `/memory` | Hechos que ZERO recuerda entre sesiones |
+| `/leads` | Bandeja omnicanal de prospectos (Firestore, escritos por n8n) *(comercial/admin)* |
 | `/inbox` · `/calendar` · `/drive` | Datos reales de Google (Gmail/Calendar/Drive) |
 | `/canvas` | Canvas / grafo del workspace |
 | `/monitor` | Uptime y latencia del sitio de la agencia |
