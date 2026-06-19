@@ -1,0 +1,109 @@
+{
+  "name": "PamaMotors · wf-whatsapp-inbound",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "GET", "path": "whatsapp", "responseMode": "responseNode", "options": {} },
+      "id": "wh-verify",
+      "name": "Webhook WA (verify GET)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 160],
+      "webhookId": "pama-wa-verify"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "version": 2 },
+          "conditions": [
+            { "leftValue": "={{ $json.query['hub.verify_token'] }}", "rightValue": "={{ $env.META_VERIFY_TOKEN }}", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-verify",
+      "name": "¿token válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 160]
+    },
+    {
+      "parameters": { "respondWith": "text", "responseBody": "={{ $json.query['hub.challenge'] }}", "options": {} },
+      "id": "respond-challenge",
+      "name": "Responder challenge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 80]
+    },
+    {
+      "parameters": { "respondWith": "text", "responseCode": 403, "responseBody": "forbidden", "options": {} },
+      "id": "respond-403",
+      "name": "403",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 260]
+    },
+    {
+      "parameters": { "httpMethod": "POST", "path": "whatsapp", "responseMode": "onReceived", "options": {} },
+      "id": "wh-events",
+      "name": "Webhook WA (events POST)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 440],
+      "webhookId": "pama-wa-events"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ch=(((($json.body||{}).entry||[])[0]||{}).changes||[])[0];const val=ch?ch.value:{};const msg=((val.messages)||[])[0];if(!msg){return {json:{skip:true}};}const c=((val.contacts)||[])[0]||{};const from=(msg.from||'').replace(/[^\\d]/g,'');const text=(msg.text&&msg.text.body)||(msg.button&&msg.button.text)||(msg.interactive&&((msg.interactive.list_reply&&msg.interactive.list_reply.title)||(msg.interactive.button_reply&&msg.interactive.button_reply.title)))||'';const lead={schemaVersion:'1.0',leadId:'wa-'+from,receivedAt:new Date().toISOString(),status:'received',source:{channel:'whatsapp',campaign:'',adId:'',referrer:''},contact:{fullName:(c.profile&&c.profile.name)||'',phone:from,email:'',preferredChannel:'whatsapp',consent:true},intent:{rawMessage:text,vehicleOfInterest:'',newOrUsed:'',budget:null,financing:false,tradeIn:false,timeframe:''},meta:{locale:'es-CO'}};function fsVal(v){if(v===null||v===undefined)return{nullValue:null};if(typeof v==='boolean')return{booleanValue:v};if(typeof v==='number')return Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v};if(Array.isArray(v))return{arrayValue:{values:v.map(fsVal)}};if(typeof v==='object')return{mapValue:{fields:fsFields(v)}};return{stringValue:String(v)};}function fsFields(o){const f={};for(const k in o)f[k]=fsVal(o[k]);return f;}return {json:{skip:false,leadId:lead.leadId,lead,firestore:{fields:fsFields(lead)}}};"
+      },
+      "id": "code-wa",
+      "name": "Extraer mensaje WA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 440]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2 },
+          "conditions": [ { "leftValue": "={{ $json.skip }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } } ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-skip",
+      "name": "¿es mensaje?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [720, 440]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://firestore.googleapis.com/v1/projects/{{ $env.FIREBASE_PROJECT_ID }}/databases/(default)/documents/leads/{{ $json.leadId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleFirebaseCloudFirestoreOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.firestore) }}",
+        "options": {}
+      },
+      "id": "http-firestore-wa",
+      "name": "Firestore · upsert lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 520],
+      "credentials": { "googleFirebaseCloudFirestoreOAuth2Api": { "id": "REPLACE_ME", "name": "Firestore (PamaMotors)" } }
+    }
+  ],
+  "connections": {
+    "Webhook WA (verify GET)": { "main": [[{ "node": "¿token válido?", "type": "main", "index": 0 }]] },
+    "¿token válido?": { "main": [[{ "node": "Responder challenge", "type": "main", "index": 0 }], [{ "node": "403", "type": "main", "index": 0 }]] },
+    "Webhook WA (events POST)": { "main": [[{ "node": "Extraer mensaje WA", "type": "main", "index": 0 }]] },
+    "Extraer mensaje WA": { "main": [[{ "node": "¿es mensaje?", "type": "main", "index": 0 }]] },
+    "¿es mensaje?": { "main": [[], [{ "node": "Firestore · upsert lead", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": false
+}

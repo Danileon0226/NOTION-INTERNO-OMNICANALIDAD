@@ -11,6 +11,7 @@ import {
 } from "@/lib/connectors/store";
 import { gmailFetchInbox, calendarEvents, driveList } from "@/lib/connectors/google";
 import { ghFetchAll } from "@/lib/connectors/github";
+import { metaSnapshot } from "@/lib/connectors/meta";
 import { useMonitor, statusOf, uptime } from "@/lib/monitor/store";
 
 // Banco de datos: caché client-side de la información de la agencia que se
@@ -33,12 +34,17 @@ interface GithubSnap {
 interface DriveSnap {
   files: string[];
 }
+interface MetaSnap {
+  facebook?: { name: string; followers: number };
+  instagram?: { username: string; followers: number; media: number };
+}
 
 interface DataBankState {
   gmail?: GmailSnap;
   calendar?: CalendarSnap;
   github?: GithubSnap;
   drive?: DriveSnap;
+  meta?: MetaSnap;
   lastRefresh: number;
   refreshing: boolean;
   set: (p: Partial<DataBankState>) => void;
@@ -54,7 +60,7 @@ export const useDataBank = create<DataBankState>()(
     {
       name: "zero-agency-databank",
       // No persiste estado transitorio (evita que 'refreshing' quede pegado).
-      partialize: (s) => ({ gmail: s.gmail, calendar: s.calendar, github: s.github, drive: s.drive, lastRefresh: s.lastRefresh }),
+      partialize: (s) => ({ gmail: s.gmail, calendar: s.calendar, github: s.github, drive: s.drive, meta: s.meta, lastRefresh: s.lastRefresh }),
     }
   )
 );
@@ -110,6 +116,11 @@ export async function refreshDataBank(force = false): Promise<void> {
             };
           })
         : Promise.resolve(),
+      c.meta.accessToken && (c.meta.pageId || c.meta.igUserId)
+        ? metaSnapshot(c.meta).then((m) => {
+            if (m.facebook || m.instagram) patch.meta = m;
+          })
+        : Promise.resolve(),
     ]);
     useDataBank.getState().set({ ...patch, lastRefresh: Date.now(), refreshing: false });
   } finally {
@@ -135,6 +146,13 @@ export function bankContext(): string {
   }
   if (b.github) lines.push(`GitHub: ${b.github.repos} repos, ${b.github.openPRs} PRs abiertos, ${b.github.openIssues} issues. Top: ${b.github.top.join(", ")}`);
   if (b.drive?.files.length) lines.push(`Drive reciente: ${b.drive.files.slice(0, 8).join(", ")}`);
+  if (b.meta) {
+    const parts: string[] = [];
+    if (b.meta.facebook) parts.push(`Facebook "${b.meta.facebook.name}": ${b.meta.facebook.followers.toLocaleString("es-CO")} seguidores`);
+    if (b.meta.instagram)
+      parts.push(`Instagram @${b.meta.instagram.username}: ${b.meta.instagram.followers.toLocaleString("es-CO")} seguidores, ${b.meta.instagram.media} posts`);
+    if (parts.length) lines.push(`Redes (Meta): ${parts.join("; ")}`);
+  }
 
   // Monitoreo (sin red).
   const sites = useMonitor.getState().sites;

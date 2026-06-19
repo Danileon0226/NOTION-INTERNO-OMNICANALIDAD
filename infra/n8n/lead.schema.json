@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://pamamotors/lead.schema.json",
+  "title": "LeadPayload",
+  "description": "Contrato canónico entre la capa de captación (PamaMotors) y el procesador omnicanal (ZERO).",
+  "type": "object",
+  "required": ["schemaVersion", "leadId", "receivedAt", "source", "contact"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "leadId": { "type": "string", "description": "UUID generado en captación (idempotencia)." },
+    "receivedAt": { "type": "string", "format": "date-time" },
+    "status": { "type": "string", "enum": ["received", "processing", "qualifying", "awaiting_customer", "qualified", "documenting", "ready_to_distribute", "assigned", "won", "lost", "discarded"] },
+    "source": {
+      "type": "object",
+      "required": ["channel"],
+      "properties": {
+        "channel": { "type": "string", "enum": ["web", "whatsapp", "meta_fb", "meta_ig", "google", "email", "call"] },
+        "campaign": { "type": "string" },
+        "adId": { "type": "string" },
+        "referrer": { "type": "string" }
+      }
+    },
+    "contact": {
+      "type": "object",
+      "required": ["consent"],
+      "properties": {
+        "fullName": { "type": "string" },
+        "phone": { "type": "string", "description": "E.164" },
+        "email": { "type": "string" },
+        "preferredChannel": { "type": "string", "enum": ["whatsapp", "email", "call"] },
+        "consent": { "type": "boolean" }
+      }
+    },
+    "intent": {
+      "type": "object",
+      "properties": {
+        "rawMessage": { "type": "string" },
+        "vehicleOfInterest": { "type": "string" },
+        "newOrUsed": { "type": "string", "enum": ["nuevo", "usado", ""] },
+        "budget": { "type": ["number", "null"] },
+        "financing": { "type": "boolean" },
+        "tradeIn": { "type": "boolean" },
+        "timeframe": { "type": "string", "enum": ["inmediato", "30d", "90d", "explorando", ""] }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "properties": { "locale": { "type": "string" }, "ipCountry": { "type": "string" }, "attributionId": { "type": "string" } }
+    }
+  }
+}
