@@ -8,8 +8,10 @@ import { Menu, Search, Moon, Sun, ShieldAlert, Clock, LogOut } from "lucide-reac
 import { Sidebar } from "@/components/Sidebar";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import { CommandPalette } from "@/components/CommandPalette";
-import { NotificationsBell } from "@/components/NotificationsBell";
-import { NotificationsPanel } from "@/components/NotificationsPanel";
+import { SileoBell } from "@/components/sileo/SileoBell";
+import { SileoPanel } from "@/components/sileo/SileoPanel";
+import { SileoToast } from "@/components/sileo/SileoToast";
+import { SileoDaemon } from "@/components/sileo/SileoDaemon";
 import { AutonomyDaemon } from "@/components/anticipation/AutonomyDaemon";
 import { MonitorDaemon } from "@/components/monitor/MonitorDaemon";
 import { BriefingDaemon } from "@/components/BriefingDaemon";
@@ -107,7 +109,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="text-sm font-semibold tracking-wide text-ink">ZERO AGENCY</span>
               <div className="ml-auto flex items-center gap-1">
                 <LevelChip />
-                <NotificationsBell />
+                <SileoBell />
                 <button
                   onClick={() => openPalette(true)}
                   className="rounded-md p-1.5 text-muted hover:bg-bg-subtle hover:text-ink"
@@ -135,8 +137,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {/* Paleta de comandos global (⌘K / Ctrl+K) */}
           <CommandPalette />
 
-          {/* Centro de notificaciones */}
-          <NotificationsPanel />
+          {/* SILEO · centro de notificaciones internas */}
+          <SileoPanel />
+          <SileoToast />
+          <SileoDaemon />
 
           {/* Demonio de autonomía: ZERO actúa solo (con guardrails) */}
           <AutonomyDaemon />

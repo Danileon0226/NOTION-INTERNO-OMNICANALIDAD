@@ -10,7 +10,7 @@ import { useTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
 import { canAccessWith, roleMeta } from "@/lib/rbac";
 import { authMode, useAccount, signOutAccount } from "@/lib/account";
-import { NotificationsBell } from "@/components/NotificationsBell";
+import { SileoBell } from "@/components/sileo/SileoBell";
 import { LevelHud } from "@/components/gamification/LevelHud";
 import type { WorkspacePage } from "@/lib/types";
 import {
@@ -42,6 +42,7 @@ import {
   UserPlus,
   Workflow,
   Trophy,
+  Bell,
 } from "lucide-react";
 
 // Navegación agrupada por intención → más fácil de escanear.
@@ -108,6 +109,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   // Grupo de cuenta: progreso (todos), perfil (con login) y, para admin, equipo.
   const accountItems: { href: string; label: string; icon: React.ReactNode }[] = [
+    { href: "/notificaciones", label: "Notificaciones", icon: <Bell size={16} /> },
     { href: "/progreso", label: "Progreso", icon: <Trophy size={16} /> },
   ];
   if (authMode === "firebase") accountItems.push({ href: "/profile", label: "Mi perfil", icon: <UserCircle size={16} /> });
@@ -137,7 +139,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <div className="text-sm font-semibold tracking-wide text-ink">ZERO AGENCY</div>
           <div className="text-[11px] text-muted">OS Omnicanal</div>
         </div>
-        <NotificationsBell className="ml-auto" />
+        <SileoBell className="ml-auto" />
       </div>
 
       {/* Comando global: descubrible (no solo ⌘K) */}
