@@ -20,6 +20,7 @@ import { useMonitor, statusOf, uptime, avgLatency } from "@/lib/monitor/store";
 import { useMemory, searchMemory } from "@/lib/ai/memory";
 import { sendSlack } from "@/lib/connectors/slack";
 import { fireWebhooks } from "@/lib/connectors/webhooks";
+import { waSendText, fbPagePost, igMedia, metaSnapshot } from "@/lib/connectors/meta";
 import {
   useGoogleInsights,
   searchConsoleSummary,
@@ -72,6 +73,40 @@ export const toolDeclarations = [
       properties: { text: { type: "string", description: "Mensaje a enviar." } },
       required: ["text"],
     },
+  },
+  {
+    name: "whatsapp_send",
+    description: "Envía un mensaje de texto de WhatsApp (Meta Cloud API) a un número en formato E.164.",
+    parameters: {
+      type: "object",
+      properties: {
+        to: { type: "string", description: "Número destino en E.164 (con o sin +), p. ej. 573001234567." },
+        text: { type: "string", description: "Mensaje a enviar." },
+      },
+      required: ["to", "text"],
+    },
+  },
+  {
+    name: "facebook_post",
+    description: "Publica una entrada en la página de Facebook de la agencia (Meta Graph API).",
+    parameters: {
+      type: "object",
+      properties: {
+        message: { type: "string", description: "Texto de la publicación." },
+        link: { type: "string", description: "URL opcional para adjuntar." },
+      },
+      required: ["message"],
+    },
+  },
+  {
+    name: "instagram_recent",
+    description: "Lista las publicaciones recientes de Instagram con likes y comentarios.",
+    parameters: { type: "object", properties: { limit: { type: "number", description: "Cuántas (máx 12)." } } },
+  },
+  {
+    name: "meta_overview",
+    description: "Resumen de Meta: seguidores de Facebook e Instagram y número de publicaciones.",
+    parameters: { type: "object", properties: {} },
   },
   {
     name: "create_note",
@@ -478,6 +513,42 @@ export async function runTool(name: string, args: any): Promise<unknown> {
       await tgSendMessage(c.telegram.botToken, c.telegram.chatId, alertText("Asistente IA", String(args?.text || "")));
       logActivity("telegram", "Gemini envió una alerta a Telegram");
       return { sent: true };
+    }
+    case "whatsapp_send": {
+      if (!c.meta.accessToken || !c.meta.phoneNumberId) return { error: "WhatsApp (Meta) no está conectado." };
+      if (!args?.to || !args?.text) return { error: "Faltan 'to' o 'text'." };
+      const r = await waSendText(c.meta, String(args.to), String(args.text));
+      logActivity("system", `Gemini envió un WhatsApp a ${args.to}`);
+      return { sent: true, messageId: r.id };
+    }
+    case "facebook_post": {
+      if (!c.meta.accessToken || !c.meta.pageId) return { error: "Facebook (Meta) no está conectado." };
+      if (!args?.message) return { error: "Falta 'message'." };
+      const r = await fbPagePost(c.meta, String(args.message), args?.link ? String(args.link) : undefined);
+      logActivity("system", "Gemini publicó en Facebook");
+      return { posted: true, postId: r.id };
+    }
+    case "instagram_recent": {
+      if (!c.meta.accessToken || !c.meta.igUserId) return { error: "Instagram (Meta) no está conectado." };
+      const media = await igMedia(c.meta, Math.min(12, Number(args?.limit) || 8));
+      logActivity("system", "Gemini consultó Instagram");
+      return {
+        count: media.length,
+        media: media.map((m) => ({
+          caption: m.caption?.slice(0, 120),
+          type: m.media_type,
+          likes: m.like_count,
+          comments: m.comments_count,
+          link: m.permalink,
+          date: m.timestamp,
+        })),
+      };
+    }
+    case "meta_overview": {
+      if (!c.meta.accessToken) return { error: "Meta no está conectado." };
+      const snap = await metaSnapshot(c.meta);
+      logActivity("system", "Gemini consultó Meta (FB/IG)");
+      return snap;
     }
     case "create_note": {
       const ws = useWorkspace.getState();

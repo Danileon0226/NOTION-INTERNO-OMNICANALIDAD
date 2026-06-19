@@ -25,6 +25,8 @@ import {
   ShieldAlert,
   Database,
   MessageSquare,
+  MessageCircle,
+  Share2,
   Webhook,
   LineChart,
 } from "lucide-react";
@@ -60,6 +62,16 @@ import {
   type TelegramBot,
   type TelegramUpdate,
 } from "@/lib/connectors/telegram";
+import {
+  metaWhoAmI,
+  fbPageInfo,
+  igInfo,
+  waSendText,
+  fbPagePost,
+  type MetaIdentity,
+  type FbPageInfo,
+  type IgInfo,
+} from "@/lib/connectors/meta";
 import {
   requestGoogleToken,
   gmailProfile,
@@ -123,6 +135,7 @@ export default function ConnectorsPage() {
       <div className="space-y-4">
         <GeminiCard />
         <GithubCard />
+        <MetaCard />
         <TelegramCard />
         <GmailCard />
         <DriveCard />
@@ -677,6 +690,167 @@ function GithubCard() {
                   </a>
                 ))}
               </div>
+            </div>
+          )}
+        </div>
+      )}
+    </Shell>
+  );
+}
+
+/* ───────────────────────────── Meta (WhatsApp · Facebook · Instagram) ───────────────────────────── */
+
+function MetaCard() {
+  const { meta, setMeta, disconnect } = useConnectors();
+  const [busy, setBusy] = useState<"connect" | "wa" | "fb" | null>(null);
+  const [err, setErr] = useState("");
+  const [me, setMe] = useState<MetaIdentity | null>(null);
+  const [page, setPage] = useState<FbPageInfo | null>(null);
+  const [ig, setIg] = useState<IgInfo | null>(null);
+  const [waTo, setWaTo] = useState("");
+  const [ok, setOk] = useState("");
+
+  async function connect() {
+    setErr("");
+    setOk("");
+    setBusy("connect");
+    try {
+      const who = await metaWhoAmI(meta.accessToken.trim());
+      setMe(who);
+      if (meta.pageId.trim()) setPage(await fbPageInfo(meta).catch(() => null));
+      if (meta.igUserId.trim()) setIg(await igInfo(meta).catch(() => null));
+    } catch (e) {
+      setErr((e as Error).message);
+      setMe(null);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function sendWa() {
+    setErr("");
+    setOk("");
+    setBusy("wa");
+    try {
+      await waSendText(meta, waTo.trim(), "✅ ZERO Agency OS quedó conectado a WhatsApp.");
+      setOk(`Mensaje de WhatsApp enviado a ${waTo.trim()}.`);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function testFbPost() {
+    setErr("");
+    setOk("");
+    setBusy("fb");
+    try {
+      await fbPagePost(meta, "Publicación de prueba desde ZERO Agency OS ✨");
+      setOk("Publicación creada en la página de Facebook.");
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  useEffect(() => {
+    if (meta.accessToken && !me) connect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <Shell
+      icon={<Share2 size={22} />}
+      title="Meta · WhatsApp · Facebook · Instagram"
+      desc="Un solo token (Graph API) para WhatsApp Cloud, tu página de Facebook y tu cuenta de Instagram Business. Pega el token de larga duración y los IDs que uses; lo que dejes vacío simplemente no se activa."
+      connected={!!me}
+      docsUrl="https://developers.facebook.com/docs/graph-api"
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <Field
+            label="Token de acceso (larga duración · usuario de sistema o de página)"
+            value={meta.accessToken}
+            onChange={(v) => setMeta({ accessToken: v })}
+            placeholder="EAAG… (token de la Graph API)"
+            type="password"
+          />
+        </div>
+        <Field label="Facebook · Page ID" value={meta.pageId} onChange={(v) => setMeta({ pageId: v })} placeholder="p. ej. 1029384756" />
+        <Field label="Instagram · Business Account ID" value={meta.igUserId} onChange={(v) => setMeta({ igUserId: v })} placeholder="p. ej. 17841400000000000" />
+        <Field label="WhatsApp · Phone Number ID" value={meta.phoneNumberId} onChange={(v) => setMeta({ phoneNumberId: v })} placeholder="p. ej. 1029384756" />
+        <Field label="WhatsApp Business Account ID (opcional)" value={meta.wabaId} onChange={(v) => setMeta({ wabaId: v })} placeholder="p. ej. 1029384756" />
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Btn onClick={connect} busy={busy === "connect"} disabled={!meta.accessToken}>
+          {me ? "Revalidar" : "Conectar"}
+        </Btn>
+        {me && (
+          <Btn
+            variant="danger"
+            onClick={() => {
+              disconnect("meta");
+              setMe(null);
+              setPage(null);
+              setIg(null);
+            }}
+          >
+            <Trash2 size={14} /> Desconectar
+          </Btn>
+        )}
+      </div>
+
+      {ok && (
+        <div className="mt-3 flex items-center gap-1.5 rounded-md bg-emerald-50 px-3 py-2 text-xs text-emerald-600">
+          <Check size={13} /> {ok}
+        </div>
+      )}
+      <ErrorMsg msg={err} />
+
+      {me && (
+        <div className="mt-4 space-y-4">
+          <p className="text-xs text-muted">
+            Token válido · <span className="font-medium text-ink">{me.name}</span>
+          </p>
+
+          {(page || ig) && (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {page && <Stat label="Facebook · seguidores" value={(page.followers_count ?? page.fan_count ?? 0).toLocaleString("es-CO")} />}
+              {ig && <Stat label={`Instagram · @${ig.username}`} value={(ig.followers_count ?? 0).toLocaleString("es-CO")} />}
+              {ig && <Stat label="Instagram · publicaciones" value={ig.media_count ?? 0} />}
+            </div>
+          )}
+
+          {/* Prueba WhatsApp */}
+          {meta.phoneNumberId && (
+            <div className="rounded-lg border glass-inset p-3">
+              <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-ink">
+                <MessageCircle size={14} className="text-emerald-500" /> Enviar WhatsApp de prueba
+              </div>
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="flex-1">
+                  <Field label="Número destino (E.164, sin +)" value={waTo} onChange={setWaTo} placeholder="573001234567" />
+                </div>
+                <Btn variant="ghost" onClick={sendWa} busy={busy === "wa"} disabled={!waTo.trim()}>
+                  <Send size={14} /> Enviar
+                </Btn>
+              </div>
+              <p className="mt-1.5 text-[11px] text-muted">
+                Para iniciar conversación fuera de la ventana de 24 h necesitas una plantilla aprobada. Las respuestas entrantes
+                requieren un webhook (servidor/n8n).
+              </p>
+            </div>
+          )}
+
+          {/* Prueba Facebook */}
+          {meta.pageId && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Btn variant="ghost" onClick={testFbPost} busy={busy === "fb"}>
+                <MessageSquare size={14} /> Publicar prueba en Facebook
+              </Btn>
             </div>
           )}
         </div>
