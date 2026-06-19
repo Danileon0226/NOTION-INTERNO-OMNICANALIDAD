@@ -7,8 +7,13 @@ interface AiState {
   apiKey: string;
   model: string;
   temperature: number;
-  // Voz de ZERO: motor neural (Gemini) o del sistema (Web Speech).
-  voiceEngine: "gemini" | "system";
+  // Voz de ZERO: Miso One (primario), Gemini TTS o Web Speech del sistema.
+  voiceEngine: "miso" | "gemini" | "system";
+  misoTtsUrl: string;
+  misoVoice: string;
+  misoStream: boolean;
+  misoSpeed: number;
+  misoStyle: string;
   geminiVoice: string;
   voiceURI: string;
   voiceRate: number;
@@ -17,7 +22,12 @@ interface AiState {
   setModel: (m: string) => void;
   setTemperature: (t: number) => void;
   setVoice: (v: {
-    voiceEngine?: "gemini" | "system";
+    voiceEngine?: "miso" | "gemini" | "system";
+    misoTtsUrl?: string;
+    misoVoice?: string;
+    misoStream?: boolean;
+    misoSpeed?: number;
+    misoStyle?: string;
     geminiVoice?: string;
     voiceURI?: string;
     voiceRate?: number;
@@ -33,7 +43,12 @@ export const useAi = create<AiState>()(
       apiKey: "",
       model: "gemini-2.5-flash",
       temperature: 0.4,
-      voiceEngine: "gemini",
+      voiceEngine: "miso",
+      misoTtsUrl: (process.env.NEXT_PUBLIC_MISO_TTS_URL || "http://localhost:8080/v1").trim(),
+      misoVoice: "default",
+      misoStream: true,
+      misoSpeed: 1,
+      misoStyle: "jarvis",
       geminiVoice: "Charon",
       voiceURI: "",
       voiceRate: 0.97,

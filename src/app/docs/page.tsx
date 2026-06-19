@@ -95,7 +95,7 @@ export default function Docs() {
               <li><strong>Asistente IA / ZERO (voz)</strong>: copiloto en texto y por voz (con streaming).</li>
               <li><strong>Memoria</strong>: lo que ZERO recuerda entre sesiones.</li>
               <li><strong>Bandeja · Calendario · Drive · Canvas/Grafo · Monitoreo</strong>: tus datos reales.</li>
-              <li><strong>Piloto automático · Reportes · Actividad agéntica</strong>: automatización, informes y trazabilidad.</li>
+              <li><strong>Piloto automático · Orquestación · Reportes · Actividad agéntica</strong>: automatización, entrega de software (Orquestador → Documentación → Código → Prueba E2E con bucle de feedback), informes y trazabilidad.</li>
               <li><strong>Conectores · Estado de configuración</strong>: integraciones y diagnóstico de APIs.</li>
             </ul>
           </Section>
