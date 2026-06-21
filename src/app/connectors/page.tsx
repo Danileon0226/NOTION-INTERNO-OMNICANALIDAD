@@ -132,6 +132,8 @@ export default function ConnectorsPage() {
         </span>
       </div>
 
+      <ConnectionSummary />
+
       <div className="space-y-4">
         <GeminiCard />
         <GithubCard />
@@ -144,6 +146,46 @@ export default function ConnectorsPage() {
         <SlackCard />
         <WebhooksCard />
         <BackupCard />
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────── Resumen de conexiones ──────────────────── */
+
+function ConnectionSummary() {
+  const { apiKey } = useAi();
+  const { google, github, telegram, meta } = useConnectors();
+  const slack = useSlack((s) => s.webhookUrl);
+  const items = [
+    { label: "Gemini", on: !!apiKey },
+    { label: "Gmail", on: googleTokenValid(google, GMAIL_SCOPE) },
+    { label: "Drive", on: googleTokenValid(google, DRIVE_SCOPE) },
+    { label: "Calendar", on: googleTokenValid(google, CALENDAR_SCOPE) },
+    { label: "GitHub", on: !!(github.account || github.token) },
+    { label: "Meta", on: !!meta.accessToken },
+    { label: "Telegram", on: !!(telegram.botToken && telegram.chatId) },
+    { label: "Slack", on: !!slack },
+  ];
+  const n = items.filter((i) => i.on).length;
+  return (
+    <div className="mb-4 rounded-xl border glass-card p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted">Estado de conexiones</span>
+        <span className="text-xs text-muted">{n} de {items.length} activos</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((i) => (
+          <span
+            key={i.label}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${
+              i.on ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600" : "glass-card text-muted"
+            }`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${i.on ? "bg-emerald-500" : "bg-muted/40"}`} />
+            {i.label}
+          </span>
+        ))}
       </div>
     </div>
   );

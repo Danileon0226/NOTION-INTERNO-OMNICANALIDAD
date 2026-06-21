@@ -7,6 +7,7 @@ import { useAi } from "@/lib/ai/store";
 import { askAi } from "@/lib/ai/client";
 import { useConnectors, googleTokenValid, GMAIL_SCOPE, DRIVE_SCOPE, CALENDAR_SCOPE } from "@/lib/connectors/store";
 import { gmailProfile, driveList, calendarEvents } from "@/lib/connectors/google";
+import { metaWhoAmI } from "@/lib/connectors/meta";
 import {
   useGoogleInsights,
   searchConsoleSummary,
@@ -120,6 +121,21 @@ export default function SetupPage() {
         if (!googleTokenValid(conn.google, ANALYTICS_SCOPE)) return { ok: false, warn: true, detail: "Sin conectar." };
         const g = await ga4Summary(conn.google.accessToken, insights.gaProperty.trim());
         return { ok: true, detail: `Analytics accesible (${g.sessions} sesiones / 28d).` };
+      },
+    },
+    {
+      id: "meta",
+      label: "Meta · WhatsApp / Facebook / Instagram",
+      apiHost: "graph.facebook.com",
+      run: async () => {
+        const m = conn.meta;
+        if (!m.accessToken) return { ok: false, warn: true, detail: "Sin conectar (Conectores → Meta)." };
+        const who = await metaWhoAmI(m.accessToken.trim());
+        const parts: string[] = [];
+        if (m.pageId) parts.push("Facebook");
+        if (m.igUserId) parts.push("Instagram");
+        if (m.phoneNumberId) parts.push("WhatsApp");
+        return { ok: true, detail: `Token válido (${who.name})${parts.length ? ` · ${parts.join(", ")}` : " · sin IDs configurados"}.` };
       },
     },
   ];
