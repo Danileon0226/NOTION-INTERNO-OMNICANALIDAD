@@ -70,6 +70,7 @@ export default function Docs() {
               <li><strong>API key de Gemini</strong>: créala en aistudio.google.com/apikey y pégala en <Code>Conectores → Asistente IA</Code>.</li>
               <li><strong>Google (Gmail/Drive/Calendar)</strong>: crea un <em>OAuth Client ID</em> (Aplicación web) en Google Cloud Console, añade tu dominio a “Orígenes de JavaScript autorizados”, y pégalo en <Code>Conectores → Google</Code>. Un clic conecta los tres.</li>
               <li><strong>GitHub / Telegram / Slack</strong>: pega token/usuario o el webhook en sus tarjetas.</li>
+              <li><strong>Meta (WhatsApp · Facebook · Instagram)</strong>: pega un token de larga duración de la Graph API y los IDs (página, IG business, WhatsApp Phone Number) en <Code>Conectores → Meta</Code>.</li>
               <li><strong>Verifica todo</strong> en <Code>Estado de configuración</Code> (/setup): prueba cada API en vivo y te da el enlace exacto para habilitar lo que falte en tu proyecto.</li>
             </ol>
             <Callout>Mantén el Client ID, la API key y las APIs habilitadas en un <strong>mismo proyecto</strong> de Google Cloud.</Callout>
@@ -124,6 +125,7 @@ export default function Docs() {
 
           <Section id="integraciones" title="Integraciones">
             <ul>
+              <li><strong>Meta · WhatsApp · Facebook · Instagram</strong>: envía WhatsApp, publica en Facebook, lee Instagram y mide seguidores/insights; ZERO lo opera por voz/chat y guarda el estado en el banco de datos.</li>
               <li><strong>Telegram &amp; Slack</strong>: alertas del equipo (caídas, briefings, acciones).</li>
               <li><strong>Webhooks salientes</strong>: dispara eventos a Zapier, Make, n8n o Discord.</li>
               <li><strong>Search Console + Analytics</strong>: SEO (clics, impresiones, posición) y tráfico (sesiones, usuarios) reales en el panel y en los reportes.</li>
