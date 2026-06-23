@@ -30,14 +30,26 @@ async function graph<T>(token: string, path: string, opts: GraphOpts = {}): Prom
   for (const [k, v] of Object.entries(opts.params || {})) {
     if (v !== undefined && v !== "") url.searchParams.set(k, String(v));
   }
-  const res = await fetch(url.toString(), {
-    method: opts.method || "GET",
-    headers: opts.body ? { "Content-Type": "application/json" } : undefined,
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      method: opts.method || "GET",
+      headers: opts.body ? { "Content-Type": "application/json" } : undefined,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+    });
+  } catch {
+    // fetch rechaza por red o CORS (algunos POST de la Graph API no envían
+    // cabeceras CORS desde el navegador).
+    throw new Error(
+      "No se pudo contactar la Graph API de Meta (red o CORS). Si es un envío (WhatsApp/publicar) y se bloquea por CORS, enrútalo por el servidor/n8n; las lecturas suelen funcionar desde el navegador."
+    );
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const e = (data as { error?: { message?: string; error_user_msg?: string } }).error;
+    const e = (data as { error?: { message?: string; error_user_msg?: string; code?: number } }).error;
+    if (res.status === 401 || res.status === 403 || e?.code === 190) {
+      throw new Error(`Token de Meta inválido o sin permisos: ${e?.message || res.status}. Genera un token de larga duración con los permisos correctos.`);
+    }
     throw new Error(e?.error_user_msg || e?.message || `Meta Graph ${res.status}`);
   }
   return data as T;
