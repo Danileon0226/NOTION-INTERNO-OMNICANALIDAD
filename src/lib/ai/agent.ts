@@ -77,7 +77,7 @@ async function streamTurn(
 ): Promise<{ parts: any[]; text: string }> {
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
+    headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey.trim() },
     body: JSON.stringify(body),
   });
   if (!res.ok || !res.body) {

@@ -24,11 +24,21 @@ export function speedConfig(model: string): Record<string, unknown> {
 
 /** Convierte errores crípticos de Google en guía accionable. */
 export function geminiError(raw: string): Error {
+  if (/API key not valid|API_KEY_INVALID|invalid.*api key|api key.*invalid/i.test(raw)) {
+    return new Error(
+      "La API key no es válida. Cópiala completa (sin espacios ni saltos de línea) desde aistudio.google.com/apikey y pégala de nuevo."
+    );
+  }
   if (/are blocked|blocked|API_KEY_HTTP_REFERRER|PERMISSION_DENIED|restricted/i.test(raw)) {
     return new Error(
       "Tu API key de Gemini está restringida (la Generative Language API está bloqueada para esta key). " +
         "Solución: crea una key SIN restricciones en aistudio.google.com/apikey, o en Google Cloud Console " +
         "habilita 'Generative Language API' y pon la key en 'No restringir' / referrers que incluyan este dominio."
+    );
+  }
+  if (/not found|NOT_FOUND|is not supported|not supported for|models\/.*is not/i.test(raw)) {
+    return new Error(
+      "El modelo seleccionado no está disponible para tu API key. En Conectores → Asistente IA pulsa 'Cargar de Google' en el selector de modelos y elige uno disponible (p. ej. gemini-2.5-flash)."
     );
   }
   return new Error(raw);
@@ -41,7 +51,7 @@ export async function askAi(prompt: string, opts: AskAiOptions = {}): Promise<st
   const m = opts.model || model;
   const res = await fetch(`${ENDPOINT}/${m}:generateContent`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
+    headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey.trim() },
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: { temperature, ...speedConfig(m) },
@@ -77,7 +87,7 @@ export interface GeminiModel {
 export async function listModels(): Promise<GeminiModel[]> {
   const { apiKey } = useAi.getState();
   if (!apiKey) throw new Error("Falta la API key de Gemini.");
-  const res = await fetch(`${ENDPOINT}?pageSize=200`, { headers: { "X-goog-api-key": apiKey } });
+  const res = await fetch(`${ENDPOINT}?pageSize=200`, { headers: { "X-goog-api-key": apiKey.trim() } });
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data?.error?.message || `Gemini ${res.status}`);
@@ -120,7 +130,7 @@ export async function chatAi(messages: ChatMessage[], opts: ChatAiOptions = {}):
   const systemInstruction = [opts.system, opts.context].filter(Boolean).join("\n\n");
   const res = await fetch(`${ENDPOINT}/${m}:generateContent`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
+    headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey.trim() },
     body: JSON.stringify({
       contents: messages.map((msg) => ({ role: msg.role, parts: [{ text: msg.text }] })),
       generationConfig: { temperature, ...speedConfig(m) },
@@ -129,7 +139,7 @@ export async function chatAi(messages: ChatMessage[], opts: ChatAiOptions = {}):
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data?.error?.message || `Gemini ${res.status}`);
+    throw geminiError(data?.error?.message || `Gemini ${res.status}`);
   }
   return (
     data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? ""
