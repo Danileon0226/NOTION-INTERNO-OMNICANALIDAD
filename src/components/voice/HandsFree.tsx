@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Mic, Ear, Loader2, Volume2, AudioLines } from "lucide-react";
-import { useHandsFree, startHandsFree, stopHandsFree } from "@/lib/voice/handsFree";
+import { useHandsFree, startHandsFree, stopHandsFree, setNavigator } from "@/lib/voice/handsFree";
 import { ensureMicPermission, recognitionSupported } from "@/lib/voice";
 import { unlockAudioOutput } from "@/lib/audioPlayer";
 
@@ -12,9 +12,17 @@ import { unlockAudioOutput } from "@/lib/audioPlayer";
 export function HandsFree() {
   const enabled = useHandsFree((s) => s.enabled);
   const status = useHandsFree((s) => s.status);
+  const heard = useHandsFree((s) => s.heard);
   const error = useHandsFree((s) => s.error);
   const setEnabled = useHandsFree((s) => s.setEnabled);
   const pathname = usePathname();
+  const router = useRouter();
+
+  // Permite que el controlador navegue por voz ("Zero, abre Leads").
+  useEffect(() => {
+    setNavigator((path) => router.push(path));
+    return () => setNavigator(null);
+  }, [router]);
 
   // En /zero manda la escucha de la propia página: pausamos el controlador global.
   const onZero = pathname === "/zero";
@@ -77,23 +85,24 @@ export function HandsFree() {
             ? "Di “Zero…”"
             : "Manos libres";
 
+  // Muestra la transcripción en vivo cuando hay algo oído; si no, el estado.
+  const chip = error || (heard ? `“${heard}”` : hint);
+
   return (
-    <div className="fixed bottom-5 left-4 z-40 flex items-center gap-2">
+    <div className="fixed bottom-5 left-4 z-40 flex max-w-[70vw] items-center gap-2">
       <button
         onClick={() => void toggle()}
         title={enabled ? "Desactivar manos libres" : "Activar manos libres (di “Zero”)"}
         aria-label="Manos libres"
-        className={`grid h-11 w-11 place-items-center rounded-full text-white shadow-lg transition active:scale-95 ${
+        className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-white shadow-lg transition active:scale-95 ${
           enabled ? "btn-brand" : "glass-pop text-ink"
-        } ${ring} ${enabled && status === "listening" ? "animate-pulse" : ""}`}
+        } ${ring} ${enabled && status === "listening" && !heard ? "animate-pulse" : ""}`}
       >
         {icon}
       </button>
       {(enabled || error) && (
-        <span
-          className={`glass-chip rounded-full px-2.5 py-1 text-[11px] ${error ? "text-amber-600" : "text-ink"}`}
-        >
-          {error || hint}
+        <span className={`glass-chip truncate rounded-full px-2.5 py-1 text-[11px] ${error ? "text-amber-600" : heard ? "text-ink" : "text-muted"}`}>
+          {chip}
         </span>
       )}
     </div>
