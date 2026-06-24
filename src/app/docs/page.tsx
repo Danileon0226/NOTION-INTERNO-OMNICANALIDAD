@@ -93,7 +93,7 @@ export default function Docs() {
             <ul>
               <li><strong>Dashboard</strong>: estado general, accesos rápidos, bandeja en vivo, briefing y anticipaciones.</li>
               <li><strong>Anticipación</strong>: madurez, escalera de confianza, autonomía y auditoría.</li>
-              <li><strong>Asistente IA / ZERO (voz)</strong>: copiloto en texto y por voz (con streaming).</li>
+              <li><strong>Asistente IA / ZERO (voz)</strong>: copiloto en texto y por voz (con streaming). <strong>Manos libres</strong>: activa el botón flotante de micrófono (abajo a la izquierda) y di “<em>Zero…</em>” desde cualquier pantalla para hablarle sin tocar nada — ZERO te escucha, actúa y responde con voz. (Escucha continua: Chrome/Edge de escritorio; en iPhone usa la página <Code>/zero</Code>.)</li>
               <li><strong>Memoria</strong>: lo que ZERO recuerda entre sesiones.</li>
               <li><strong>Leads</strong>: bandeja omnicanal de prospectos (web, WhatsApp, Facebook, Instagram) que llegan vía n8n a Firestore; asigna, califica y responde por WhatsApp desde el OS.</li>
               <li><strong>Bandeja · Calendario · Drive · Canvas/Grafo · Monitoreo</strong>: tus datos reales.</li>

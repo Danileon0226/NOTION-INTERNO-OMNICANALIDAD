@@ -12,6 +12,7 @@ import { SileoBell } from "@/components/sileo/SileoBell";
 import { SileoPanel } from "@/components/sileo/SileoPanel";
 import { SileoToast } from "@/components/sileo/SileoToast";
 import { SileoDaemon } from "@/components/sileo/SileoDaemon";
+import { HandsFree } from "@/components/voice/HandsFree";
 import { AutonomyDaemon } from "@/components/anticipation/AutonomyDaemon";
 import { MonitorDaemon } from "@/components/monitor/MonitorDaemon";
 import { BriefingDaemon } from "@/components/BriefingDaemon";
@@ -141,6 +142,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <SileoPanel />
           <SileoToast />
           <SileoDaemon />
+
+          {/* Manos libres global: di "Zero" para hablarle desde cualquier pantalla */}
+          <HandsFree />
 
           {/* Demonio de autonomía: ZERO actúa solo (con guardrails) */}
           <AutonomyDaemon />
