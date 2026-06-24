@@ -29,11 +29,27 @@ export function geminiError(raw: string): Error {
       "La API key no es válida. Cópiala completa (sin espacios ni saltos de línea) desde aistudio.google.com/apikey y pégala de nuevo."
     );
   }
-  if (/are blocked|blocked|API_KEY_HTTP_REFERRER|PERMISSION_DENIED|restricted/i.test(raw)) {
+  // La API no está habilitada en el proyecto (distinto de "key restringida").
+  if (/SERVICE_DISABLED|has not been used in project|it is disabled|API .* disabled|enable it by visiting/i.test(raw)) {
     return new Error(
-      "Tu API key de Gemini está restringida (la Generative Language API está bloqueada para esta key). " +
-        "Solución: crea una key SIN restricciones en aistudio.google.com/apikey, o en Google Cloud Console " +
-        "habilita 'Generative Language API' y pon la key en 'No restringir' / referrers que incluyan este dominio."
+      "La 'Generative Language API' no está habilitada en el proyecto de tu key. Actívala en " +
+        "console.cloud.google.com/apis/library/generativelanguage.googleapis.com (elige el MISMO proyecto de la key), " +
+        "espera 1-2 min y reintenta. Lo más simple: usa una key de aistudio.google.com/apikey, que ya viene habilitada."
+    );
+  }
+  // Restricción por referrer/origen HTTP (típico de keys creadas en Cloud Console).
+  if (/API_KEY_HTTP_REFERRER|referer|referrer|requests from referer/i.test(raw)) {
+    return new Error(
+      "Tu API key tiene restricción por 'Referrers HTTP' y este dominio no está permitido. En " +
+        "console.cloud.google.com/apis/credentials abre la key → Restricciones de aplicación: pon 'Ninguna' " +
+        "(o añade este dominio, p. ej. https://danileon0226.github.io/*). Alternativa: usa una key SIN restricciones de aistudio.google.com/apikey."
+    );
+  }
+  if (/are blocked|blocked|PERMISSION_DENIED|restricted|API_KEY_SERVICE_BLOCKED/i.test(raw)) {
+    return new Error(
+      "Tu API key está restringida para la Generative Language API. En console.cloud.google.com/apis/credentials abre la key → " +
+        "'Restricciones de API': elige 'No restringir la clave' (o incluye 'Generative Language API'). " +
+        "Lo más simple: crea una key SIN restricciones en aistudio.google.com/apikey."
     );
   }
   if (/not found|NOT_FOUND|is not supported|not supported for|models\/.*is not/i.test(raw)) {
