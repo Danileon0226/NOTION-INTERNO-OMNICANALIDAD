@@ -16,7 +16,7 @@ export default function MemoryPage() {
     return [...list].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || b.ts - a.ts);
   }, [items, q]);
 
-  function submit(e: React.FormEvent) {
+  function submit(e: React.SyntheticEvent) {
     e.preventDefault();
     if (!text.trim()) return;
     add(text, tag.trim() || undefined);
@@ -44,17 +44,22 @@ export default function MemoryPage() {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") submit(e);
+          }}
           placeholder="Recuerda que… (p. ej. 'El retainer de Montaña Viva es 480 USD mensuales')"
           rows={2}
-          className="w-full resize-none bg-transparent text-sm text-ink outline-none placeholder:text-muted"
+          autoFocus
+          className="w-full resize-none rounded-lg border bg-bg-subtle px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-accent"
         />
         <div className="mt-2 flex items-center gap-2">
           <input
             value={tag}
             onChange={(e) => setTag(e.target.value)}
             placeholder="etiqueta (opcional)"
-            className="w-40 rounded-md border glass-card px-2 py-1 text-xs text-ink outline-none focus:border-accent"
+            className="w-40 rounded-md border glass-card px-2 py-1 text-xs text-muted outline-none focus:border-accent"
           />
+          <span className="hidden text-[11px] text-muted sm:inline">⌘/Ctrl + Enter</span>
           <button
             type="submit"
             disabled={!text.trim()}
