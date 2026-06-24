@@ -53,7 +53,7 @@ export const useAi = create<AiState>()(
       voiceURI: "",
       voiceRate: 0.97,
       voicePitch: 0.82,
-      setApiKey: (apiKey) => set({ apiKey }),
+      setApiKey: (apiKey) => set({ apiKey: (apiKey || "").trim() }),
       setModel: (model) => set({ model: model || "gemini-2.5-flash" }),
       setTemperature: (temperature) => set({ temperature }),
       setVoice: (v) => set((s) => ({ ...s, ...v })),

@@ -83,7 +83,7 @@ export async function geminiTTS(text: string, voiceName = "Charon"): Promise<str
   for (const model of TTS_MODELS) {
     const res = await fetch(`${ENDPOINT}/${model}:generateContent`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey },
+      headers: { "Content-Type": "application/json", "X-goog-api-key": apiKey.trim() },
       body,
     });
     const data = await res.json();
