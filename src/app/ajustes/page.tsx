@@ -1,9 +1,10 @@
 "use client";
 
-import { SlidersHorizontal, Sun, Moon, Type, Zap, Contrast, Lock, Check } from "lucide-react";
+import { SlidersHorizontal, Sun, Moon, Type, Zap, Contrast, Check, Sparkles } from "lucide-react";
 import { ModuleHeader } from "@/components/ModuleHeader";
 import { usePrefs, ACCENTS, type TextScale } from "@/lib/prefs";
 import { useTheme } from "@/lib/theme";
+import { useOnboarding } from "@/lib/onboarding";
 import { authMode } from "@/lib/account";
 
 const SCALES: { id: TextScale; label: string }[] = [
@@ -19,6 +20,7 @@ export default function AjustesPage() {
   const mode = useTheme((s) => s.mode);
   const setMode = useTheme((s) => s.setMode);
   const { accent, scale, reduceMotion, highContrast, lockMinutes, setAccent, setScale, setReduceMotion, setHighContrast, setLockMinutes } = usePrefs();
+  const resetOnboarding = useOnboarding((s) => s.reset);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-8">
@@ -67,6 +69,12 @@ export default function AjustesPage() {
               </Toggle>
             ))}
           </div>
+        </Row>
+
+        <Row label="Tour de bienvenida" hint="Vuelve a ver la presentación inicial del OS.">
+          <Toggle active={false} onClick={resetOnboarding}>
+            <Sparkles size={13} /> Ver de nuevo
+          </Toggle>
         </Row>
       </Section>
 

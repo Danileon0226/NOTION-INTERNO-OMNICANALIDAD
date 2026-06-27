@@ -13,6 +13,8 @@ import {
   Check,
 } from "lucide-react";
 import { ModuleHeader } from "@/components/ModuleHeader";
+import { SkeletonList } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { authMode, useAccount } from "@/lib/account";
 import { useConnectors } from "@/lib/connectors/store";
 import { waSendText } from "@/lib/connectors/meta";
@@ -92,13 +94,13 @@ export default function LeadsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-muted">
-          <Loader2 size={16} className="animate-spin" /> Cargando leads…
-        </div>
+        <SkeletonList rows={6} />
       ) : leads.length === 0 ? (
-        <p className="rounded-xl border glass-card p-6 text-sm text-muted">
-          Aún no hay leads. En cuanto los workflows de n8n reciban un formulario, un WhatsApp o un Lead Ad, aparecerán aquí en vivo.
-        </p>
+        <EmptyState
+          icon={<Users2 size={22} />}
+          title="Aún no hay leads"
+          description="En cuanto los workflows de n8n reciban un formulario, un WhatsApp o un Lead Ad, aparecerán aquí en vivo."
+        />
       ) : (
         <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
           {/* Lista */}

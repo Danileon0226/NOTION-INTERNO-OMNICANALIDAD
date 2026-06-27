@@ -261,6 +261,34 @@ html[data-contrast="high"][data-theme="dark"] {
   top: 8px;
 }
 
+/* Placeholders de carga (skeleton) con brillo de marca. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-subtle);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--violet-bright) 16%, transparent),
+    transparent
+  );
+  animation: skeletonShimmer 1.4s var(--ease-standard) infinite;
+}
+@keyframes skeletonShimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+html[data-reduce-motion="1"] .skeleton::after {
+  animation: none;
+}
+
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;

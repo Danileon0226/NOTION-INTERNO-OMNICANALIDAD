@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Users, CheckCircle2, Circle, Loader2, ShieldAlert } from "lucide-react";
 import { ModuleHeader } from "@/components/ModuleHeader";
+import { SkeletonList } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { authMode } from "@/lib/account";
 import { ROLE_LIST, MODULES, roleMeta, canAccess, type Role } from "@/lib/rbac";
 import {
@@ -55,11 +57,13 @@ export default function TeamPage() {
       />
 
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-muted">
-          <Loader2 size={16} className="animate-spin" /> Cargando equipo…
-        </div>
+        <SkeletonList rows={5} />
       ) : profiles.length === 0 ? (
-        <p className="text-sm text-muted">Aún no hay personas registradas. Comparte el enlace y pídeles que inicien sesión.</p>
+        <EmptyState
+          icon={<Users size={22} />}
+          title="Aún no hay personas registradas"
+          description="Comparte el enlace de acceso y pídeles que inicien sesión. Aparecerán aquí para que apruebes su acceso y asignes roles."
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-[260px_1fr]">
           {/* Lista de personas */}
