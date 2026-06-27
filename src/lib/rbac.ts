@@ -126,7 +126,7 @@ function segOf(path: string): string {
  * sobre el permiso por rol. El panel de administración es siempre solo-admin.
  */
 // Páginas de cuenta personales: accesibles para cualquier sesión autenticada.
-const ALWAYS_ALLOWED = ["/profile", "/progreso", "/notificaciones"];
+const ALWAYS_ALLOWED = ["/profile", "/progreso", "/notificaciones", "/ajustes"];
 
 export function canAccessWith(role: Role, path: string, overrides?: Record<string, boolean>): boolean {
   const seg = segOf(path);

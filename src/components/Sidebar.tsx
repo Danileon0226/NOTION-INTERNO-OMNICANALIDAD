@@ -43,6 +43,7 @@ import {
   Workflow,
   Trophy,
   Bell,
+  SlidersHorizontal,
 } from "lucide-react";
 
 // Navegación agrupada por intención → más fácil de escanear.
@@ -111,6 +112,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const accountItems: { href: string; label: string; icon: React.ReactNode }[] = [
     { href: "/notificaciones", label: "Notificaciones", icon: <Bell size={16} /> },
     { href: "/progreso", label: "Progreso", icon: <Trophy size={16} /> },
+    { href: "/ajustes", label: "Ajustes", icon: <SlidersHorizontal size={16} /> },
   ];
   if (authMode === "firebase") accountItems.push({ href: "/profile", label: "Mi perfil", icon: <UserCircle size={16} /> });
   if (role === "admin") accountItems.push({ href: "/team", label: "Equipo", icon: <Users size={16} /> });

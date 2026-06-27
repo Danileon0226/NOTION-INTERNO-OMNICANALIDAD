@@ -23,10 +23,12 @@ import { Celebration } from "@/components/gamification/Celebration";
 import { LevelChip } from "@/components/gamification/LevelHud";
 import { LoginGate } from "@/components/LoginGate";
 import { AuthListener } from "@/components/AuthListener";
+import { PWA } from "@/components/PWA";
 import { useTheme, applyTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
 import { canAccessWith, roleMeta } from "@/lib/rbac";
 import { authMode, useAccount, signOutAccount } from "@/lib/account";
+import { usePrefs, applyPrefs } from "@/lib/prefs";
 import { track } from "@/lib/firebase/track";
 import zeroMark from "@/brand/zero-mark.png";
 
@@ -38,16 +40,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const toggleTheme = useTheme((s) => s.toggle);
   const openPalette = useCommandPalette((s) => s.setOpen);
   const account = useAccount();
+  const lockMinutes = usePrefs((s) => s.lockMinutes);
+  const prefsAccent = usePrefs((s) => s.accent);
+  const prefsScale = usePrefs((s) => s.scale);
+  const prefsMotion = usePrefs((s) => s.reduceMotion);
+  const prefsContrast = usePrefs((s) => s.highContrast);
 
   // Aplica el tema persistido al cargar y cuando cambia.
   useEffect(() => {
     applyTheme(mode);
   }, [mode]);
 
+  // Aplica las preferencias de personalización/accesibilidad.
+  useEffect(() => {
+    applyPrefs();
+  }, [prefsAccent, prefsScale, prefsMotion, prefsContrast]);
+
   // Evita flash/mismatch del login antes de rehidratar el estado persistido.
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Bloqueo por inactividad (seguridad): cierra sesión tras N min sin actividad.
+  useEffect(() => {
+    if (authMode === "open" || lockMinutes <= 0 || !account.authed) return;
+    let last = Date.now();
+    const touch = () => (last = Date.now());
+    const evs = ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "visibilitychange"] as const;
+    evs.forEach((e) => window.addEventListener(e, touch, { passive: true }));
+    const id = setInterval(() => {
+      if (Date.now() - last >= lockMinutes * 60_000) {
+        clearInterval(id);
+        void signOutAccount();
+      }
+    }, 15_000);
+    return () => {
+      clearInterval(id);
+      evs.forEach((e) => window.removeEventListener(e, touch));
+    };
+  }, [lockMinutes, account.authed]);
 
   // Seguimiento de navegación por persona (best-effort; solo con Firebase).
   useEffect(() => {
@@ -77,8 +108,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <AuthListener />
+      <PWA />
       {gate ?? (
         <div className="flex h-screen w-screen overflow-hidden">
+          <a href="#main" className="skip-link">
+            Saltar al contenido
+          </a>
           {/* Sidebar fija en escritorio */}
           <div className="hidden lg:block">
             <Sidebar />
@@ -128,7 +163,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <main className="flex-1 overflow-y-auto bg-transparent">
+            <main id="main" className="flex-1 overflow-y-auto bg-transparent">
               <div key={pathname} className="zero-page-enter h-full">
                 {children}
               </div>
