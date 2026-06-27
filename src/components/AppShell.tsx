@@ -23,6 +23,7 @@ import { Celebration } from "@/components/gamification/Celebration";
 import { LevelChip } from "@/components/gamification/LevelHud";
 import { LoginGate } from "@/components/LoginGate";
 import { AuthListener } from "@/components/AuthListener";
+import { Onboarding } from "@/components/Onboarding";
 import { PWA } from "@/components/PWA";
 import { useTheme, applyTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
@@ -202,6 +203,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Copiloto "Zero" — flotante en cualquier pantalla */}
           <AssistantPanel />
+
+          {/* Bienvenida de primer arranque (se ve una sola vez) */}
+          <Onboarding />
         </div>
       )}
     </>
