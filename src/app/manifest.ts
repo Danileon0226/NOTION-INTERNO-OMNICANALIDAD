@@ -13,8 +13,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: `${base}/dashboard`,
     scope: `${base}/`,
     display: "standalone",
-    background_color: "#0c0a14",
-    theme_color: "#5b3fa6",
+    background_color: "#0e002b",
+    theme_color: "#5e20be",
     icons: [
       { src: `${base}/icon.png`, sizes: "512x512", type: "image/png", purpose: "any" },
       { src: `${base}/icon.png`, sizes: "192x192", type: "image/png", purpose: "maskable" },

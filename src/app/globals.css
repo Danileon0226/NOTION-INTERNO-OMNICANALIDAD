@@ -209,6 +209,58 @@ h2 {
   }
 }
 
+/* ── Accesibilidad y personalización (preferencias del usuario) ──── */
+/* Tamaño de texto: escala todo el UI (Tailwind usa rem). */
+html[data-scale="sm"] {
+  font-size: 93.75%;
+}
+html[data-scale="lg"] {
+  font-size: 109%;
+}
+html[data-scale="xl"] {
+  font-size: 118%;
+}
+
+/* Reducir movimiento (interruptor manual, además de la preferencia del SO). */
+html[data-reduce-motion="1"] *,
+html[data-reduce-motion="1"] *::before,
+html[data-reduce-motion="1"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Alto contraste: sube el contraste de texto secundario y bordes (WCAG). */
+html[data-contrast="high"] {
+  --text-muted: #443c5c;
+  --border: #b9b0d4;
+  --glass-border: rgba(40, 24, 70, 0.4);
+}
+html[data-contrast="high"][data-theme="dark"] {
+  --text-muted: #d4ccec;
+  --border: #5a4f86;
+  --glass-border: rgba(200, 180, 240, 0.34);
+}
+
+/* Enlace "saltar al contenido" (accesibilidad de teclado). */
+.skip-link {
+  position: fixed;
+  left: 8px;
+  top: -48px;
+  z-index: 100;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background-image: linear-gradient(120deg, var(--violet), var(--violet-bright));
+  transition: top 0.16s var(--ease-standard);
+}
+.skip-link:focus {
+  top: 8px;
+}
+
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;

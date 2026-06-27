@@ -99,6 +99,7 @@ export default function Docs() {
               <li><strong>Bandeja · Calendario · Drive · Canvas/Grafo · Monitoreo</strong>: tus datos reales.</li>
               <li><strong>Piloto automático · Orquestación · Reportes · Actividad agéntica</strong>: automatización, entrega de software (Orquestador → Documentación → Código → Prueba E2E con bucle de feedback), informes y trazabilidad.</li>
               <li><strong>Conectores · Estado de configuración</strong>: integraciones y diagnóstico de APIs.</li>
+              <li><strong>Ajustes</strong>: personalización completa (tema, color de acento de marca o propio, tamaño de texto), accesibilidad (reducir movimiento, alto contraste WCAG) y seguridad (bloqueo por inactividad). ZERO es además una <strong>app instalable</strong> que funciona sin conexión.</li>
               <li><strong>SILEO (Notificaciones)</strong>: centro de notificaciones internas — eventos del sistema/agente/leads, avisos del equipo (difusión del admin), modo silencio y muteo por categoría. El Agente avisa al comercial cuando un lead queda calificado, y los avisos de alta prioridad pueden reenviarse a Telegram/WhatsApp.</li>
             </ul>
           </Section>
