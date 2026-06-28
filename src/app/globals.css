@@ -304,16 +304,27 @@ html[data-reduce-motion="1"] .lock-shake {
   animation: none;
 }
 
+/* Scrollbar fina y translúcida estilo iOS (overlay) */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d8d1e6;
-  border-radius: 8px;
+  background: color-mix(in srgb, var(--brand) 28%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #c4b8db;
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+  background-clip: padding-box;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--brand) 30%, transparent) transparent;
 }
 
 /* Placeholder para bloques vacíos del editor */
@@ -323,47 +334,54 @@ html[data-reduce-motion="1"] .lock-shake {
   pointer-events: none;
 }
 
-/* ── Liquid glass · cristal líquido de marca ──────────────────── */
+/* ── Liquid glass · vibrancy estilo iOS (glassmorphism) ───────────
+   Cristal esmerilado translúcido sobre la aurora de marca: blur alto +
+   saturación (vibrancy), lámina especular superior, hairline fino y sombra
+   suave y amplia. Esto da el look "iPhone" a TODA la plataforma, porque el
+   chrome, las tarjetas, los popovers y las superficies comparten estas clases. */
 :root {
-  /* Más opacidad = más contraste y legibilidad sobre la aurora */
-  --glass-bg: rgba(255, 255, 255, 0.78);
-  --glass-bg-strong: rgba(255, 255, 255, 0.88);
-  --glass-border: rgba(57, 40, 81, 0.14); /* hairline tintado de marca, da definición */
-  --glass-hi: rgba(255, 255, 255, 0.9); /* brillo especular superior */
-  --glass-shadow: 0 12px 36px -18px rgba(40, 20, 70, 0.42);
+  --glass-bg: rgba(255, 255, 255, 0.62); /* translúcido: deja ver la aurora */
+  --glass-bg-strong: rgba(255, 255, 255, 0.74);
+  --glass-border: rgba(57, 40, 81, 0.12); /* hairline tintado de marca */
+  --glass-hi: rgba(255, 255, 255, 0.95); /* brillo especular superior */
+  --glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 46%);
+  --glass-shadow: 0 18px 48px -22px rgba(40, 20, 70, 0.45);
+  --glass-blur: 24px;
   --glass-inset: color-mix(in srgb, var(--brand) 6%, #ffffff);
 }
 [data-theme="dark"] {
-  --glass-bg: rgba(27, 17, 66, 0.62);
-  --glass-bg-strong: rgba(31, 20, 74, 0.8);
-  --glass-border: rgba(180, 155, 230, 0.16); /* hairline lavanda */
-  --glass-hi: rgba(180, 155, 230, 0.12);
-  --glass-shadow: 0 16px 44px -20px rgba(8, 2, 26, 0.82);
+  --glass-bg: rgba(27, 17, 66, 0.55);
+  --glass-bg-strong: rgba(31, 20, 74, 0.7);
+  --glass-border: rgba(180, 155, 230, 0.18); /* hairline lavanda */
+  --glass-hi: rgba(200, 180, 240, 0.16);
+  --glass-sheen: linear-gradient(180deg, rgba(200, 180, 240, 0.1), rgba(200, 180, 240, 0) 46%);
+  --glass-shadow: 0 22px 56px -22px rgba(8, 2, 26, 0.85);
   --glass-inset: color-mix(in srgb, var(--lavender-bright) 12%, #1b1142);
 }
 
-/* Tarjetas/paneles translúcidos con desenfoque y brillo especular */
+/* Tarjetas/paneles translúcidos con desenfoque, vibrancy y lámina especular */
 .glass-card {
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(16px) saturate(165%);
-  backdrop-filter: blur(16px) saturate(165%);
+  background: var(--glass-sheen), var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
   border-color: var(--glass-border);
   box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow);
 }
-/* Barra/chrome (sidebar, top bar, nav): más desenfoque, más sólida */
+/* Barra/chrome (sidebar, top bar, nav): desenfoque fuerte estilo iOS */
 .glass-bar {
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  backdrop-filter: blur(22px) saturate(170%);
+  background: var(--glass-sheen), var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  backdrop-filter: blur(30px) saturate(200%);
   border-color: var(--glass-border);
+  box-shadow: inset 0 1px 0 var(--glass-hi);
 }
-/* Popovers/overlays de cristal */
+/* Popovers/overlays de cristal: el desenfoque más alto */
 .glass-pop {
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
+  background: var(--glass-sheen), var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  backdrop-filter: blur(32px) saturate(200%);
   border-color: var(--glass-border);
-  box-shadow: inset 0 1px 0 var(--glass-hi), 0 24px 60px -24px rgba(30, 15, 55, 0.5);
+  box-shadow: inset 0 1px 0 var(--glass-hi), 0 30px 70px -28px rgba(30, 15, 55, 0.55);
 }
 /* Componentes pequeños: inset tintado y chip con definición (legibles sobre el cristal) */
 .glass-inset {
@@ -371,9 +389,9 @@ html[data-reduce-motion="1"] .lock-shake {
   border: 1px solid var(--glass-border);
 }
 .glass-chip {
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: blur(10px) saturate(160%);
-  backdrop-filter: blur(10px) saturate(160%);
+  background: var(--glass-sheen), var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  backdrop-filter: blur(14px) saturate(180%);
   border: 1px solid var(--glass-border);
 }
 
@@ -382,12 +400,13 @@ html[data-reduce-motion="1"] .lock-shake {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--glass-border);
-  border-radius: 18px;
+  border-radius: 22px;
   background:
+    var(--glass-sheen),
     linear-gradient(135deg, color-mix(in srgb, var(--brand) 12%, transparent), transparent 60%),
     var(--glass-bg-strong);
-  -webkit-backdrop-filter: blur(18px) saturate(165%);
-  backdrop-filter: blur(18px) saturate(165%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  backdrop-filter: blur(24px) saturate(190%);
   box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow);
 }
 
@@ -403,6 +422,7 @@ kbd {
   .glass-bar,
   .glass-pop,
   .glass-chip,
+  .surface,
   .module-head {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -430,11 +450,11 @@ kbd {
 }
 /* Superficie elevada (cristal) con borde tintado de marca */
 .surface {
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(16px) saturate(165%);
-  backdrop-filter: blur(16px) saturate(165%);
+  background: var(--glass-sheen), var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
   border: 1px solid var(--glass-border);
-  border-radius: 18px; /* radio de tarjeta del deck */
+  border-radius: 22px; /* esquinas suaves estilo iOS */
   box-shadow: inset 0 1px 0 var(--glass-hi);
 }
 .surface-glow {
