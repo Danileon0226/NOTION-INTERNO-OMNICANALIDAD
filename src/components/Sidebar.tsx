@@ -44,6 +44,7 @@ import {
   Trophy,
   Bell,
   SlidersHorizontal,
+  QrCode,
 } from "lucide-react";
 
 // Navegación agrupada por intención → más fácil de escanear.
@@ -116,6 +117,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   ];
   if (authMode === "firebase") accountItems.push({ href: "/profile", label: "Mi perfil", icon: <UserCircle size={16} /> });
   if (role === "admin") accountItems.push({ href: "/team", label: "Equipo", icon: <Users size={16} /> });
+  if (role === "admin" && authMode === "firebase") accountItems.push({ href: "/vincular", label: "Vincular por QR", icon: <QrCode size={16} /> });
   navGroups.push({ label: "Cuenta", items: accountItems });
 
   const rm = roleMeta(role);

@@ -18,9 +18,9 @@ import {
 } from "@/lib/firebase/auth";
 import zeroMark from "@/brand/zero-mark.png";
 
-export function LoginGate() {
-  if (authMode === "firebase") return <SocialLogin />;
-  return <PasswordLogin />;
+export function LoginGate({ intro }: { intro?: React.ReactNode } = {}) {
+  if (authMode === "firebase") return <SocialLogin intro={intro} />;
+  return <PasswordLogin intro={intro} />;
 }
 
 // ── Login social (Firebase) ────────────────────────────────
@@ -49,7 +49,7 @@ function ProviderIcon({ id }: { id: ProviderId }) {
   );
 }
 
-function SocialLogin() {
+function SocialLogin({ intro }: { intro?: React.ReactNode }) {
   const [busy, setBusy] = useState<ProviderId | null>(null);
   const [err, setErr] = useState("");
 
@@ -68,6 +68,7 @@ function SocialLogin() {
 
   return (
     <Shell>
+      {intro}
       <div className="space-y-2.5">
         {ENABLED_PROVIDERS.map((p) => (
           <button
@@ -217,7 +218,7 @@ function Field({ icon, label, children }: { icon: React.ReactNode; label: string
 }
 
 // ── Login por clave (compat / sin Firebase) ────────────────
-function PasswordLogin() {
+function PasswordLogin({ intro }: { intro?: React.ReactNode }) {
   const setSession = useAuth((s) => s.setSession);
   const [pass, setPass] = useState("");
   const [busy, setBusy] = useState(false);
@@ -238,6 +239,7 @@ function PasswordLogin() {
 
   return (
     <Shell>
+      {intro}
       <form onSubmit={submit} className="space-y-3">
         <label className="block">
           <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">

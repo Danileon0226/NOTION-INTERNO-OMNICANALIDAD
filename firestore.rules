@@ -41,25 +41,56 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enabled == true;
     }
 
+    // ── Vinculación por QR ──────────────────────────────────────────
+    // Una invitación la crea SOLO el admin y fija el rol (y si habilita al
+    // instante). La persona la "reclama" al crear/actualizar su propio perfil:
+    // el rol/habilitación deben coincidir con la invitación (cadena de confianza).
+    function inviteRef(code) {
+      return /databases/$(database)/documents/invites/$(code);
+    }
+    function inviteData(code) {
+      return get(inviteRef(code)).data;
+    }
+    function inviteUsable(code) {
+      return code is string && code.size() > 0
+        && exists(inviteRef(code))
+        && inviteData(code).active == true;
+    }
+    function claimMatchesInvite(code) {
+      return inviteUsable(code)
+        && request.resource.data.role == inviteData(code).role
+        && request.resource.data.enabled == inviteData(code).autoEnable;
+    }
+
     match /users/{uid} {
       // Lee tu propio perfil; el admin lee todos.
       allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
 
       // Crear el propio perfil al iniciar sesión:
       // - correos admin entran como admin habilitado;
+      // - con una invitación (QR) válida: rol/habilitación según la invitación;
       // - el resto entra como rol normal DESHABILITADO (pendiente de aprobación).
       allow create: if isSignedIn() && request.auth.uid == uid && (
         (isAdminEmail() && request.resource.data.role == 'admin' && request.resource.data.enabled == true) ||
+        (!isAdminEmail() && claimMatchesInvite(request.resource.data.invite)) ||
         (!isAdminEmail() && request.resource.data.role in ['comercial', 'dev'] && request.resource.data.enabled == false)
       );
 
-      // El admin puede cambiar todo. El propio usuario puede actualizar su perfil
-      // EXCEPTO rol, enabled y modules (esos solo los cambia el admin).
+      // El admin puede cambiar todo. El propio usuario puede:
+      // - actualizar su perfil SIN tocar rol/enabled/modules, o
+      // - reclamar una invitación (QR): fija rol/habilitación según la invitación,
+      //   sin alterar sus módulos.
       allow update: if isAdmin() || (
-        isSignedIn() && request.auth.uid == uid &&
-        request.resource.data.role == resource.data.role &&
-        request.resource.data.enabled == resource.data.enabled &&
-        request.resource.data.modules == resource.data.modules
+        isSignedIn() && request.auth.uid == uid && (
+          (
+            request.resource.data.role == resource.data.role &&
+            request.resource.data.enabled == resource.data.enabled &&
+            request.resource.data.modules == resource.data.modules
+          ) || (
+            claimMatchesInvite(request.resource.data.invite) &&
+            request.resource.data.modules == resource.data.modules
+          )
+        )
       );
 
       allow delete: if isAdmin();
@@ -78,6 +109,19 @@ service cloud.firestore {
         allow create: if isSignedIn() && (hasRole('comercial') || hasRole('dev') || isAdmin());
         allow read, update, delete: if isSignedIn() && (request.auth.uid == uid || isAdmin());
       }
+    }
+
+    // Invitaciones de vinculación por QR. Las crea/edita/borra SOLO el admin.
+    // Cualquier sesión puede leerlas (para reclamarlas) e incrementar su contador
+    // de usos en 1 (sin tocar nada más) al unirse.
+    match /invites/{code} {
+      allow read: if isSignedIn();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uses']) &&
+        request.resource.data.uses == resource.data.uses + 1
+      );
     }
 
     // Leads omnicanal: los escribe n8n con un service account (el Admin SDK

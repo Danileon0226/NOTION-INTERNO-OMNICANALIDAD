@@ -199,6 +199,13 @@ export default function Docs() {
               actividad. Los cambios se aplican <strong>al instante</strong> en su sesión. La seguridad la imponen las reglas de
               Firestore (un usuario no puede cambiarse su propio rol ni permisos).
             </Callout>
+            <Callout>
+              <strong>Vinculación por QR (<Code>/vincular</Code>):</strong> genera un QR por rol (Administrador, Chief Comercial,
+              Desarrollador). Quien lo escanee abre <Code>/unirse</Code>, inicia sesión y queda vinculado con ese rol — con
+              <strong> acceso inmediato</strong> o pendiente de tu aprobación, según elijas. La invitación solo la crea el admin y el
+              rol se valida en las reglas de Firestore (nadie puede auto-asignarse un rol sin un QR tuyo). Puedes desactivar o borrar
+              un QR cuando quieras.
+            </Callout>
             <p className="text-sm text-muted">
               Sin Firebase, la app sigue funcionando con el login por clave/rol (sección anterior), pero sin perfiles centralizados
               ni seguimiento entre personas.

@@ -104,7 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname, account.authed, account.enabled]);
 
   // Rutas de marketing: a pantalla completa, sin el shell de la app.
-  const isMarketing = pathname === "/" || pathname.startsWith("/docs");
+  const isMarketing = pathname === "/" || pathname.startsWith("/docs") || pathname.startsWith("/unirse");
   if (isMarketing) {
     return (
       <div key={pathname} className="zero-page-enter min-h-screen bg-transparent">

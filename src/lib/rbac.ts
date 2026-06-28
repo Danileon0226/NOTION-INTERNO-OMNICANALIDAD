@@ -130,7 +130,7 @@ const ALWAYS_ALLOWED = ["/profile", "/progreso", "/notificaciones", "/ajustes"];
 
 export function canAccessWith(role: Role, path: string, overrides?: Record<string, boolean>): boolean {
   const seg = segOf(path);
-  if (seg === "/team") return role === "admin"; // consola de administración
+  if (seg === "/team" || seg === "/vincular") return role === "admin"; // consola de administración
   if (ALWAYS_ALLOWED.includes(seg)) return true;
   if (overrides && seg in overrides) return overrides[seg];
   return canAccess(role, path);
