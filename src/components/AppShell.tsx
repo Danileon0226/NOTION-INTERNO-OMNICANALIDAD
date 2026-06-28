@@ -24,12 +24,14 @@ import { LevelChip } from "@/components/gamification/LevelHud";
 import { LoginGate } from "@/components/LoginGate";
 import { AuthListener } from "@/components/AuthListener";
 import { Onboarding } from "@/components/Onboarding";
+import { LockScreen } from "@/components/LockScreen";
 import { PWA } from "@/components/PWA";
 import { useTheme, applyTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
 import { canAccessWith, roleMeta } from "@/lib/rbac";
 import { authMode, useAccount, signOutAccount } from "@/lib/account";
 import { usePrefs, applyPrefs } from "@/lib/prefs";
+import { useLock } from "@/lib/lock";
 import { track } from "@/lib/firebase/track";
 import zeroMark from "@/brand/zero-mark.png";
 
@@ -42,6 +44,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const openPalette = useCommandPalette((s) => s.setOpen);
   const account = useAccount();
   const lockMinutes = usePrefs((s) => s.lockMinutes);
+  const pinHash = useLock((s) => s.pinHash);
+  const locked = useLock((s) => s.locked);
   const prefsAccent = usePrefs((s) => s.accent);
   const prefsScale = usePrefs((s) => s.scale);
   const prefsMotion = usePrefs((s) => s.reduceMotion);
@@ -62,15 +66,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Bloqueo por inactividad (seguridad): cierra sesión tras N min sin actividad.
+  // Bloqueo por inactividad (seguridad): con PIN se bloquea (sin perder estado);
+  // sin PIN cierra sesión. Con PIN funciona en cualquier modo de acceso.
   useEffect(() => {
-    if (authMode === "open" || lockMinutes <= 0 || !account.authed) return;
+    if (lockMinutes <= 0) return;
+    const usePin = !!pinHash;
+    if (!usePin && (authMode === "open" || !account.authed)) return;
     let last = Date.now();
     const touch = () => (last = Date.now());
     const evs = ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "visibilitychange"] as const;
     evs.forEach((e) => window.addEventListener(e, touch, { passive: true }));
     const id = setInterval(() => {
-      if (Date.now() - last >= lockMinutes * 60_000) {
+      if (Date.now() - last < lockMinutes * 60_000) return;
+      if (usePin) {
+        useLock.getState().lock(); // sigue corriendo: re-bloquea tras desbloquear + inactividad
+      } else {
         clearInterval(id);
         void signOutAccount();
       }
@@ -79,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       clearInterval(id);
       evs.forEach((e) => window.removeEventListener(e, touch));
     };
-  }, [lockMinutes, account.authed]);
+  }, [lockMinutes, account.authed, pinHash]);
 
   // Seguimiento de navegación por persona (best-effort; solo con Firebase).
   useEffect(() => {
@@ -110,6 +120,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <AuthListener />
       <PWA />
+      {mounted && locked && pinHash && <LockScreen />}
       {gate ?? (
         <div className="flex h-screen w-screen overflow-hidden">
           <a href="#main" className="skip-link">
