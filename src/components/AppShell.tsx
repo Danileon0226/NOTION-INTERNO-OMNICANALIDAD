@@ -140,7 +140,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Drawer en móvil/tablet */}
           {open && (
-            <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setOpen(false)} />
+            <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)} />
           )}
           <div
             className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] lg:hidden ${
