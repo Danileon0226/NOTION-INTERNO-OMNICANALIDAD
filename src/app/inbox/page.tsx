@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { RefreshCw, Sparkles, Mail } from "lucide-react";
+import { SkeletonList } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { EmailCategory, EmailItem } from "@/lib/types";
 import { categoryColors, categoryLabels } from "@/lib/data/emails";
 import { useConnectors, googleTokenValid, GMAIL_SCOPE } from "@/lib/connectors/store";
@@ -98,9 +100,7 @@ export default function InboxPage() {
           </button>
         </div>
       ) : loading ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted">
-          <Loader2 size={16} className="animate-spin" /> Sincronizando bandeja…
-        </div>
+        <SkeletonList rows={6} />
       ) : (
         <>
           <div className="mb-4 flex flex-wrap gap-2">
@@ -117,9 +117,7 @@ export default function InboxPage() {
           </div>
 
           {filtered.length === 0 ? (
-            <div className="rounded-lg border border-dashed py-10 text-center text-sm text-muted">
-              Sin correos en esta vista.
-            </div>
+            <EmptyState icon={<Mail size={22} />} title="Sin correos en esta vista" description="Cambia de filtro o sincroniza la bandeja para traer los últimos correos." />
           ) : (
             <div className="divide-y rounded-lg border glass-card">
               {filtered.map((e) => (

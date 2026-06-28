@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   Gauge,
 } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   useMonitor,
   statusOf,
@@ -125,9 +126,7 @@ export default function MonitorPage() {
       </form>
 
       {sites.length === 0 ? (
-        <div className="rounded-lg border border-dashed py-10 text-center text-sm text-muted">
-          Sin sitios monitoreados. Añade uno arriba.
-        </div>
+        <EmptyState icon={<Globe size={22} />} title="Sin sitios monitoreados" description="Añade una URL arriba para vigilar su disponibilidad, latencia y SEO." />
       ) : (
         <div className="space-y-3">
           {sites.map((site) => (

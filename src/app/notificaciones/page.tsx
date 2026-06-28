@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Bell, BellOff, CheckCheck, Trash2, Megaphone, Loader2, Check, ExternalLink } from "lucide-react";
 import { ModuleHeader } from "@/components/ModuleHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useSileo, CATEGORY_META, CATEGORIES, type SileoCategory, type SileoPriority } from "@/lib/sileo/store";
 import { authMode, useAccount } from "@/lib/account";
 import { broadcast } from "@/lib/sileo/remote";
@@ -75,10 +76,10 @@ export default function NotificacionesPage() {
       </div>
 
       {/* Lista */}
-      <div className="rounded-xl border glass-card">
-        {filtered.length === 0 ? (
-          <p className="px-4 py-12 text-center text-sm text-muted">Nada por aquí.</p>
-        ) : (
+      {filtered.length === 0 ? (
+        <EmptyState icon={<Bell size={22} />} title="Nada por aquí" description="Cuando lleguen avisos del equipo o de ZERO, aparecerán en este centro." />
+      ) : (
+        <div className="rounded-xl border glass-card">
           <div className="divide-y">
             {filtered.map((n) => {
               const meta = CATEGORY_META[n.category];
@@ -117,8 +118,8 @@ export default function NotificacionesPage() {
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Preferencias de silencio por categoría */}
       <div className="mt-4 rounded-xl border glass-card p-4">

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { History, Trash2, Wrench, CheckCircle2, XCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { History, Trash2, Wrench, CheckCircle2, XCircle, ChevronDown, ChevronRight, Zap } from "lucide-react";
 import { useRuns, type AgentRun } from "@/lib/ai/runs";
 import { ModuleHeader } from "@/components/ModuleHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function RunsPage() {
   const { runs, clear } = useRuns();
@@ -25,9 +26,7 @@ export default function RunsPage() {
       />
 
       {runs.length === 0 ? (
-        <div className="rounded-xl border border-dashed py-12 text-center text-sm text-muted">
-          Aún no hay ejecuciones. Cuando ZERO actúe, aparecerán aquí.
-        </div>
+        <EmptyState icon={<Zap size={22} />} title="Aún no hay ejecuciones" description="Cuando ZERO actúe —responda, redacte o ejecute herramientas— cada paso quedará registrado aquí." />
       ) : (
         <div className="space-y-2">
           {runs.map((r) => (

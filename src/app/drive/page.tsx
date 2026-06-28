@@ -6,13 +6,14 @@ import {
   FolderOpen,
   Folder,
   FileText,
-  Loader2,
   RefreshCw,
   Sparkles,
   ChevronRight,
   ExternalLink,
   Home,
 } from "lucide-react";
+import { SkeletonList } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useConnectors, googleTokenValid, DRIVE_SCOPE } from "@/lib/connectors/store";
 import { driveList, isFolder, type DriveFile } from "@/lib/connectors/google";
 import { connectGoogle } from "@/lib/connectors/googleConnect";
@@ -132,11 +133,9 @@ export default function DrivePage() {
           </nav>
 
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted">
-              <Loader2 size={16} className="animate-spin" /> Cargando…
-            </div>
+            <SkeletonList rows={6} />
           ) : files.length === 0 ? (
-            <div className="rounded-lg border border-dashed py-10 text-center text-sm text-muted">Carpeta vacía.</div>
+            <EmptyState icon={<Folder size={22} />} title="Carpeta vacía" description="Esta carpeta no tiene archivos ni subcarpetas." />
           ) : (
             <div className="space-y-4">
               {folders.length > 0 && (

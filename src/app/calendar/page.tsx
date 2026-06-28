@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Calendar, Clock, MapPin, Loader2, RefreshCw, Sparkles, ExternalLink } from "lucide-react";
+import { Calendar, Clock, MapPin, RefreshCw, Sparkles, ExternalLink } from "lucide-react";
+import { SkeletonList } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useConnectors, googleTokenValid, CALENDAR_SCOPE } from "@/lib/connectors/store";
 import { calendarEvents, type CalendarEvent } from "@/lib/connectors/google";
 import { connectGoogle } from "@/lib/connectors/googleConnect";
@@ -92,13 +94,9 @@ export default function CalendarPage() {
           </button>
         </div>
       ) : loading ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted">
-          <Loader2 size={16} className="animate-spin" /> Cargando agenda…
-        </div>
+        <SkeletonList rows={5} />
       ) : events.length === 0 ? (
-        <div className="rounded-lg border border-dashed py-10 text-center text-sm text-muted">
-          No hay eventos próximos.
-        </div>
+        <EmptyState icon={<Calendar size={22} />} title="No hay eventos próximos" description="Tu agenda está despejada. Los próximos eventos de Google Calendar aparecerán aquí." />
       ) : (
         <div className="space-y-5">
           {Object.entries(groups).map(([day, evs]) => (
