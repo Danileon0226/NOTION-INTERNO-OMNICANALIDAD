@@ -32,6 +32,7 @@ import { canAccessWith, roleMeta } from "@/lib/rbac";
 import { authMode, useAccount, signOutAccount } from "@/lib/account";
 import { usePrefs, applyPrefs } from "@/lib/prefs";
 import { useLock } from "@/lib/lock";
+import { ensureIdentity, useIdentity } from "@/lib/identity";
 import { track } from "@/lib/firebase/track";
 import zeroMark from "@/brand/zero-mark.png";
 
@@ -64,7 +65,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Evita flash/mismatch del login antes de rehidratar el estado persistido.
   useEffect(() => {
     setMounted(true);
+    void ensureIdentity(); // identidad del dispositivo para firmar acciones del agente
   }, []);
+
+  // El humano que delega encabeza la cadena de firma de las acciones.
+  useEffect(() => {
+    if (account.name) useIdentity.getState().setOwner(account.name);
+  }, [account.name]);
 
   // Bloqueo por inactividad (seguridad): con PIN se bloquea (sin perder estado);
   // sin PIN cierra sesión. Con PIN funciona en cualquier modo de acceso.
