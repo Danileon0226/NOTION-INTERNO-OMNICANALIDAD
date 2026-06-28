@@ -1,12 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { Lock, ArrowRight, Loader2, BookOpen } from "lucide-react";
+import { Lock, ArrowRight, Loader2, BookOpen, Mail, User, Check } from "lucide-react";
 import { login, useAuth } from "@/lib/auth";
 import { ROLE_LIST } from "@/lib/rbac";
 import { authMode } from "@/lib/account";
-import { ENABLED_PROVIDERS, signInWith, type ProviderId } from "@/lib/firebase/auth";
+import {
+  ENABLED_PROVIDERS,
+  signInWith,
+  registerWithEmail,
+  signInWithEmail,
+  resetPassword,
+  authErrorMessage,
+  type ProviderId,
+} from "@/lib/firebase/auth";
+import zeroMark from "@/brand/zero-mark.png";
 
 export function LoginGate() {
   if (authMode === "firebase") return <SocialLogin />;
@@ -58,7 +68,6 @@ function SocialLogin() {
 
   return (
     <Shell>
-      <p className="mb-4 text-center text-sm text-muted">Inicia sesión con tu cuenta del equipo</p>
       <div className="space-y-2.5">
         {ENABLED_PROVIDERS.map((p) => (
           <button
@@ -73,10 +82,137 @@ function SocialLogin() {
         ))}
       </div>
       {err && <p className="mt-3 text-center text-xs text-red-500">{err}</p>}
+
+      <div className="my-4 flex items-center gap-3 text-[11px] uppercase tracking-wider text-muted/60">
+        <span className="h-px flex-1 bg-border" /> o con tu correo <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <EmailAuth />
+
       <p className="mt-4 text-center text-[11px] text-muted">
         Al entrar por primera vez, tu cuenta queda <strong>pendiente</strong> hasta que el administrador la apruebe.
       </p>
     </Shell>
+  );
+}
+
+type EmailMode = "signin" | "register" | "reset";
+
+// Acceso/registro con correo y contraseña (Firebase).
+function EmailAuth() {
+  const [mode, setMode] = useState<EmailMode>("signin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [ok, setOk] = useState("");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr("");
+    setOk("");
+    setBusy(true);
+    try {
+      if (mode === "register") {
+        await registerWithEmail(email, pass, name);
+        // El AuthListener crea el perfil y entra automáticamente.
+      } else if (mode === "signin") {
+        await signInWithEmail(email, pass);
+      } else {
+        await resetPassword(email);
+        setOk("Te enviamos un correo para restablecer tu contraseña.");
+      }
+    } catch (e2) {
+      setErr(authErrorMessage(e2));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const cta = mode === "register" ? "Crear cuenta" : mode === "reset" ? "Enviar enlace" : "Iniciar sesión";
+
+  return (
+    <form onSubmit={submit} className="space-y-2.5">
+      {mode === "register" && (
+        <Field icon={<User size={13} />} label="Nombre">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Tu nombre"
+            autoComplete="name"
+            className="w-full rounded-lg border glass-card px-3 py-2.5 text-sm text-ink outline-none focus:border-accent"
+          />
+        </Field>
+      )}
+      <Field icon={<Mail size={13} />} label="Correo">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="tucorreo@empresa.com"
+          autoComplete="email"
+          required
+          className="w-full rounded-lg border glass-card px-3 py-2.5 text-sm text-ink outline-none focus:border-accent"
+        />
+      </Field>
+      {mode !== "reset" && (
+        <Field icon={<Lock size={13} />} label="Contraseña">
+          <input
+            type="password"
+            value={pass}
+            onChange={(e) => setPass(e.target.value)}
+            placeholder={mode === "register" ? "Mínimo 6 caracteres" : "••••••••"}
+            autoComplete={mode === "register" ? "new-password" : "current-password"}
+            required
+            className="w-full rounded-lg border glass-card px-3 py-2.5 text-sm text-ink outline-none focus:border-accent"
+          />
+        </Field>
+      )}
+
+      {err && <p className="text-xs text-red-500">{err}</p>}
+      {ok && (
+        <p className="flex items-center gap-1 text-xs text-emerald-600">
+          <Check size={13} /> {ok}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={busy || !email || (mode !== "reset" && !pass)}
+        className="btn-brand flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold hover:opacity-95 disabled:opacity-50"
+      >
+        {busy ? <Loader2 size={15} className="animate-spin" /> : <ArrowRight size={15} />} {cta}
+      </button>
+
+      <div className="flex items-center justify-between pt-0.5 text-[11px] text-muted">
+        {mode === "signin" ? (
+          <>
+            <button type="button" onClick={() => { setMode("register"); setErr(""); setOk(""); }} className="hover:text-ink">
+              Crear cuenta nueva
+            </button>
+            <button type="button" onClick={() => { setMode("reset"); setErr(""); setOk(""); }} className="hover:text-ink">
+              ¿Olvidaste tu contraseña?
+            </button>
+          </>
+        ) : (
+          <button type="button" onClick={() => { setMode("signin"); setErr(""); setOk(""); }} className="hover:text-ink">
+            ← Ya tengo cuenta · Iniciar sesión
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}
+
+function Field({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+        {icon} {label}
+      </span>
+      {children}
+    </label>
   );
 }
 
@@ -147,7 +283,9 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="zero-rise w-full max-w-sm">
         <div className="surface surface-glow p-7">
           <div className="mb-5 flex flex-col items-center text-center">
-            <span className="zero-monogram mb-3 h-14 w-14 text-2xl">Z</span>
+            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--night)] shadow-lg">
+              <Image src={zeroMark} alt="ZERO AGENCY" width={34} height={34} className="h-[34px] w-[34px] rounded-lg" />
+            </div>
             <h1 className="text-lg font-bold tracking-[0.18em] text-ink">ZERO AGENCY</h1>
             <p className="mt-1 text-sm text-muted">Acceso al OS Omnicanal</p>
           </div>
