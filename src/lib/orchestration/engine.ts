@@ -11,16 +11,41 @@ import { areaLabels, MAX_FEEDBACK_ITERATIONS, type OrchRun, type OrchStage } fro
 // secuencial con un bucle de feedback acotado, usando Gemini por etapa.
 
 const ORCHESTRATOR_SYSTEM = `Eres el "Orquestador" técnico de ZERO Agency OS, una extensión del gestor de
-conciencia. Coordinas la entrega de software a partir de un requerimiento, informado por las ÁREAS TÉCNICAS
-y sus RESTRICCIONES. Eres riguroso, conciso y accionable. No inventes APIs ni datos. Respeta SIEMPRE las
-restricciones técnicas declaradas. Respondes en español con Markdown limpio.`;
+conciencia. Coordinas la entrega de software COMPLETO y DESPLEGABLE a partir de un requerimiento, informado por
+las ÁREAS TÉCNICAS y sus RESTRICCIONES. Eres riguroso, conciso y accionable. No inventes APIs ni datos. Respeta
+SIEMPRE las restricciones técnicas declaradas. Tu objetivo final es un proyecto que se despliega en Vercel sin
+tocar nada: completo, idiomático, sin TODOs ni placeholders, con cada import resoluble. Respondes en español
+con Markdown limpio, salvo el código (que va en archivos).`;
+
+// Formato de archivos OBLIGATORIO para que la plataforma pueda publicarlo en GitHub.
+const FILE_FORMAT = `FORMATO DE ARCHIVOS (OBLIGATORIO):
+Emite CADA archivo exactamente así, sin excepción y sin texto entre archivos:
+FILE: ruta/relativa/desde/la/raiz.ext
+\`\`\`<lenguaje>
+<contenido completo del archivo>
+\`\`\`
+- Rutas relativas a la raíz del repo (sin "./" ni "/" inicial).
+- Contenido COMPLETO de cada archivo (nunca "// resto igual" ni recortes).
+- No agrupes varios archivos en un mismo bloque.`;
+
+// Requisitos de despliegue en Vercel que se inyectan al generar el código.
+const VERCEL_REQUIREMENTS = `REQUISITOS DE DESPLIEGUE (Vercel, automático):
+El proyecto debe desplegarse en Vercel tal cual, sin configuración manual. Incluye SIEMPRE estos archivos:
+- "package.json" con scripts ("build", "start"/"dev" según el framework) y dependencias correctas y fijadas.
+- "vercel.json" mínimo y válido (framework si aplica; cabeceras/rewrites solo si se necesitan).
+- "README.md" con: descripción, requisitos, variables de entorno, cómo correr en local y un botón
+  "Deploy with Vercel" (![Deploy](https://vercel.com/button) enlazando a https://vercel.com/new/clone?repository-url=...).
+- ".gitignore" adecuado (node_modules, .next, dist, .env*, etc.).
+- ".env.example" si el proyecto usa variables de entorno (NUNCA pongas secretos reales).
+Si el stack no se especifica, usa Next.js (App Router) + TypeScript, óptimo para Vercel.`;
 
 function baseContext(run: OrchRun): string {
   return [
     `# Requerimiento\n${run.title}\n\n${run.request}`,
     `# Áreas técnicas (informan y restringen)\n${run.areas.length ? areaLabels(run.areas) : "(sin especificar)"}`,
     `# Restricciones técnicas\n${run.constraints?.trim() || "(sin restricciones explícitas)"}`,
-    `# Stack/lenguaje objetivo del código\n${run.language || "(a criterio del orquestador)"}`,
+    `# Stack/lenguaje objetivo del código\n${run.language || "Next.js (App Router) + TypeScript, desplegable en Vercel"}`,
+    `# Destino\nEl entregable se publicará en GitHub y se desplegará automáticamente en Vercel.`,
   ].join("\n\n");
 }
 
@@ -42,28 +67,42 @@ Markdown claro y bien estructurado. No incluyas el código completo (eso va en l
   code: (run, ctx, prev, feedback) =>
     `${ctx}\n\n# Plan\n${prev.plan || ""}\n\n# Documentación\n${prev.documentation || ""}` +
     (feedback ? `\n\n# CORRECCIONES REQUERIDAS (bucle de feedback)\n${feedback}` : "") +
-    `\n\n---\nGenera el CÓDIGO que implementa el plan, respetando estrictamente las restricciones técnicas.
-${feedback ? "Aplica TODAS las correcciones requeridas." : ""}
+    `\n\n---\nGenera el PROYECTO COMPLETO que implementa el plan, respetando estrictamente las restricciones técnicas.
+${feedback ? "Aplica TODAS las correcciones requeridas y vuelve a emitir el árbol de archivos completo." : ""}
+${VERCEL_REQUIREMENTS}
+
+${FILE_FORMAT}
+
 Reglas:
-- Código completo, idiomático y listo para usar en el stack indicado.
-- Incluye cada archivo en su propio bloque con ruta como encabezado (p. ej. \`// src/...\` o un comentario de ruta) y fences con el lenguaje.
-- Comentarios solo donde aporten. Sin texto fuera de los bloques salvo una breve nota inicial.`,
+- Código completo, idiomático y production-ready (sin TODOs, sin placeholders, sin funciones vacías).
+- Todos los imports deben resolver con los archivos y dependencias que incluyes.
+- Antes del primer archivo puedes poner UNA frase de resumen; después, solo archivos en el formato indicado.`,
 
   e2e: (_run, ctx, prev) =>
-    `${ctx}\n\n# Plan\n${prev.plan || ""}\n\n# Código\n${prev.code || ""}\n\n---\nDefine la PRUEBA END-TO-END que valida los criterios de aceptación:
+    `${ctx}\n\n# Plan\n${prev.plan || ""}\n\n# Código\n${prev.code || ""}\n\n---\nDefine la PRUEBA END-TO-END que valida los criterios de aceptación.
+Primero, en Markdown:
 1. "Estrategia" (qué se valida de extremo a extremo y con qué herramienta).
 2. "Casos E2E" (tabla: caso → pasos → resultado esperado), incluyendo casos límite y de error.
-3. "Tests" (código de pruebas E2E ejecutable, en bloques con su ruta y lenguaje).
-4. "Checklist de validación" (marcable).`,
+3. "Checklist de validación" (marcable).
+Después, los TESTS como archivos reales del proyecto (se publicarán junto al código), usando este formato:
+
+${FILE_FORMAT}
+Incluye también la configuración del runner de pruebas si hace falta (p. ej. "playwright.config.ts") y, si procede,
+los scripts de test en el "package.json" (menciónalo en la estrategia).`,
 
   review: (_run, ctx, prev) =>
     `${ctx}\n\n# Plan\n${prev.plan || ""}\n\n# Código\n${prev.code || ""}\n\n# Prueba End-to-End\n${prev.e2e || ""}\n\n---\nActúa como REVISIÓN TÉCNICA (bucle de feedback "informa y restricciones técnicas").
-Evalúa el código y las pruebas contra el plan, los criterios de aceptación y las restricciones técnicas.
+Evalúa el código y las pruebas contra el plan, los criterios de aceptación, las restricciones técnicas y la
+DESPLEGABILIDAD en Vercel. Verifica explícitamente:
+- ¿Existen package.json, vercel.json, README.md y .gitignore válidos?
+- ¿Las dependencias y scripts permiten "build" sin errores? ¿Los imports resuelven?
+- ¿Hay TODOs, placeholders o archivos incompletos? (eso es CAMBIOS)
+- ¿Se filtran secretos? (.env.example sí, secretos reales no)
 Tu respuesta DEBE empezar EXACTAMENTE con una de estas dos líneas:
-"VEREDICTO: APROBADO" — si cumple criterios y restricciones, o
-"VEREDICTO: CAMBIOS" — si hay defectos o incumplimientos.
+"VEREDICTO: APROBADO" — si cumple criterios, restricciones y es desplegable, o
+"VEREDICTO: CAMBIOS" — si hay defectos, incumplimientos o no desplegaría.
 Si es CAMBIOS, lista debajo correcciones concretas y accionables (numeradas, por archivo cuando aplique).
-Si es APROBADO, resume en 3-5 líneas por qué cumple.`,
+Si es APROBADO, resume en 3-5 líneas por qué cumple y por qué desplegaría en Vercel.`,
 };
 
 let running = false;

@@ -18,6 +18,7 @@ import {
   GitBranch,
 } from "lucide-react";
 import { ModuleHeader } from "@/components/ModuleHeader";
+import { DeliverPanel } from "@/components/orchestration/DeliverPanel";
 import { useOrchestration } from "@/lib/orchestration/store";
 import { runOrchestration } from "@/lib/orchestration/engine";
 import { STAGES, TECH_AREAS, type OrchRun, type OrchStage } from "@/lib/orchestration/areas";
@@ -43,7 +44,7 @@ export default function OrchestrationPage() {
       <ModuleHeader
         icon={<Workflow size={20} />}
         title="Orquestación"
-        subtitle="Orquestador → Documentación → Código → Prueba E2E, con bucle de feedback técnico."
+        subtitle="Plan → Docs → Código → E2E → Revisión, y entrega el proyecto en GitHub listo para auto-deploy en Vercel."
       />
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
@@ -256,6 +257,9 @@ function Detail({ run }: { run: OrchRun }) {
         </div>
       )}
       {run.error && <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-2.5 text-sm text-red-600">{run.error}</div>}
+
+      {/* Entrega: publicar en GitHub + desplegar en Vercel */}
+      {run.status === "done" && run.artifacts.code && <DeliverPanel run={run} />}
 
       {/* Artefactos */}
       {tabs.length > 0 && (

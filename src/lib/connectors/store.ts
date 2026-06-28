@@ -11,6 +11,10 @@ export interface GithubConfig {
   token: string;
   account: string; // usuario u organización
 }
+export interface VercelConfig {
+  token: string;
+  teamId: string; // opcional: despliega bajo un equipo
+}
 export interface TelegramConfig {
   botToken: string;
   chatId: string;
@@ -24,10 +28,12 @@ export interface GoogleConfig {
 
 interface ConnectorsState {
   github: GithubConfig;
+  vercel: VercelConfig;
   telegram: TelegramConfig;
   google: GoogleConfig;
   meta: MetaConfig;
   setGithub: (p: Partial<GithubConfig>) => void;
+  setVercel: (p: Partial<VercelConfig>) => void;
   setTelegram: (p: Partial<TelegramConfig>) => void;
   setGoogle: (p: Partial<GoogleConfig>) => void;
   setMeta: (p: Partial<MetaConfig>) => void;
@@ -46,11 +52,13 @@ export const useConnectors = create<ConnectorsState>()(
   persist(
     (set) => ({
       github: { token: "", account: "" },
+      vercel: { token: "", teamId: "" },
       telegram: { botToken: "", chatId: "" },
       google: { ...emptyGoogle },
       meta: { ...emptyMeta },
 
       setGithub: (p) => set((s) => ({ github: { ...s.github, ...p } })),
+      setVercel: (p) => set((s) => ({ vercel: { ...s.vercel, ...p } })),
       setTelegram: (p) => set((s) => ({ telegram: { ...s.telegram, ...p } })),
       setGoogle: (p) => set((s) => ({ google: { ...s.google, ...p } })),
       setMeta: (p) => set((s) => ({ meta: { ...s.meta, ...p } })),
@@ -58,6 +66,7 @@ export const useConnectors = create<ConnectorsState>()(
       disconnect: (id) =>
         set((s) => {
           if (id === "github") return { github: { token: "", account: "" } };
+          if (id === "vercel") return { vercel: { token: "", teamId: "" } };
           if (id === "telegram") return { telegram: { botToken: "", chatId: "" } };
           if (id === "meta") return { meta: { ...emptyMeta } };
           if (id === "gmail" || id === "google-drive" || id === "google-calendar") {
