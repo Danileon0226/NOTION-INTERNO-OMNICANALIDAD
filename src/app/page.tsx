@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import zeroMark from "@/brand/zero-mark.png";
 import {
   ArrowRight,
   Radar,
@@ -58,7 +60,9 @@ export default function Landing() {
       {/* Nav */}
       <header className="sticky top-0 z-30 glass-bar border-b border-border/60">
         <nav className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-8">
-          <span className="zero-monogram h-9 w-9 text-lg">Z</span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--night)]">
+            <Image src={zeroMark} alt="ZERO AGENCY" width={22} height={22} className="h-[22px] w-[22px] rounded-md" />
+          </span>
           <span className="font-semibold tracking-[0.18em] text-ink">ZERO AGENCY</span>
           <div className="ml-auto flex items-center gap-2">
             <Link href="/docs" className="hidden rounded-md px-3 py-1.5 text-sm text-muted hover:text-ink sm:inline">
@@ -77,6 +81,9 @@ export default function Landing() {
       {/* Hero */}
       <section className="brand-halo relative">
         <div className="mx-auto max-w-4xl px-4 py-20 text-center sm:px-8 sm:py-28">
+          <div className="zero-rise mx-auto mb-7 flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--night)] shadow-xl">
+            <Image src={zeroMark} alt="ZERO AGENCY" width={48} height={48} className="h-12 w-12 rounded-2xl" priority />
+          </div>
           <div className="zero-rise mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/5 px-3 py-1 text-xs font-medium text-accent">
             <Sparkles size={13} /> El gestor de conciencia de tu agencia
           </div>
@@ -167,7 +174,10 @@ export default function Landing() {
       <footer className="border-t border-border/60">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-8 text-sm text-muted sm:flex-row sm:px-8">
           <span className="flex items-center gap-2">
-            <span className="zero-monogram h-7 w-7 text-sm">Z</span> ZERO AGENCY · OS Omnicanal
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--night)]">
+              <Image src={zeroMark} alt="ZERO AGENCY" width={16} height={16} className="h-4 w-4 rounded" />
+            </span>{" "}
+            ZERO AGENCY · OS Omnicanal
           </span>
           <div className="flex items-center gap-4">
             <Link href="/docs" className="hover:text-ink">Documentación</Link>

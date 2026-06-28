@@ -5,6 +5,10 @@ import {
   GithubAuthProvider,
   FacebookAuthProvider,
   signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
   signOut as fbSignOut,
   type AuthProvider,
 } from "firebase/auth";
@@ -45,6 +49,47 @@ export async function signInWith(id: ProviderId): Promise<void> {
   const auth = firebaseAuth();
   if (!auth) throw new Error("Firebase no está configurado.");
   await signInWithPopup(auth, providerFor(id));
+}
+
+/** Crea una cuenta con correo y contraseña (el perfil queda pendiente de aprobación). */
+export async function registerWithEmail(email: string, password: string, displayName: string): Promise<void> {
+  const auth = firebaseAuth();
+  if (!auth) throw new Error("Firebase no está configurado.");
+  const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+  const name = displayName.trim();
+  if (name) await updateProfile(cred.user, { displayName: name }).catch(() => {});
+}
+
+/** Inicia sesión con correo y contraseña. */
+export async function signInWithEmail(email: string, password: string): Promise<void> {
+  const auth = firebaseAuth();
+  if (!auth) throw new Error("Firebase no está configurado.");
+  await signInWithEmailAndPassword(auth, email.trim(), password);
+}
+
+/** Envía un correo para restablecer la contraseña. */
+export async function resetPassword(email: string): Promise<void> {
+  const auth = firebaseAuth();
+  if (!auth) throw new Error("Firebase no está configurado.");
+  await sendPasswordResetEmail(auth, email.trim());
+}
+
+/** Traduce los códigos de error de Firebase Auth a mensajes claros en español. */
+export function authErrorMessage(e: unknown): string {
+  const code = (e as { code?: string })?.code || "";
+  const map: Record<string, string> = {
+    "auth/invalid-email": "El correo no es válido.",
+    "auth/user-not-found": "No existe una cuenta con ese correo.",
+    "auth/wrong-password": "Contraseña incorrecta.",
+    "auth/invalid-credential": "Correo o contraseña incorrectos.",
+    "auth/email-already-in-use": "Ya existe una cuenta con ese correo. Inicia sesión.",
+    "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
+    "auth/too-many-requests": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
+    "auth/popup-closed-by-user": "Inicio cancelado.",
+    "auth/network-request-failed": "Sin conexión. Revisa tu red.",
+    "auth/operation-not-allowed": "Este método de acceso no está habilitado en Firebase.",
+  };
+  return map[code] || "No se pudo completar. Inténtalo de nuevo.";
 }
 
 /** Cierra la sesión de Firebase. */
