@@ -18,6 +18,7 @@ import {
 import type { User } from "firebase/auth";
 import { firebaseDb, ADMIN_EMAILS } from "@/lib/firebase/app";
 import type { Role } from "@/lib/rbac";
+import { getPendingInvite, clearPendingInvite, readInvite, bumpInviteUses, inviteStatus } from "@/lib/firebase/invites";
 
 // Perfil de cada persona dentro de la app, almacenado en Firestore (users/{uid}).
 export interface UserProfile {
@@ -66,21 +67,51 @@ export async function ensureProfile(user: User): Promise<UserProfile> {
   const email = (user.email || "").toLowerCase();
   const isAdmin = ADMIN_EMAILS.includes(email);
 
+  // ¿Vino por un QR de vinculación? El rol/habilitación los marca la invitación.
+  const pendingCode = getPendingInvite();
+  const invite = pendingCode ? await readInvite(pendingCode) : null;
+  const inviteOk = !!invite && inviteStatus(invite).ok && !isAdmin; // los admin se rigen por su correo
+
   if (!snap.exists()) {
+    const role: Role = isAdmin ? "admin" : inviteOk ? invite!.role : "dev";
+    const enabled = isAdmin ? true : inviteOk ? invite!.autoEnable : false;
     const profile: UserProfile = {
       uid: user.uid,
       email,
       displayName: user.displayName || email || "Usuario",
       photoURL: user.photoURL || "",
       providers: providersOf(user),
-      role: isAdmin ? "admin" : "dev",
-      enabled: isAdmin,
+      role,
+      enabled,
       modules: {},
       createdAt: Date.now(),
       lastLoginAt: Date.now(),
     };
-    await setDoc(ref, { ...profile, createdAtTs: serverTimestamp(), lastLoginTs: serverTimestamp() });
+    const extra = inviteOk ? { invite: pendingCode, invitedRole: invite!.role } : {};
+    await setDoc(ref, { ...profile, ...extra, createdAtTs: serverTimestamp(), lastLoginTs: serverTimestamp() });
+    if (inviteOk) {
+      void bumpInviteUses(pendingCode);
+      clearPendingInvite();
+    }
     return profile;
+  }
+
+  // Usuario existente que escanea un QR: aplica rol/habilitación de la invitación.
+  const cur = normalize(snap.data(), user.uid);
+  if (inviteOk && (cur.role !== invite!.role || (invite!.autoEnable && !cur.enabled))) {
+    await updateDoc(ref, {
+      role: invite!.role,
+      enabled: invite!.autoEnable ? true : cur.enabled,
+      modules: snap.data().modules || {},
+      invite: pendingCode,
+      invitedRole: invite!.role,
+      lastLoginAt: Date.now(),
+      lastLoginTs: serverTimestamp(),
+    }).catch(() => {});
+    void bumpInviteUses(pendingCode);
+    clearPendingInvite();
+    const fresh = await getDoc(ref);
+    return normalize(fresh.data() as Record<string, unknown>, user.uid);
   }
 
   // Actualiza solo campos propios permitidos por las reglas.
@@ -91,7 +122,15 @@ export async function ensureProfile(user: User): Promise<UserProfile> {
     lastLoginAt: Date.now(),
     lastLoginTs: serverTimestamp(),
   }).catch(() => {});
-  return normalize(snap.data(), user.uid);
+  return cur;
+}
+
+/** Reaplica la invitación pendiente para una sesión ya iniciada (pantalla /unirse). */
+export async function claimPendingInvite(): Promise<UserProfile | null> {
+  const { firebaseAuth } = await import("@/lib/firebase/app");
+  const user = firebaseAuth()?.currentUser;
+  if (!user) return null;
+  return ensureProfile(user);
 }
 
 function normalize(data: Record<string, unknown>, uid: string): UserProfile {
