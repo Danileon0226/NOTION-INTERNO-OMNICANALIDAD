@@ -1,10 +1,12 @@
 "use client";
 
-import { SlidersHorizontal, Sun, Moon, Type, Zap, Contrast, Check, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { SlidersHorizontal, Sun, Moon, Type, Zap, Contrast, Check, Sparkles, Lock, ShieldCheck } from "lucide-react";
 import { ModuleHeader } from "@/components/ModuleHeader";
 import { usePrefs, ACCENTS, type TextScale } from "@/lib/prefs";
 import { useTheme } from "@/lib/theme";
 import { useOnboarding } from "@/lib/onboarding";
+import { useLock } from "@/lib/lock";
 import { authMode } from "@/lib/account";
 
 const SCALES: { id: TextScale; label: string }[] = [
@@ -21,6 +23,7 @@ export default function AjustesPage() {
   const setMode = useTheme((s) => s.setMode);
   const { accent, scale, reduceMotion, highContrast, lockMinutes, setAccent, setScale, setReduceMotion, setHighContrast, setLockMinutes } = usePrefs();
   const resetOnboarding = useOnboarding((s) => s.reset);
+  const hasPin = useLock((s) => !!s.pinHash);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-8">
@@ -98,11 +101,22 @@ export default function AjustesPage() {
 
       {/* Seguridad */}
       <Section title="Seguridad">
-        <Row label="Bloqueo por inactividad" hint={authMode === "open" ? "Configura un acceso (Firebase o clave) para usar el bloqueo." : "Cierra la sesión tras estar inactivo."}>
+        <PinRow />
+
+        <Row
+          label="Bloqueo por inactividad"
+          hint={
+            hasPin
+              ? "Bloquea con PIN tras estar inactivo (sin perder tu sesión)."
+              : authMode === "open"
+                ? "Configura un PIN o un acceso para usar el bloqueo."
+                : "Cierra la sesión tras estar inactivo."
+          }
+        >
           <select
             value={lockMinutes}
             onChange={(e) => setLockMinutes(Number(e.target.value))}
-            disabled={authMode === "open"}
+            disabled={authMode === "open" && !hasPin}
             className="rounded-md border glass-card px-2.5 py-1.5 text-sm text-ink outline-none focus:border-accent disabled:opacity-50"
           >
             {LOCKS.map((m) => (
@@ -116,6 +130,105 @@ export default function AjustesPage() {
           Tus credenciales y datos viven solo en este dispositivo. Para borrarlos por completo usa “Borrar sesión y credenciales” en Conectores.
         </p>
       </Section>
+    </div>
+  );
+}
+
+function PinRow() {
+  const hasPin = useLock((s) => !!s.pinHash);
+  const setPin = useLock((s) => s.setPin);
+  const clearPin = useLock((s) => s.clearPin);
+  const lock = useLock((s) => s.lock);
+  const [editing, setEditing] = useState(false);
+  const [a, setA] = useState("");
+  const [b, setB] = useState("");
+  const [err, setErr] = useState("");
+
+  const onlyDigits = (v: string) => v.replace(/\D/g, "").slice(0, 4);
+
+  async function save() {
+    if (a.length !== 4) return setErr("El PIN debe tener 4 dígitos.");
+    if (a !== b) return setErr("Los PIN no coinciden.");
+    await setPin(a);
+    setEditing(false);
+    setA("");
+    setB("");
+    setErr("");
+  }
+
+  function cancel() {
+    setEditing(false);
+    setA("");
+    setB("");
+    setErr("");
+  }
+
+  return (
+    <div className="space-y-3">
+      <Row
+        label="PIN de bloqueo"
+        hint={hasPin ? "Activo: ZERO pedirá tu PIN al bloquearse." : "Candado local de 4 dígitos para este dispositivo."}
+      >
+        {hasPin && !editing ? (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+              <ShieldCheck size={14} /> Activo
+            </span>
+            <button onClick={lock} className="rounded-lg border px-2.5 py-1 text-xs font-medium text-ink hover:bg-bg-subtle">
+              Bloquear ahora
+            </button>
+            <button onClick={() => setEditing(true)} className="rounded-lg border px-2.5 py-1 text-xs font-medium text-ink hover:bg-bg-subtle">
+              Cambiar
+            </button>
+            <button onClick={() => clearPin()} className="rounded-lg px-2.5 py-1 text-xs font-medium text-red-500 hover:bg-red-500/10">
+              Quitar
+            </button>
+          </div>
+        ) : editing ? null : (
+          <Toggle active={false} onClick={() => setEditing(true)}>
+            <Lock size={13} /> Configurar PIN
+          </Toggle>
+        )}
+      </Row>
+
+      {editing && (
+        <div className="rounded-lg border glass-inset p-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="text-[11px] text-muted">
+              {hasPin ? "Nuevo PIN" : "PIN"} (4 dígitos)
+              <input
+                type="password"
+                inputMode="numeric"
+                autoFocus
+                value={a}
+                onChange={(e) => setA(onlyDigits(e.target.value))}
+                className="mt-1 block w-28 rounded-md border glass-card px-2.5 py-1.5 text-center text-lg tracking-[0.4em] text-ink outline-none focus:border-accent"
+              />
+            </label>
+            <label className="text-[11px] text-muted">
+              Confirmar
+              <input
+                type="password"
+                inputMode="numeric"
+                value={b}
+                onChange={(e) => setB(onlyDigits(e.target.value))}
+                onKeyDown={(e) => e.key === "Enter" && save()}
+                className="mt-1 block w-28 rounded-md border glass-card px-2.5 py-1.5 text-center text-lg tracking-[0.4em] text-ink outline-none focus:border-accent"
+              />
+            </label>
+            <div className="flex gap-2">
+              <button onClick={save} className="btn-brand rounded-lg px-3 py-1.5 text-sm font-medium">
+                Guardar
+              </button>
+              <button onClick={cancel} className="rounded-lg border px-3 py-1.5 text-sm text-muted hover:bg-bg-subtle">
+                Cancelar
+              </button>
+            </div>
+          </div>
+          {err && <p className="mt-2 text-[11px] text-red-500">{err}</p>}
+          <p className="mt-2 text-[11px] text-muted">El PIN es un candado de privacidad local; no cifra tus datos.</p>
+        </div>
+      )}
     </div>
   );
 }

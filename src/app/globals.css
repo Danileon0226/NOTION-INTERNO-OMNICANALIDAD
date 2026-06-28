@@ -289,6 +289,21 @@ html[data-reduce-motion="1"] .skeleton::after {
   animation: none;
 }
 
+/* Sacudida de PIN incorrecto (pantalla de bloqueo). */
+@keyframes lockShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+.lock-shake {
+  animation: lockShake 0.4s var(--ease-standard);
+}
+html[data-reduce-motion="1"] .lock-shake {
+  animation: none;
+}
+
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
