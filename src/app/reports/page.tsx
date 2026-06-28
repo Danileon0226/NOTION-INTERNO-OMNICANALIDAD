@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { FileBarChart, Loader2, FileDown, FileText, Trash2, Plug, ChevronDown, ChevronRight } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useReports, generateReport, PERIODS, type Period, type Report } from "@/lib/reports";
 import { exportReportPdf } from "@/lib/reportPdf";
 import { downloadText } from "@/lib/export";
@@ -73,9 +74,7 @@ export default function ReportsPage() {
       {err && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{err}</div>}
 
       {reports.length === 0 ? (
-        <div className="rounded-xl border border-dashed py-12 text-center text-sm text-muted">
-          Aún no hay reportes. Genera uno arriba.
-        </div>
+        <EmptyState icon={<FileBarChart size={22} />} title="Aún no hay reportes" description="Genera un reporte diario, semanal o mensual con los botones de arriba. Quedarán guardados aquí." />
       ) : (
         <div className="space-y-2">
           {reports.map((r) => (
