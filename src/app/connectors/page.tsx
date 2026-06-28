@@ -29,6 +29,7 @@ import {
   Share2,
   Webhook,
   LineChart,
+  Triangle,
 } from "lucide-react";
 import { exportBackup, restoreBackup, backupKeyCount } from "@/lib/backup";
 import { useSlack, sendSlack } from "@/lib/connectors/slack";
@@ -54,6 +55,7 @@ import {
   googleTokenValid,
 } from "@/lib/connectors/store";
 import { ghFetchAll, repoFromUrl, type GithubData } from "@/lib/connectors/github";
+import { vercelWhoami } from "@/lib/connectors/vercel";
 import {
   tgGetMe,
   tgSendMessage,
@@ -137,6 +139,7 @@ export default function ConnectorsPage() {
       <div className="space-y-4">
         <GeminiCard />
         <GithubCard />
+        <VercelCard />
         <MetaCard />
         <TelegramCard />
         <GmailCard />
@@ -155,7 +158,7 @@ export default function ConnectorsPage() {
 
 function ConnectionSummary() {
   const { apiKey } = useAi();
-  const { google, github, telegram, meta } = useConnectors();
+  const { google, github, vercel, telegram, meta } = useConnectors();
   const slack = useSlack((s) => s.webhookUrl);
   const items = [
     { label: "Gemini", on: !!apiKey },
@@ -163,6 +166,7 @@ function ConnectionSummary() {
     { label: "Drive", on: googleTokenValid(google, DRIVE_SCOPE) },
     { label: "Calendar", on: googleTokenValid(google, CALENDAR_SCOPE) },
     { label: "GitHub", on: !!(github.account || github.token) },
+    { label: "Vercel", on: !!vercel.token },
     { label: "Meta", on: !!meta.accessToken },
     { label: "Telegram", on: !!(telegram.botToken && telegram.chatId) },
     { label: "Slack", on: !!slack },
@@ -735,6 +739,83 @@ function GithubCard() {
             </div>
           )}
         </div>
+      )}
+    </Shell>
+  );
+}
+
+/* ───────────────────────────── Vercel ───────────────────────────── */
+
+function VercelCard() {
+  const { vercel, setVercel, disconnect } = useConnectors();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [user, setUser] = useState<string | null>(null);
+  const connected = !!user;
+
+  async function connect() {
+    setErr("");
+    setBusy(true);
+    try {
+      const u = await vercelWhoami(vercel.token.trim(), vercel.teamId.trim() || undefined);
+      setUser(u.username);
+    } catch (e) {
+      setErr((e as Error).message);
+      setUser(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if (vercel.token && !user) connect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <Shell
+      icon={<Triangle size={20} />}
+      title="Vercel"
+      desc="Despliega los proyectos de Orquestación automáticamente. Pega un token de Vercel para crear el proyecto y publicarlo desde aquí; cada push hará auto-deploy."
+      connected={connected}
+      docsUrl="https://vercel.com/docs/rest-api"
+    >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field
+          label="Token de acceso"
+          value={vercel.token}
+          onChange={(v) => setVercel({ token: v })}
+          placeholder="vercel_…"
+          type="password"
+        />
+        <Field
+          label="Team ID (opcional)"
+          value={vercel.teamId}
+          onChange={(v) => setVercel({ teamId: v })}
+          placeholder="team_… (si despliegas en un equipo)"
+        />
+      </div>
+      <div className="mt-3 flex gap-2">
+        <Btn onClick={connect} busy={busy}>
+          {connected ? "Actualizar" : "Conectar"}
+        </Btn>
+        {connected && (
+          <Btn
+            variant="danger"
+            onClick={() => {
+              disconnect("vercel");
+              setUser(null);
+            }}
+          >
+            <Trash2 size={14} /> Desconectar
+          </Btn>
+        )}
+      </div>
+      <ErrorMsg msg={err} />
+      {user && (
+        <p className="mt-3 flex items-center gap-1.5 text-sm text-muted">
+          <Check size={14} className="text-emerald-600" /> Conectado como <span className="font-medium text-ink">{user}</span>
+        </p>
       )}
     </Shell>
   );

@@ -70,6 +70,7 @@ export default function Docs() {
               <li><strong>API key de Gemini</strong>: créala en aistudio.google.com/apikey y pégala en <Code>Conectores → Asistente IA</Code>.</li>
               <li><strong>Google (Gmail/Drive/Calendar)</strong>: crea un <em>OAuth Client ID</em> (Aplicación web) en Google Cloud Console, añade tu dominio a “Orígenes de JavaScript autorizados”, y pégalo en <Code>Conectores → Google</Code>. Un clic conecta los tres.</li>
               <li><strong>GitHub / Telegram / Slack</strong>: pega token/usuario o el webhook en sus tarjetas.</li>
+              <li><strong>Vercel</strong> (opcional): pega un token en <Code>Conectores → Vercel</Code> para que Orquestación despliegue sola los proyectos generados (auto-deploy en cada push).</li>
               <li><strong>Meta (WhatsApp · Facebook · Instagram)</strong>: pega un token de larga duración de la Graph API y los IDs (página, IG business, WhatsApp Phone Number) en <Code>Conectores → Meta</Code>.</li>
               <li><strong>Verifica todo</strong> en <Code>Estado de configuración</Code> (/setup): prueba cada API en vivo y te da el enlace exacto para habilitar lo que falte en tu proyecto.</li>
             </ol>
@@ -97,7 +98,7 @@ export default function Docs() {
               <li><strong>Memoria</strong>: lo que ZERO recuerda entre sesiones.</li>
               <li><strong>Leads</strong>: bandeja omnicanal de prospectos (web, WhatsApp, Facebook, Instagram) que llegan vía n8n a Firestore; asigna, califica y responde por WhatsApp desde el OS.</li>
               <li><strong>Bandeja · Calendario · Drive · Canvas/Grafo · Monitoreo</strong>: tus datos reales.</li>
-              <li><strong>Piloto automático · Orquestación · Reportes · Actividad agéntica</strong>: automatización, entrega de software (Orquestador → Documentación → Código → Prueba E2E con bucle de feedback), informes y trazabilidad.</li>
+              <li><strong>Piloto automático · Orquestación · Reportes · Actividad agéntica</strong>: automatización, entrega de software (Plan → Documentación → Código → E2E → Revisión, con bucle de feedback) que <strong>publica el proyecto en GitHub</strong> con un commit limpio y lo deja <strong>preconfigurado para auto-deploy en Vercel</strong>, informes y trazabilidad.</li>
               <li><strong>Conectores · Estado de configuración</strong>: integraciones y diagnóstico de APIs.</li>
               <li><strong>Ajustes</strong>: personalización completa (tema, color de acento de marca o propio, tamaño de texto), accesibilidad (reducir movimiento, alto contraste WCAG) y seguridad (bloqueo por inactividad). ZERO es además una <strong>app instalable</strong> que funciona sin conexión.</li>
               <li><strong>SILEO (Notificaciones)</strong>: centro de notificaciones internas — eventos del sistema/agente/leads, avisos del equipo (difusión del admin), modo silencio y muteo por categoría. El Agente avisa al comercial cuando un lead queda calificado, y los avisos de alta prioridad pueden reenviarse a Telegram/WhatsApp.</li>

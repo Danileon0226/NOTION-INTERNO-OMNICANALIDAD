@@ -59,6 +59,23 @@ export interface OrchLogEntry {
   ok: boolean;
 }
 
+export interface PublishInfo {
+  repoFullName: string; // owner/name
+  htmlUrl: string; // url del repo
+  commitUrl: string;
+  branch: string;
+  filesPushed: number;
+  at: number;
+}
+
+export interface DeployInfo {
+  projectName: string;
+  url: string; // dominio del despliegue (si lo hubo)
+  inspectorUrl: string; // panel del despliegue
+  projectUrl: string; // panel del proyecto en Vercel
+  at: number;
+}
+
 export interface OrchRun {
   id: string;
   title: string;
@@ -73,6 +90,8 @@ export interface OrchRun {
   iterations: number; // vueltas del bucle de feedback ejecutadas
   reviewPassed?: boolean;
   error?: string;
+  publish?: PublishInfo; // resultado de publicar en GitHub
+  deploy?: DeployInfo; // resultado de desplegar en Vercel
   createdAt: number;
   updatedAt: number;
 }

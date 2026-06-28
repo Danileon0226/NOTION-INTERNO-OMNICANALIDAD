@@ -28,7 +28,7 @@ export interface EmailItem {
   source: "gmail";
 }
 
-export type ConnectorId = "gmail" | "google-drive" | "google-calendar" | "github" | "telegram" | "meta";
+export type ConnectorId = "gmail" | "google-drive" | "google-calendar" | "github" | "vercel" | "telegram" | "meta";
 
 export type ConnectorStatus = "connected" | "disconnected" | "error" | "pending";
 
