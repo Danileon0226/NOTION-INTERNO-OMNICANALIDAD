@@ -32,6 +32,8 @@ export interface UserProfile {
   modules: Record<string, boolean>; // overrides por módulo (true=permitido, false=bloqueado)
   title?: string; // cargo
   notes?: string; // notas internas del admin
+  invite?: string; // código del QR con el que se vinculó (si aplica)
+  invitedRole?: Role; // rol asignado por ese QR
   createdAt: number;
   lastLoginAt: number;
 }
@@ -145,6 +147,8 @@ function normalize(data: Record<string, unknown>, uid: string): UserProfile {
     modules: (data.modules as Record<string, boolean>) || {},
     title: (data.title as string) || "",
     notes: (data.notes as string) || "",
+    invite: (data.invite as string) || "",
+    invitedRole: (data.invitedRole as Role) || undefined,
     createdAt: (data.createdAt as number) || 0,
     lastLoginAt: (data.lastLoginAt as number) || 0,
   };
