@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, CheckCircle2, Circle, Loader2, ShieldAlert } from "lucide-react";
+import { Users, CheckCircle2, Circle, Loader2, ShieldAlert, QrCode } from "lucide-react";
 import { ModuleHeader } from "@/components/ModuleHeader";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -143,6 +143,13 @@ function Detail({ profile }: { profile: UserProfile }) {
             {profile.providers.map((p) => p.replace(".com", "")).join(", ") || "—"} · alta{" "}
             {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString("es-CO") : "—"}
           </div>
+          {profile.invite && (
+            <div className="mt-1 inline-flex items-center gap-1 rounded-full glass-inset px-2 py-0.5 text-[10px] text-muted">
+              <QrCode size={11} className="text-accent" /> Vino por QR
+              {profile.invitedRole ? ` · ${roleMeta(profile.invitedRole).label}` : ""}
+              <span className="text-muted/70">({profile.invite})</span>
+            </div>
+          )}
         </div>
         {saving && <Loader2 size={16} className="ml-auto animate-spin text-accent" />}
       </div>
