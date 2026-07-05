@@ -27,11 +27,21 @@ import {
   Sparkles,
   CornerDownLeft,
   Loader2,
+  UserPlus,
+  Workflow,
+  Bell,
+  Trophy,
+  SlidersHorizontal,
+  Users,
+  QrCode,
+  UserCircle,
 } from "lucide-react";
 import { useWorkspace } from "@/lib/store";
 import { useTheme } from "@/lib/theme";
 import { useCommandPalette } from "@/lib/ui/commandPalette";
 import { runAgent } from "@/lib/ai/agent";
+import { authMode, useAccount } from "@/lib/account";
+import { canAccessWith } from "@/lib/rbac";
 
 interface Cmd {
   id: string;
@@ -48,6 +58,7 @@ export function CommandPalette() {
   const createPage = useWorkspace((s) => s.createPage);
   const toggleTheme = useTheme((s) => s.toggle);
   const mode = useTheme((s) => s.mode);
+  const account = useAccount();
 
   const open = useCommandPalette((s) => s.open);
   const setOpen = useCommandPalette((s) => s.setOpen);
@@ -90,24 +101,42 @@ export function CommandPalette() {
     [router, close]
   );
 
-  const baseCmds = useMemo<Cmd[]>(
-    () => [
-      { id: "dash", label: "Ir al Dashboard", icon: <LayoutDashboard size={16} />, run: () => nav("/dashboard") },
-      { id: "assist", label: "Asistente IA", icon: <Bot size={16} />, run: () => nav("/assistant") },
-      { id: "zero", label: "ZERO (voz)", icon: <Mic size={16} />, run: () => nav("/zero") },
-      { id: "memory", label: "Memoria de ZERO", icon: <Brain size={16} />, run: () => nav("/memory") },
-      { id: "auto", label: "Piloto automático", icon: <Rocket size={16} />, run: () => nav("/autopilot") },
-      { id: "reports", label: "Reportes", icon: <FileBarChart size={16} />, run: () => nav("/reports") },
-      { id: "runs", label: "Actividad agéntica", icon: <History size={16} />, run: () => nav("/runs") },
-      { id: "anticipation", label: "Anticipación", icon: <Radar size={16} />, run: () => nav("/anticipation") },
-      { id: "canvas", label: "Canvas / Grafo", icon: <Activity size={16} />, run: () => nav("/canvas") },
-      { id: "calendar", label: "Calendario", icon: <Calendar size={16} />, run: () => nav("/calendar") },
-      { id: "drive", label: "Explorador de Drive", icon: <FolderOpen size={16} />, run: () => nav("/drive") },
-      { id: "monitor", label: "Monitoreo web", icon: <Globe size={16} />, run: () => nav("/monitor") },
-      { id: "inbox", label: "Bandeja", icon: <Mail size={16} />, run: () => nav("/inbox") },
-      { id: "connectors", label: "Conectores", icon: <Plug size={16} />, run: () => nav("/connectors") },
-      { id: "setup", label: "Estado de configuración", icon: <ShieldCheck size={16} />, run: () => nav("/setup") },
-      { id: "docs", label: "Documentación", icon: <BookOpen size={16} />, run: () => nav("/docs") },
+  const baseCmds = useMemo<Cmd[]>(() => {
+    // Tabla de navegación; se filtra por el rol/permisos de la sesión.
+    const NAV: { id: string; label: string; href: string; icon: React.ReactNode; gate?: "always" | "firebase" }[] = [
+      { id: "dash", label: "Ir al Dashboard", href: "/dashboard", icon: <LayoutDashboard size={16} /> },
+      { id: "anticipation", label: "Anticipación", href: "/anticipation", icon: <Radar size={16} /> },
+      { id: "assist", label: "Asistente IA", href: "/assistant", icon: <Bot size={16} /> },
+      { id: "zero", label: "ZERO (voz)", href: "/zero", icon: <Mic size={16} /> },
+      { id: "memory", label: "Memoria de ZERO", href: "/memory", icon: <Brain size={16} /> },
+      { id: "inbox", label: "Bandeja", href: "/inbox", icon: <Mail size={16} /> },
+      { id: "leads", label: "Leads", href: "/leads", icon: <UserPlus size={16} /> },
+      { id: "calendar", label: "Calendario", href: "/calendar", icon: <Calendar size={16} /> },
+      { id: "drive", label: "Explorador de Drive", href: "/drive", icon: <FolderOpen size={16} /> },
+      { id: "canvas", label: "Canvas / Grafo", href: "/canvas", icon: <Activity size={16} /> },
+      { id: "monitor", label: "Monitoreo web", href: "/monitor", icon: <Globe size={16} /> },
+      { id: "auto", label: "Piloto automático", href: "/autopilot", icon: <Rocket size={16} /> },
+      { id: "orq", label: "Orquestación", href: "/orquestacion", icon: <Workflow size={16} /> },
+      { id: "reports", label: "Reportes", href: "/reports", icon: <FileBarChart size={16} /> },
+      { id: "runs", label: "Actividad agéntica", href: "/runs", icon: <History size={16} /> },
+      { id: "connectors", label: "Conectores", href: "/connectors", icon: <Plug size={16} /> },
+      { id: "setup", label: "Estado de configuración", href: "/setup", icon: <ShieldCheck size={16} /> },
+      { id: "notif", label: "Notificaciones", href: "/notificaciones", icon: <Bell size={16} /> },
+      { id: "prog", label: "Progreso", href: "/progreso", icon: <Trophy size={16} /> },
+      { id: "ajustes", label: "Ajustes", href: "/ajustes", icon: <SlidersHorizontal size={16} /> },
+      { id: "vincular", label: "Vincular por QR", href: "/vincular", icon: <QrCode size={16} /> },
+      { id: "team", label: "Equipo", href: "/team", icon: <Users size={16} /> },
+      { id: "profile", label: "Mi perfil", href: "/profile", icon: <UserCircle size={16} />, gate: "firebase" },
+      { id: "docs", label: "Documentación", href: "/docs", icon: <BookOpen size={16} />, gate: "always" },
+    ];
+
+    const cmds: Cmd[] = NAV.filter((n) => {
+      if (n.gate === "always") return true;
+      if (n.gate === "firebase") return authMode === "firebase";
+      return canAccessWith(account.role, n.href, account.modules);
+    }).map((n) => ({ id: n.id, label: n.label, icon: n.icon, run: () => nav(n.href) }));
+
+    cmds.push(
       {
         id: "new",
         label: "Nueva página",
@@ -125,10 +154,10 @@ export function CommandPalette() {
           toggleTheme();
           close();
         },
-      },
-    ],
-    [nav, createPage, toggleTheme, mode, close]
-  );
+      }
+    );
+    return cmds;
+  }, [nav, createPage, toggleTheme, mode, close, account.role, account.modules]);
 
   const pageCmds = useMemo<Cmd[]>(
     () =>
@@ -187,7 +216,7 @@ export function CommandPalette() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/40 px-4 pt-[12vh]" onClick={close}>
+    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/40 px-4 pt-[12vh] backdrop-blur-sm" onClick={close}>
       <div
         className="zero-pop w-full max-w-xl overflow-hidden rounded-xl border glass-card shadow-2xl"
         style={{ transformOrigin: "top center" }}
