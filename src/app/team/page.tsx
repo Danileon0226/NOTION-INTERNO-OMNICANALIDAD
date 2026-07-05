@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Users, CheckCircle2, Circle, Loader2, ShieldAlert, QrCode } from "lucide-react";
 import { ModuleHeader } from "@/components/ModuleHeader";
 import { SkeletonList } from "@/components/ui/Skeleton";
@@ -62,7 +63,12 @@ export default function TeamPage() {
         <EmptyState
           icon={<Users size={22} />}
           title="Aún no hay personas registradas"
-          description="Comparte el enlace de acceso y pídeles que inicien sesión. Aparecerán aquí para que apruebes su acceso y asignes roles."
+          description="Genera un QR de acceso por rol y compártelo: quien lo escanee inicia sesión y queda vinculado con ese rol. Aparecerá aquí para que revises su acceso."
+          action={
+            <Link href="/vincular" className="btn-brand inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold">
+              <QrCode size={15} /> Generar QR de acceso
+            </Link>
+          }
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-[260px_1fr]">

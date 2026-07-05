@@ -1,7 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
+
+// Analítica de Vercel: solo en el despliegue de Vercel (SSR). En la exportación
+// estática (GitHub Pages) se omite para no pedir un script que no existe allí.
+const isStaticExport = process.env.NEXT_OUTPUT_EXPORT === "true";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -53,6 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <AppShell>{children}</AppShell>
+        {!isStaticExport && <Analytics />}
       </body>
     </html>
   );

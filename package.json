@@ -12,6 +12,7 @@
     "miso:test": "node scripts/test-miso-integration.mjs"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "firebase": "^12.15.0",
     "lucide-react": "^0.460.0",
     "next": "^15.5.19",
