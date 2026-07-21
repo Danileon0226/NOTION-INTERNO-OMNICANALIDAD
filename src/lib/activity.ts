@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type ActivitySource = "gmail" | "google-drive" | "github" | "telegram" | "ai" | "system";
+export type ActivitySource = "gmail" | "google-drive" | "github" | "telegram" | "ai" | "system" | "web";
 export type ActivityKind = "integrate" | "sync" | "connect" | "alert" | "info";
 
 export interface ActivityEvent {
@@ -51,4 +51,5 @@ export const sourceMeta: Record<ActivitySource, { label: string; color: string }
   telegram: { label: "Telegram", color: "#2aabee" },
   ai: { label: "IA", color: "#2383e2" },
   system: { label: "Sistema", color: "#6b7280" },
+  web: { label: "Sitio Web", color: "#f59e0b" },
 };

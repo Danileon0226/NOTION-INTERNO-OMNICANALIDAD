@@ -15,6 +15,7 @@ import { SileoDaemon } from "@/components/sileo/SileoDaemon";
 import { HandsFree } from "@/components/voice/HandsFree";
 import { AutonomyDaemon } from "@/components/anticipation/AutonomyDaemon";
 import { MonitorDaemon } from "@/components/monitor/MonitorDaemon";
+import { WebPulseDaemon } from "@/components/web/WebPulseDaemon";
 import { BriefingDaemon } from "@/components/BriefingDaemon";
 import { ReportsDaemon } from "@/components/ReportsDaemon";
 import { DataBankDaemon } from "@/components/DataBankDaemon";
@@ -205,6 +206,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Demonio de monitoreo del sitio web de la agencia */}
           <MonitorDaemon />
+
+          {/* Demonio 360: eventos en vivo del sitio público (web_events) */}
+          <WebPulseDaemon />
 
           {/* Demonio del briefing programado */}
           <BriefingDaemon />

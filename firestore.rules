@@ -134,5 +134,35 @@ service cloud.firestore {
         allow read: if isAdmin() || hasRole('comercial');
       }
     }
+
+    // Eventos 360 del sitio público (zeroagency.com.co): los escribe el
+    // navegador de cada visitante (sin sesión) vía REST con la API key web.
+    // Solo CREACIÓN, con esquema validado y tamaños acotados (anti-abuso);
+    // el equipo los lee en el módulo "Web 360" y solo el admin puede purgar.
+    match /web_events/{eventId} {
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          'name', 'ts', 'session', 'path', 'title', 'lang',
+          'ref', 'utm', 'device', 'vw', 'params'
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 40
+        && request.resource.data.ts is number
+        && request.resource.data.session is string
+        && request.resource.data.session.size() <= 60
+        && request.resource.data.path is string
+        && request.resource.data.path.size() <= 300
+        && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 200))
+        && (!('lang' in request.resource.data) || (request.resource.data.lang is string && request.resource.data.lang.size() <= 10))
+        && (!('ref' in request.resource.data) || (request.resource.data.ref is string && request.resource.data.ref.size() <= 300))
+        && (!('utm' in request.resource.data) || (request.resource.data.utm is string && request.resource.data.utm.size() <= 200))
+        && (!('device' in request.resource.data) || (request.resource.data.device is string && request.resource.data.device.size() <= 10))
+        && (!('vw' in request.resource.data) || request.resource.data.vw is number)
+        && (!('params' in request.resource.data) || (request.resource.data.params is string && request.resource.data.params.size() <= 600));
+      allow read: if isAdmin() || hasRole('comercial') || hasRole('dev');
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
   }
 }
