@@ -32,6 +32,7 @@ import {
   Sun,
   Radar,
   Globe,
+  Megaphone,
   MousePointerClick,
   Brain,
   History,
@@ -76,6 +77,7 @@ const NAV_GROUPS: { label: string; items: { href: string; label: string; icon: R
     label: "Automatización",
     items: [
       { href: "/autopilot", label: "Piloto automático", icon: <Rocket size={16} /> },
+      { href: "/campaigns", label: "Campañas IG", icon: <Megaphone size={16} /> },
       { href: "/orquestacion", label: "Orquestación", icon: <Workflow size={16} /> },
       { href: "/reports", label: "Reportes", icon: <FileBarChart size={16} /> },
       { href: "/runs", label: "Actividad agéntica", icon: <History size={16} /> },

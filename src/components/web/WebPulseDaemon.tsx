@@ -6,6 +6,9 @@ import { firebaseEnabled } from "@/lib/firebase/app";
 import { watchWebEvents, eventParams, NOTABLE_EVENTS, type WebEvent } from "@/lib/firebase/webEvents";
 import { useWebPulse } from "@/lib/webpulse";
 import { useActivity, type ActivityKind } from "@/lib/activity";
+import { usePrefs } from "@/lib/prefs";
+import { notify } from "@/lib/notify";
+import { announceEs } from "@/lib/voice/announce";
 
 const HOUR = 3_600_000;
 
@@ -40,6 +43,21 @@ function activityLabel(e: WebEvent): { kind: ActivityKind; label: string } {
   }
 }
 
+// Mensaje corto (español) para notificación del navegador y anuncio de voz.
+// Solo los eventos que ameritan interrumpir; null = no se anuncia.
+function pushMessage(e: WebEvent): string | null {
+  switch (e.name) {
+    case "lead_submit":
+      return "Lead nuevo desde la web";
+    case "blog_subscribe":
+      return "Nueva suscripción al blog";
+    case "js_error":
+      return "Error de JavaScript en el sitio web";
+    default:
+      return null;
+  }
+}
+
 /**
  * Demonio del 360 web: se suscribe en vivo a `web_events` (Firestore),
  * mantiene el pulso de la última hora (señales para Anticipación) y anuncia
@@ -68,6 +86,23 @@ export function WebPulseDaemon() {
         const { kind, label } = activityLabel(e);
         useActivity.getState().push({ source: "web", kind, label, count: 1 });
       }
+
+      // Notificación del navegador + anuncio de voz (según Ajustes; máx. 3
+      // por ciclo para no saturar si llega una ráfaga de eventos).
+      const { notifyEnabled, voiceAnnounce } = usePrefs.getState();
+      if (notifyEnabled || voiceAnnounce) {
+        const push = fresh
+          .map((e) => ({ e, msg: pushMessage(e) }))
+          .filter((x): x is { e: WebEvent; msg: string } => !!x.msg)
+          .slice(0, 3);
+        if (notifyEnabled) {
+          for (const { e, msg } of push) notify("ZERO · Web en vivo", msg, { tag: `web:${e.id}`, href: "/web" });
+        }
+        if (voiceAnnounce && push.length) {
+          announceEs([...new Set(push.map((x) => x.msg))].join(". ") + ".");
+        }
+      }
+
       pulse.markSeen(newest);
     });
     return () => unsub();

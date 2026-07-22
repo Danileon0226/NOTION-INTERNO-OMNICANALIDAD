@@ -5,7 +5,9 @@ import { useActivity, type ActivityEvent } from "@/lib/activity";
 import { useSileo, type SileoCategory, type SileoPriority } from "@/lib/sileo/store";
 import { firebaseEnabled } from "@/lib/firebase/app";
 import { useFirebaseSession } from "@/lib/firebase/session";
-import { watchMyNotifications } from "@/lib/sileo/remote";
+import { watchMyNotifications, type RemoteNotification } from "@/lib/sileo/remote";
+import { notify } from "@/lib/notify";
+import { announceEs } from "@/lib/voice/announce";
 import { useConnectors } from "@/lib/connectors/store";
 import { tgSendMessage, alertText } from "@/lib/connectors/telegram";
 import { waSendText } from "@/lib/connectors/meta";
@@ -64,8 +66,14 @@ export function SileoDaemon() {
   useEffect(() => {
     if (!firebaseEnabled || !uid) return;
     const seeded = { done: false };
+    const seen = new Set<string>();
     const unsub = watchMyNotifications(uid, (list) => {
+      const entrantes: RemoteNotification[] = [];
       for (const r of list) {
+        if (!seen.has(r.id)) {
+          seen.add(r.id);
+          if (seeded.done) entrantes.push(r); // recién llegada (no histórico)
+        }
         useSileo.getState().notify({
           id: `r:${r.id}`,
           ts: r.ts,
@@ -79,6 +87,18 @@ export function SileoDaemon() {
           silent: !seeded.done, // la primera carga no dispara toasts
         });
       }
+
+      // Notificación del navegador + anuncio de voz para lo recién entrante
+      // (según Ajustes; respeta el modo silencio de SILEO; máx. 3 por lote).
+      if (entrantes.length && !useSileo.getState().quiet) {
+        const top = entrantes.slice(0, 3);
+        for (const r of top) {
+          notify(`SILEO · ${r.actor || "Equipo"}`, r.title, { tag: `sileo:${r.id}`, href: "/notificaciones" });
+        }
+        const titulos = top.map((r) => r.title).join(". ");
+        announceEs(top.length === 1 ? `Notificación nueva: ${titulos}` : `${top.length} notificaciones nuevas: ${titulos}`);
+      }
+
       seeded.done = true;
     });
     return () => unsub();

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { SlidersHorizontal, Sun, Moon, Type, Zap, Contrast, Check, Sparkles, Lock, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { SlidersHorizontal, Sun, Moon, Type, Zap, Contrast, Check, Sparkles, Lock, ShieldCheck, Bell, BellRing, Volume2 } from "lucide-react";
 import { ModuleHeader } from "@/components/ModuleHeader";
 import { usePrefs, ACCENTS, type TextScale } from "@/lib/prefs";
 import { useTheme } from "@/lib/theme";
 import { useOnboarding } from "@/lib/onboarding";
 import { useLock } from "@/lib/lock";
 import { authMode } from "@/lib/account";
+import { notify, notifyPermission, requestNotifyPermission, type NotifyPermission } from "@/lib/notify";
+import { announceEs } from "@/lib/voice/announce";
 
 const SCALES: { id: TextScale; label: string }[] = [
   { id: "sm", label: "Compacto" },
@@ -99,6 +101,9 @@ export default function AjustesPage() {
         />
       </Section>
 
+      {/* Notificaciones y voz */}
+      <NotifVoiceSection />
+
       {/* Seguridad */}
       <Section title="Seguridad">
         <PinRow />
@@ -131,6 +136,74 @@ export default function AjustesPage() {
         </p>
       </Section>
     </div>
+  );
+}
+
+// Notificaciones del navegador + anuncios de voz de eventos clave.
+function NotifVoiceSection() {
+  const notifyEnabled = usePrefs((s) => s.notifyEnabled);
+  const voiceAnnounce = usePrefs((s) => s.voiceAnnounce);
+  const setNotifyEnabled = usePrefs((s) => s.setNotifyEnabled);
+  const setVoiceAnnounce = usePrefs((s) => s.setVoiceAnnounce);
+  const [perm, setPerm] = useState<NotifyPermission>("default");
+
+  // El permiso solo se conoce en el cliente (evita desajustes de hidratación).
+  useEffect(() => setPerm(notifyPermission()), []);
+
+  async function toggleNotify(next: boolean) {
+    if (!next) {
+      setNotifyEnabled(false);
+      return;
+    }
+    const p = await requestNotifyPermission();
+    setPerm(p);
+    setNotifyEnabled(p === "granted");
+  }
+
+  async function probar() {
+    let p = perm;
+    if (p === "default") {
+      p = await requestNotifyPermission();
+      setPerm(p);
+    }
+    notify("ZERO · Prueba", "Así se ven las notificaciones de eventos clave.", { force: true, tag: "zero-test" });
+    announceEs("Hola, soy ZERO. Así sonarán los anuncios de eventos importantes.", { force: true });
+  }
+
+  const permInfo: Record<NotifyPermission, { label: string; tone: string }> = {
+    granted: { label: "Permiso del navegador concedido.", tone: "text-emerald-600" },
+    denied: { label: "Bloqueado por el navegador: actívalo en el candado de la barra de direcciones.", tone: "text-red-500" },
+    default: { label: "El navegador pedirá permiso al activar el interruptor.", tone: "text-muted" },
+    unsupported: { label: "Este navegador no soporta notificaciones.", tone: "text-muted" },
+  };
+
+  return (
+    <Section title="Notificaciones y voz">
+      <div className="space-y-1">
+        <SwitchRow
+          icon={<Bell size={15} />}
+          label="Notificaciones del navegador"
+          hint="Avisos del sistema para eventos clave (leads, suscripciones, errores del sitio) con la app abierta o en segundo plano."
+          checked={notifyEnabled}
+          onChange={toggleNotify}
+        />
+        <p className={`px-1 text-[11px] ${permInfo[perm].tone}`}>{permInfo[perm].label}</p>
+      </div>
+
+      <SwitchRow
+        icon={<Volume2 size={15} />}
+        label="ZERO anuncia por voz los eventos importantes"
+        hint="Un anuncio hablado breve, en español, cuando llega un evento clave."
+        checked={voiceAnnounce}
+        onChange={setVoiceAnnounce}
+      />
+
+      <Row label="Probar" hint="Dispara una notificación y un anuncio de voz de ejemplo.">
+        <Toggle active={false} onClick={probar}>
+          <BellRing size={13} /> Probar ahora
+        </Toggle>
+      </Row>
+    </Section>
   );
 }
 

@@ -29,11 +29,15 @@ interface PrefsState {
   reduceMotion: boolean;
   highContrast: boolean;
   lockMinutes: number; // bloqueo por inactividad; 0 = desactivado
+  notifyEnabled: boolean; // notificaciones del navegador para eventos clave
+  voiceAnnounce: boolean; // ZERO anuncia por voz los eventos importantes
   setAccent: (c: string) => void;
   setScale: (s: TextScale) => void;
   setReduceMotion: (b: boolean) => void;
   setHighContrast: (b: boolean) => void;
   setLockMinutes: (n: number) => void;
+  setNotifyEnabled: (b: boolean) => void;
+  setVoiceAnnounce: (b: boolean) => void;
 }
 
 export const usePrefs = create<PrefsState>()(
@@ -44,6 +48,8 @@ export const usePrefs = create<PrefsState>()(
       reduceMotion: false,
       highContrast: false,
       lockMinutes: 0,
+      notifyEnabled: false,
+      voiceAnnounce: false,
       setAccent: (accent) => {
         set({ accent });
         applyPrefs();
@@ -61,6 +67,8 @@ export const usePrefs = create<PrefsState>()(
         applyPrefs();
       },
       setLockMinutes: (lockMinutes) => set({ lockMinutes }),
+      setNotifyEnabled: (notifyEnabled) => set({ notifyEnabled }),
+      setVoiceAnnounce: (voiceAnnounce) => set({ voiceAnnounce }),
     }),
     { name: "zero-agency-prefs", onRehydrateStorage: () => () => applyPrefs() }
   )
