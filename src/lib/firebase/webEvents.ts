@@ -31,6 +31,19 @@ export interface WebEvent {
   vw?: number;
   /** Parámetros extra del evento, serializados como JSON. */
   params?: string;
+  /** Sitio de origen: "zeroagency" | "openbusiness". Ausente = zeroagency (eventos viejos). */
+  site?: string;
+}
+
+/** Etiqueta legible de cada sitio del ecosistema 360. */
+export const SITE_LABEL: Record<string, string> = {
+  zeroagency: "zeroagency.com.co",
+  openbusiness: "OpenBusiness",
+};
+
+/** Sitio del evento; los eventos viejos sin `site` se tratan como zeroagency. */
+export function siteOf(e: WebEvent): string {
+  return e.site || "zeroagency";
 }
 
 export const WEB_EVENT_META: Record<string, { label: string; tone: string }> = {

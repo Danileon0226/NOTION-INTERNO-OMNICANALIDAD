@@ -5,6 +5,7 @@ import {
   GithubAuthProvider,
   FacebookAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -44,11 +45,42 @@ function providerFor(id: ProviderId): AuthProvider {
   return g;
 }
 
-/** Inicia sesión con un proveedor social mediante popup. */
+/** ¿Conviene redirect en vez de popup? En móvil el navegador suele matar el
+ *  popup de OAuth (llega como "cancelado" sin que el usuario cancelara). */
+function prefiereRedirect(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(pointer: coarse)").matches;
+}
+
+/**
+ * Inicia sesión con un proveedor social. En escritorio usa popup (no pierde
+ * el estado de la página); en móvil, o si el navegador bloquea el popup,
+ * cae a redirect de página completa (el retorno lo recoge AuthListener vía
+ * onAuthStateChanged, sin código extra).
+ */
 export async function signInWith(id: ProviderId): Promise<void> {
   const auth = firebaseAuth();
   if (!auth) throw new Error("Firebase no está configurado.");
-  await signInWithPopup(auth, providerFor(id));
+  const provider = providerFor(id);
+  if (prefiereRedirect()) {
+    await signInWithRedirect(auth, provider);
+    return;
+  }
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (e) {
+    const code = (e as { code?: string })?.code || "";
+    // Popup bloqueado o no soportado por el navegador → redirect completo.
+    if (
+      code === "auth/popup-blocked" ||
+      code === "auth/cancelled-popup-request" ||
+      code === "auth/operation-not-supported-in-this-environment"
+    ) {
+      await signInWithRedirect(auth, provider);
+      return;
+    }
+    throw e;
+  }
 }
 
 /** Crea una cuenta con correo y contraseña (el perfil queda pendiente de aprobación). */

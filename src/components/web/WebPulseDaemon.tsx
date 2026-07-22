@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { authMode, useAccount } from "@/lib/account";
 import { firebaseEnabled } from "@/lib/firebase/app";
-import { watchWebEvents, eventParams, NOTABLE_EVENTS, type WebEvent } from "@/lib/firebase/webEvents";
+import { watchWebEvents, eventParams, NOTABLE_EVENTS, SITE_LABEL, siteOf, type WebEvent } from "@/lib/firebase/webEvents";
 import { useWebPulse } from "@/lib/webpulse";
 import { useActivity, type ActivityKind } from "@/lib/activity";
 import { usePrefs } from "@/lib/prefs";
@@ -82,9 +82,12 @@ export function WebPulseDaemon() {
         return;
       }
       const fresh = events.filter((e) => e.ts > pulse.lastSeenTs && NOTABLE_EVENTS.has(e.name));
+      // Prefijo del sitio emisor cuando no es el sitio principal (multi-sitio).
+      const conSitio = (e: WebEvent, texto: string) =>
+        siteOf(e) === "zeroagency" ? texto : `${SITE_LABEL[siteOf(e)] || siteOf(e)}: ${texto}`;
       for (const e of fresh.slice(0, 8).reverse()) {
         const { kind, label } = activityLabel(e);
-        useActivity.getState().push({ source: "web", kind, label, count: 1 });
+        useActivity.getState().push({ source: "web", kind, label: conSitio(e, label), count: 1 });
       }
 
       // Notificación del navegador + anuncio de voz (según Ajustes; máx. 3
@@ -94,6 +97,7 @@ export function WebPulseDaemon() {
         const push = fresh
           .map((e) => ({ e, msg: pushMessage(e) }))
           .filter((x): x is { e: WebEvent; msg: string } => !!x.msg)
+          .map((x) => ({ e: x.e, msg: conSitio(x.e, x.msg) }))
           .slice(0, 3);
         if (notifyEnabled) {
           for (const { e, msg } of push) notify("ZERO · Web en vivo", msg, { tag: `web:${e.id}`, href: "/web" });

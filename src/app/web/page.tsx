@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Link2,
   Radio,
+  Globe,
 } from "lucide-react";
 import { ModuleHeader } from "@/components/ModuleHeader";
 import { SkeletonList } from "@/components/ui/Skeleton";
@@ -20,6 +21,8 @@ import {
   webEventMeta,
   eventParams,
   WEB_EVENT_META,
+  SITE_LABEL,
+  siteOf,
   type WebEvent,
 } from "@/lib/firebase/webEvents";
 
@@ -43,6 +46,7 @@ export default function Web360Page() {
   const [events, setEvents] = useState<WebEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [siteFilter, setSiteFilter] = useState<string>("all");
 
   useEffect(() => {
     if (authMode !== "firebase") {
@@ -56,7 +60,14 @@ export default function Web360Page() {
     return () => unsub();
   }, []);
 
-  const today = useMemo(() => events.filter((e) => e.ts >= startOfToday()), [events]);
+  // Sitios presentes en los eventos (multi-sitio: zeroagency, openbusiness, …).
+  const sites = useMemo(() => [...new Set(events.map(siteOf))], [events]);
+  const scoped = useMemo(
+    () => (siteFilter === "all" ? events : events.filter((e) => siteOf(e) === siteFilter)),
+    [events, siteFilter]
+  );
+
+  const today = useMemo(() => scoped.filter((e) => e.ts >= startOfToday()), [scoped]);
 
   const kpis = useMemo(
     () => ({
@@ -94,13 +105,13 @@ export default function Web360Page() {
   }, [today]);
 
   const names = useMemo(() => {
-    const present = new Set(events.map((e) => e.name));
+    const present = new Set(scoped.map((e) => e.name));
     return Object.keys(WEB_EVENT_META).filter((n) => present.has(n));
-  }, [events]);
+  }, [scoped]);
 
   const feed = useMemo(
-    () => (filter === "all" ? events : events.filter((e) => e.name === filter)).slice(0, 120),
-    [events, filter]
+    () => (filter === "all" ? scoped : scoped.filter((e) => e.name === filter)).slice(0, 120),
+    [scoped, filter]
   );
 
   if (authMode !== "firebase") {
@@ -120,8 +131,23 @@ export default function Web360Page() {
       <ModuleHeader
         icon={<MousePointerClick size={20} />}
         title="Web 360"
-        subtitle="Cada visita, clic, formulario, scroll y error de zeroagency.com.co, comunicado en vivo a tu omnicanalidad."
+        subtitle="Cada visita, clic, formulario, scroll y error de tu ecosistema (zeroagency.com.co y OpenBusiness), en vivo."
       />
+
+      {/* Filtro por sitio (solo si hay más de uno emitiendo) */}
+      {sites.length > 1 && (
+        <div className="mb-4 flex flex-wrap items-center gap-1.5">
+          <Globe size={13} className="text-muted" />
+          <Chip active={siteFilter === "all"} onClick={() => setSiteFilter("all")}>
+            Todos los sitios
+          </Chip>
+          {sites.map((s) => (
+            <Chip key={s} active={siteFilter === s} onClick={() => setSiteFilter(s)}>
+              {SITE_LABEL[s] || s} ({events.filter((e) => siteOf(e) === s).length})
+            </Chip>
+          ))}
+        </div>
+      )}
 
       {/* KPIs de hoy */}
       <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-5">
@@ -156,7 +182,7 @@ export default function Web360Page() {
             </div>
             <div className="space-y-1.5">
               {feed.map((e) => (
-                <EventRow key={e.id} event={e} />
+                <EventRow key={e.id} event={e} showSite={sites.length > 1 && siteFilter === "all"} />
               ))}
             </div>
           </div>
@@ -184,9 +210,10 @@ export default function Web360Page() {
   );
 }
 
-function EventRow({ event }: { event: WebEvent }) {
+function EventRow({ event, showSite = false }: { event: WebEvent; showSite?: boolean }) {
   const meta = webEventMeta(event.name);
   const p = eventParams(event);
+  const site = siteOf(event);
   const detail =
     event.name === "whatsapp_click"
       ? `desde ${String(p.cta_location || event.path)}`
@@ -202,6 +229,9 @@ function EventRow({ event }: { event: WebEvent }) {
   return (
     <div className="flex items-center gap-2.5 rounded-lg border glass-card px-2.5 py-2">
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${meta.tone}`}>{meta.label}</span>
+      {showSite && (
+        <span className="shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] text-muted">{SITE_LABEL[site] || site}</span>
+      )}
       <span className="min-w-0 flex-1 truncate text-xs text-ink/80">{detail}</span>
       <span className="hidden shrink-0 text-[10px] text-muted sm:inline">{event.device === "mobile" ? "📱" : "💻"} {event.lang || ""}</span>
       <span className="shrink-0 text-[10px] text-muted">{timeAgo(event.ts)}</span>

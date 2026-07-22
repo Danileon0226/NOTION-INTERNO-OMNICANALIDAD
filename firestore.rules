@@ -11,7 +11,7 @@ service cloud.firestore {
 
     function adminEmails() {
       // ⬇️ EDITA con tus correos de administrador (en minúsculas).
-      return ['principal.zeroagency@gmail.com'];
+      return ['principal.zeroagency@gmail.com', 'danielalejandrosalgadoleon@gmail.com'];
     }
 
     function isSignedIn() {
@@ -143,7 +143,7 @@ service cloud.firestore {
       allow create: if
         request.resource.data.keys().hasOnly([
           'name', 'ts', 'session', 'path', 'title', 'lang',
-          'ref', 'utm', 'device', 'vw', 'params'
+          'ref', 'utm', 'device', 'vw', 'params', 'site'
         ])
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
@@ -159,7 +159,8 @@ service cloud.firestore {
         && (!('utm' in request.resource.data) || (request.resource.data.utm is string && request.resource.data.utm.size() <= 200))
         && (!('device' in request.resource.data) || (request.resource.data.device is string && request.resource.data.device.size() <= 10))
         && (!('vw' in request.resource.data) || request.resource.data.vw is number)
-        && (!('params' in request.resource.data) || (request.resource.data.params is string && request.resource.data.params.size() <= 600));
+        && (!('params' in request.resource.data) || (request.resource.data.params is string && request.resource.data.params.size() <= 600))
+        && (!('site' in request.resource.data) || (request.resource.data.site is string && request.resource.data.site.size() <= 30));
       allow read: if isAdmin() || hasRole('comercial') || hasRole('dev');
       allow update: if false;
       allow delete: if isAdmin();
