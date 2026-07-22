@@ -71,9 +71,14 @@ export const useConnectors = create<ConnectorsState>()(
           if (id === "meta") return { meta: { ...emptyMeta } };
           if (id === "gmail" || id === "google-drive" || id === "google-calendar") {
             // Quita solo el scope correspondiente; revoca el token si no quedan scopes.
-            const scope =
-              id === "gmail" ? GMAIL_SCOPE : id === "google-drive" ? DRIVE_SCOPE : CALENDAR_SCOPE;
-            const scopes = s.google.scopes.filter((x) => x !== scope);
+            // Al desconectar Drive se quita también el scope de escritura (Campañas IG).
+            const drop =
+              id === "gmail"
+                ? [GMAIL_SCOPE]
+                : id === "google-drive"
+                  ? [DRIVE_SCOPE, DRIVE_WRITE_SCOPE]
+                  : [CALENDAR_SCOPE];
+            const scopes = s.google.scopes.filter((x) => !drop.includes(x));
             return {
               google: scopes.length
                 ? { ...s.google, scopes }
@@ -100,6 +105,10 @@ export const useConnectors = create<ConnectorsState>()(
 
 export const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
+// Escritura en Drive (módulo Campañas IG): crear carpeta, subir piezas y
+// hacer públicas las imágenes finales. Se pide bajo demanda (no está en
+// GOOGLE_SCOPES) para no ampliar el consentimiento del resto de módulos.
+export const DRIVE_WRITE_SCOPE = "https://www.googleapis.com/auth/drive";
 export const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
 // Todos los scopes de Google: un solo consentimiento conecta Gmail + Drive + Calendar.
 export const GOOGLE_SCOPES = [GMAIL_SCOPE, DRIVE_SCOPE, CALENDAR_SCOPE];

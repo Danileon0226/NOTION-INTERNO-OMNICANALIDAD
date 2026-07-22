@@ -71,11 +71,12 @@ export interface NewInvite {
   autoEnable: boolean;
   expiresAt?: number | null;
   maxUses?: number | null;
+  code?: string; // código fijo (presets de la agencia); si falta, se genera uno aleatorio
 }
 
 /** Crea una invitación (solo admin por reglas). Devuelve el código. */
 export async function createInvite(input: NewInvite, by: { uid: string; name: string }): Promise<string> {
-  const code = genCode();
+  const code = input.code?.trim() || genCode();
   await setDoc(doc(db(), "invites", code), {
     role: input.role,
     label: input.label.trim() || `Invitación ${input.role}`,

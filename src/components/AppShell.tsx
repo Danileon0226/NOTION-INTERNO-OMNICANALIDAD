@@ -15,12 +15,14 @@ import { SileoDaemon } from "@/components/sileo/SileoDaemon";
 import { HandsFree } from "@/components/voice/HandsFree";
 import { AutonomyDaemon } from "@/components/anticipation/AutonomyDaemon";
 import { MonitorDaemon } from "@/components/monitor/MonitorDaemon";
+import { WebPulseDaemon } from "@/components/web/WebPulseDaemon";
 import { BriefingDaemon } from "@/components/BriefingDaemon";
 import { ReportsDaemon } from "@/components/ReportsDaemon";
 import { DataBankDaemon } from "@/components/DataBankDaemon";
 import { ProgressDaemon } from "@/components/gamification/ProgressDaemon";
 import { Celebration } from "@/components/gamification/Celebration";
 import { LevelChip } from "@/components/gamification/LevelHud";
+import { OrbLoader } from "@/components/ui/OrbLoader";
 import { LoginGate } from "@/components/LoginGate";
 import { AuthListener } from "@/components/AuthListener";
 import { Onboarding } from "@/components/Onboarding";
@@ -206,6 +208,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {/* Demonio de monitoreo del sitio web de la agencia */}
           <MonitorDaemon />
 
+          {/* Demonio 360: eventos en vivo del sitio público (web_events) */}
+          <WebPulseDaemon />
+
           {/* Demonio del briefing programado */}
           <BriefingDaemon />
 
@@ -233,7 +238,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 function Splash() {
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <span className="zero-monogram h-12 w-12 animate-pulse text-xl">Z</span>
+      <OrbLoader size={64} label="Iniciando ZERO" />
     </div>
   );
 }

@@ -17,6 +17,7 @@ import { gmailSearch, calendarEvents } from "@/lib/connectors/google";
 import { ghFetchAll } from "@/lib/connectors/github";
 import { useWorkspace } from "@/lib/store";
 import { useMonitor, statusOf, latest, avgLatency, uptime } from "@/lib/monitor/store";
+import { useWebPulse } from "@/lib/webpulse";
 import { useAnticipation, typeCalibration, type TrustMode } from "@/lib/anticipation/store";
 
 export interface Anticipation {
@@ -49,6 +50,8 @@ export interface Signals {
     slow: { label: string; url: string; ms: number }[];
     degraded: { label: string; url: string; up: number }[];
   };
+  /** Pulso 360 del sitio público (última hora de web_events, vía WebPulseDaemon). */
+  web?: { leads: number; subs: number; whatsapp: number; errors: number; sessions: number };
   missing: string[]; // conectores sin conectar (cold-start)
 }
 
@@ -97,6 +100,19 @@ export async function gatherSignals(): Promise<Signals> {
       }
     : undefined;
 
+  // Pulso 360 del sitio público (sin red: lo mantiene fresco WebPulseDaemon).
+  const pulse = useWebPulse.getState();
+  const web =
+    pulse.updatedAt && Date.now() - pulse.updatedAt < 15 * 60_000
+      ? {
+          leads: pulse.hour.leads,
+          subs: pulse.hour.subs,
+          whatsapp: pulse.hour.whatsapp,
+          errors: pulse.hour.errors,
+          sessions: pulse.hour.sessions,
+        }
+      : undefined;
+
   const [gmail, calendar, github] = await Promise.all([
     gmailOk
       ? (async () => {
@@ -131,7 +147,7 @@ export async function gatherSignals(): Promise<Signals> {
       : Promise.resolve(undefined),
   ]);
 
-  return { gmail, calendar, github, workspace: { openTodos }, site, missing };
+  return { gmail, calendar, github, workspace: { openTodos }, site, web, missing };
 }
 
 // ── N1 · Reglas deterministas ─────────────────────────────────
@@ -263,6 +279,57 @@ function rules(s: Signals): Anticipation[] {
       confidence: 0.7,
       source: "system",
       suggestPrompt: `El sitio ${sl.url} responde lento (~${sl.ms} ms). Analiza posibles causas y propón optimizaciones de rendimiento priorizadas.`,
+    });
+  }
+
+  // Pulso 360 del sitio público: convierte los eventos web en acciones.
+  if (s.web?.leads) {
+    out.push({
+      key: "web.leads",
+      type: "next.best.feature",
+      title: `${s.web.leads} lead(s) nuevos desde la web en la última hora`,
+      reason: "El formulario del sitio registró envíos recientes (evento lead_submit).",
+      confidence: 0.9,
+      leadTime: "ahora",
+      source: "web",
+      suggestPrompt:
+        "Llegaron leads nuevos desde el formulario del sitio. Revisa la bandeja de Leads y el módulo Web 360, y redacta la primera respuesta de contacto para cada uno (WhatsApp o email según su canal preferido).",
+    });
+  }
+  if (s.web && s.web.whatsapp >= 3) {
+    out.push({
+      key: "web.whatsapp",
+      type: "next.best.feature",
+      title: `${s.web.whatsapp} clics a WhatsApp desde el sitio en la última hora`,
+      reason: "Pico de intención de contacto: varios visitantes abrieron WhatsApp.",
+      confidence: 0.7,
+      source: "web",
+      suggestPrompt:
+        "Hay un pico de clics a WhatsApp desde el sitio. Verifica que la línea de WhatsApp esté atendida y prepara respuestas rápidas para las consultas entrantes.",
+    });
+  }
+  if (s.web?.errors) {
+    out.push({
+      key: "web.errors",
+      type: "error.prevention",
+      title: `${s.web.errors} error(es) JS en el sitio en la última hora`,
+      reason: "Los navegadores de los visitantes reportaron errores de JavaScript.",
+      confidence: 0.85,
+      source: "web",
+      suggestPrompt:
+        "El sitio está reportando errores de JavaScript (evento js_error en Web 360). Lista los mensajes y las páginas afectadas y propón el diagnóstico y la corrección.",
+    });
+  }
+  if (s.web && s.web.sessions >= 8) {
+    out.push({
+      key: "web.traffic",
+      type: "smart.defaults",
+      title: `Tráfico alto: ${s.web.sessions} visitas activas en la última hora`,
+      reason: "El sitio recibe más sesiones de lo habitual ahora mismo.",
+      confidence: 0.55,
+      source: "web",
+      suggestPrompt:
+        "El sitio tiene un pico de tráfico. Revisa en Web 360 de dónde viene (referrer/UTM) y sugiere cómo capitalizarlo (CTA, campaña, contenido).",
     });
   }
 

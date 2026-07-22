@@ -35,6 +35,14 @@ const EXPIRIES: { label: string; days: number | null }[] = [
   { label: "30 días", days: 30 },
 ];
 
+// QRs estándar de la agencia: códigos fijos para imprimir una sola vez y
+// reutilizar (el QR no cambia aunque se desactive/reactive la invitación).
+const PRESETS: { code: string; role: Role; label: string; file: string }[] = [
+  { code: "zadmin-x7k9m2", role: "admin", label: "Administradores", file: "zero-qr-admin.png" },
+  { code: "zcom-t5r3j8", role: "comercial", label: "Chief Comercial", file: "zero-qr-comercial.png" },
+  { code: "zdev-p4w8n6", role: "dev", label: "Desarrolladores", file: "zero-qr-dev.png" },
+];
+
 export default function VincularPage() {
   const account = useAccount();
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -73,6 +81,15 @@ export default function VincularPage() {
       />
 
       <Creator by={{ uid: account.uid || "", name: account.name }} />
+
+      <div className="mt-6">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">QRs estándar de la agencia</div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {PRESETS.map((p) => (
+            <PresetCard key={p.code} preset={p} invites={invites} cargando={loading} by={{ uid: account.uid || "", name: account.name }} />
+          ))}
+        </div>
+      </div>
 
       <div className="mt-6">
         <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Invitaciones</div>
@@ -192,6 +209,102 @@ function Creator({ by }: { by: { uid: string; name: string } }) {
       >
         <Plus size={15} /> Crear QR
       </button>
+    </div>
+  );
+}
+
+// Tarjeta de un QR estándar: código fijo, QR brandeado con el isotipo y
+// alta/reactivación de la invitación en Firestore con un solo botón.
+function PresetCard({
+  preset,
+  invites,
+  cargando,
+  by,
+}: {
+  preset: (typeof PRESETS)[number];
+  invites: Invite[];
+  cargando: boolean;
+  by: { uid: string; name: string };
+}) {
+  const inv = invites.find((i) => i.code === preset.code) ?? null;
+  const url = inviteUrl(preset.code);
+  const status = inviteStatus(inv);
+  const rm = roleMeta(preset.role);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  // Crea la invitación con el código fijo, o la reactiva si ya existe.
+  async function crearOActivar() {
+    setErr("");
+    setBusy(true);
+    try {
+      if (!inv) {
+        await createInvite({ role: preset.role, label: preset.label, autoEnable: true, code: preset.code }, by);
+      } else if (!inv.active) {
+        await setInviteActive(preset.code, true);
+      }
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function copy() {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+
+  return (
+    <div className="rounded-2xl border glass-card p-4">
+      <div className="flex items-start gap-3">
+        <QrCode value={url} size={104} logo />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${rm.badge}`}>{rm.label}</span>
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600">
+              <ShieldCheck size={11} /> inmediato
+            </span>
+          </div>
+          <div className="mt-1 truncate text-sm font-medium text-ink">{preset.label}</div>
+          <code className="mt-0.5 block truncate text-[11px] text-muted">{preset.code}</code>
+          {cargando ? (
+            <div className="mt-1 text-[11px] text-muted">Comprobando estado…</div>
+          ) : inv ? (
+            status.ok ? (
+              <div className="mt-1 text-[11px] text-muted">Activa · {inv.uses} uso(s)</div>
+            ) : (
+              <div className="mt-1 text-[11px] text-red-500">{status.reason}</div>
+            )
+          ) : (
+            <div className="mt-1 text-[11px] text-amber-600">Aún no existe en Firestore: créala para que el QR funcione.</div>
+          )}
+        </div>
+      </div>
+
+      {err && <p className="mt-2 text-xs text-red-500">{err}</p>}
+
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <button
+          onClick={crearOActivar}
+          disabled={busy || cargando || (!!inv && inv.active)}
+          className="btn-brand inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold disabled:opacity-50"
+        >
+          {inv ? <Power size={12} /> : <Plus size={12} />} {inv ? (inv.active ? "Invitación activa" : "Activar invitación") : "Crear invitación"}
+        </button>
+        <button
+          onClick={() => downloadQr(url, preset.file, { logo: true })}
+          className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] text-ink hover:bg-bg-subtle"
+        >
+          <Download size={12} /> Descargar PNG
+        </button>
+        <button onClick={copy} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] text-ink hover:bg-bg-subtle">
+          {copied ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />} {copied ? "Copiado" : "Copiar enlace"}
+        </button>
+      </div>
     </div>
   );
 }
